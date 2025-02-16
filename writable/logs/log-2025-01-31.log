@@ -1,0 +1,47 @@
+ERROR - 2025-01-31 15:38:12 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:40:28 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:42:46 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:49:46 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-01-31 15:49:49 --> Undefined variable $program_schedule
+in APPPATH\Views\ybb\timeline.php on line 16.
+ 1 APPPATH\Views\ybb\timeline.php(16): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\ybb\\timeline.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\View\View.php(452): CodeIgniter\View\View->render()
+ 5 APPPATH\Views\ybb\home.php(309): CodeIgniter\View\View->include()
+ 6 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\ybb\\home.php')
+ 7 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 8 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 9 APPPATH\Controllers\BaseController.php(101): view()
+10 APPPATH\Controllers\Home.php(22): App\Controllers\BaseController->render()
+11 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+12 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+13 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+14 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+15 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-01-31 15:50:37 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-01-31 15:50:42 --> Undefined variable $program_schedule
+in APPPATH\Views\ybb\timeline.php on line 10.
+ 1 APPPATH\Views\ybb\timeline.php(10): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\ybb\\timeline.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\View\View.php(452): CodeIgniter\View\View->render()
+ 5 APPPATH\Views\ybb\home.php(309): CodeIgniter\View\View->include()
+ 6 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\ybb\\home.php')
+ 7 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 8 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 9 APPPATH\Controllers\BaseController.php(101): view()
+10 APPPATH\Controllers\Home.php(22): App\Controllers\BaseController->render()
+11 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+12 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+13 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+14 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+15 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-01-31 15:51:01 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:51:22 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:53:23 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:53:56 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:54:11 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:54:31 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:54:45 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-31 15:55:13 --> 22 : The requested URL returned error: 404

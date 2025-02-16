@@ -1,0 +1,199 @@
+ERROR - 2025-01-15 10:13:47 --> 35 : Recv failure: Connection was reset
+CRITICAL - 2025-01-15 10:13:47 --> Trying to access array offset on value of type null
+in APPPATH\Views\ybb\home.php on line 181.
+ 1 APPPATH\Views\ybb\home.php(181): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(15): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:18:02 --> Undefined array key "start_date"
+in APPPATH\Views\ybb\home.php on line 95.
+ 1 APPPATH\Views\ybb\home.php(95): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(15): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:19:03 --> Undefined array key "start_date"
+in APPPATH\Views\ybb\home.php on line 95.
+ 1 APPPATH\Views\ybb\home.php(95): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(15): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:19:08 --> Undefined array key "start_date"
+in APPPATH\Views\ybb\home.php on line 95.
+ 1 APPPATH\Views\ybb\home.php(95): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(15): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:19:15 --> Undefined array key "start_date"
+in APPPATH\Views\ybb\home.php on line 95.
+ 1 APPPATH\Views\ybb\home.php(95): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(15): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:21:08 --> Undefined array key "start_date"
+in APPPATH\Views\ybb\home.php on line 97.
+ 1 APPPATH\Views\ybb\home.php(97): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(15): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:22:04 --> Array to string conversion
+in APPPATH\Controllers\Home.php on line 15.
+ 1 APPPATH\Controllers\Home.php(15): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 3 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 4 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+ 5 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:22:37 --> Undefined array key "location"
+in APPPATH\Controllers\Home.php on line 15.
+ 1 APPPATH\Controllers\Home.php(15): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 3 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 4 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+ 5 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:22:41 --> Undefined array key "location"
+in APPPATH\Controllers\Home.php on line 15.
+ 1 APPPATH\Controllers\Home.php(15): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 3 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 4 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+ 5 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:22:48 --> Undefined array key 0
+in APPPATH\Controllers\Home.php on line 15.
+ 1 APPPATH\Controllers\Home.php(15): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 3 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 4 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+ 5 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 6 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 10:42:30 --> Undefined array key "registration_video_url"
+in APPPATH\Views\ybb\home.php on line 260.
+ 1 APPPATH\Views\ybb\home.php(260): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(16): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+CRITICAL - 2025-01-15 11:03:04 --> Undefined array key "role"
+in APPPATH\Views\ybb\home.php on line 314.
+ 1 APPPATH\Views\ybb\home.php(314): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(18): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+ERROR - 2025-01-15 11:42:42 --> 28 : Operation timed out after 30006 milliseconds with 0 bytes received
+CRITICAL - 2025-01-15 11:42:42 --> Trying to access array offset on value of type null
+in APPPATH\Controllers\BaseController.php on line 94.
+ 1 APPPATH\Controllers\BaseController.php(94): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 APPPATH\Controllers\Home.php(11): App\Controllers\BaseController->getProgramInfoDetail()
+ 3 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 4 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 5 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+ 6 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+ERROR - 2025-01-15 16:58:20 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-01-15 16:58:21 --> Trying to access array offset on value of type null
+in APPPATH\Views\ybb\home.php on line 181.
+ 1 APPPATH\Views\ybb\home.php(181): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 5 APPPATH\Controllers\BaseController.php(101): view()
+ 6 APPPATH\Controllers\Home.php(17): App\Controllers\BaseController->render()
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+ERROR - 2025-01-15 16:59:18 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 16:59:40 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:07:14 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:08:58 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-01-15 17:08:59 --> Undefined array key "mail"
+in APPPATH\Views\ybb\common\footer.php on line 78.
+ 1 APPPATH\Views\ybb\common\footer.php(78): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\common\\footer.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\View\View.php(452): CodeIgniter\View\View->render()
+ 5 APPPATH\Views\ybb\about-us.php(139): CodeIgniter\View\View->include()
+ 6 SYSTEMPATH\View\View.php(224): include('D:\\Work\\default\\app\\Views\\ybb\\about-us.php')
+ 7 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 8 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render()
+ 9 APPPATH\Controllers\BaseController.php(101): view()
+10 APPPATH\Controllers\AboutUs.php(20): App\Controllers\BaseController->render()
+11 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\AboutUs->index()
+12 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+13 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest()
+14 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+15 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\default\\public\\index.php')
+ERROR - 2025-01-15 17:09:18 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:10:14 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:12:11 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:12:43 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:13:04 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:14:29 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:15:37 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:16:09 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:16:29 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:16:51 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:17:07 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:17:18 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 17:20:11 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 18:24:56 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 18:29:36 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 18:29:42 --> 22 : The requested URL returned error: 404
+ERROR - 2025-01-15 22:07:56 --> 22 : The requested URL returned error: 404
