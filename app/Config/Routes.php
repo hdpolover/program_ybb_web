@@ -47,6 +47,11 @@ $routes->get('sponsorships', 'Sponsorships::index');
 $routes->get('announcements', 'Announcements::index');
 $routes->get('announcements/(:segment)', 'Announcements::details/$1');
 
+$routes->get('dashboard', 'Dashboard::index');
+
+// auth
+$routes->get('sign-in', 'Auth::index', ['filter' => 'noauth']);
+
 $routes->get('sitemap.xml', 'Sitemap::index');
 
 /*

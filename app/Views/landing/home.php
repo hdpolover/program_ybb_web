@@ -29,7 +29,7 @@
 
     <!-- Begin page -->
     <div class="layout-wrapper landing">
-        <?= $this->include('ybb/common/navbar') ?>
+        <?= $this->include('landing/common/navbar') ?>
 
         <!-- start hero section -->
         <section class="section pb-0 hero-section" id="hero">
@@ -306,7 +306,7 @@
                     <!-- <div class="col-lg-12">
                         <div id="timeline-embed" style="width: 100%; height: 100vh"></div>
                     </div> -->
-                    <?= $this->include('ybb/timeline') ?>
+                    <?= $this->include('landing/timeline') ?>
                 </div>
             </div>
         </section>
@@ -356,7 +356,7 @@
         </section>
         <!-- end testimonial section -->
 
-        <?= $this->include('ybb/common/footer') ?>
+        <?= $this->include('landing/common/footer') ?>
 
     </div>
     <!-- end layout wrapper -->

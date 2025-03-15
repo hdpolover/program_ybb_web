@@ -1,9 +1,6 @@
 <?= $this->include('partials/main') ?>
 
 <head>
-
-    <?php echo view('partials/title-meta', array('title'=>'Dashboard')); ?>
-
     <!-- jsvectormap css -->
     <link href="/assets/libs/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css" />
 

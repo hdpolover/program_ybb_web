@@ -19,7 +19,7 @@ class Home extends BaseController
             $data['program_photos'] = $this->makeGetRequest('/program_photos');
         }
 
-        return $this->render('ybb/home', $data);
+        return $this->render('landing/home', $data);
     }
 
     public function root($path = '')
