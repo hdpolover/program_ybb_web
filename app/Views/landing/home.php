@@ -319,7 +319,7 @@
                 <div class="row justify-content-center">
                     <div class="col-lg-8">
                         <div class="text-center mb-5">
-                            <h2 class="mb-3 fw-semibold text-white">What Our Participants Say</h2>
+                            <h2 class="mb-3 fw-semibold text-white">What People Say About Our Program</h2>
                             <p class="text-white">Discover the impact of our program through the experiences of our participants</p>
                         </div>
                     </div>

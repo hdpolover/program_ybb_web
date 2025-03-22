@@ -10,19 +10,19 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mx-auto mt-2 mt-lg-0" id="navbar-example">
                 <li class="nav-item">
-                    <a class="nav-link <?= current_url() === base_url() ? 'active' : ''; ?>" href="<?= base_url(); ?>">Home</a>
+                    <a class="nav-link <?= uri_string() == '' || uri_string() == 'home' ? 'active' : ''; ?>" href="<?= base_url(); ?>">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= current_url() === base_url('/about-us') ? 'active' : ''; ?>" href="<?= base_url("/about-us"); ?>">About Us</a>
+                    <a class="nav-link <?= uri_string() == 'about-us' ? 'active' : ''; ?>" href="<?= base_url("about-us"); ?>">About Us</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= current_url() === base_url('/sponsorships') ? 'active' : ''; ?>" href="<?= base_url("/sponsorships"); ?>">Partnerships & Sponsorships</a>
+                    <a class="nav-link <?= uri_string() == 'sponsorships' ? 'active' : ''; ?>" href="<?= base_url("sponsorships"); ?>">Partnerships & Sponsorships</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= current_url() === base_url('/announcements') ? 'active' : ''; ?>" href="<?= base_url("/announcements"); ?>">Announcements</a>
+                    <a class="nav-link <?= uri_string() == 'announcements' ? 'active' : ''; ?>" href="<?= base_url("announcements"); ?>">Announcements</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= current_url() === base_url('/faqs') ? 'active' : ''; ?>" href="<?= base_url("/faqs"); ?>">FAQs</a>
+                    <a class="nav-link <?= uri_string() == 'faqs' ? 'active' : ''; ?>" href="<?= base_url("faqs"); ?>">FAQs</a>
                 </li>
             </ul>
 

@@ -113,3 +113,20 @@ in APPPATH\Views\landing\announcements.php on line 51.
  9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
 10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
 11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 19:00:32 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 19:00:32 --> usort(): Argument #1 ($array) must be of type array, null given
+in APPPATH\Views\landing\announcements.php on line 51.
+ 1 APPPATH\Views\landing\announcements.php(51): usort(null, Object(Closure))
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\landing\\announcements.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('landing/announcements', [], true)
+ 5 APPPATH\Controllers\BaseController.php(105): view('landing/announcements', [...])
+ 6 APPPATH\Controllers\Announcements.php(14): App\Controllers\BaseController->render('landing/announcements', [...])
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Announcements->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Announcements))
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 19:03:26 --> 22 : The requested URL returned error: 404
+ERROR - 2025-03-22 19:03:49 --> 22 : The requested URL returned error: 404
+ERROR - 2025-03-22 19:09:57 --> 22 : The requested URL returned error: 404

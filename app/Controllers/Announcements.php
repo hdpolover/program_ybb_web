@@ -6,9 +6,11 @@ class Announcements extends BaseController
 {
     public function index()
     {
+        $announcements = $this->makeGetRequest('/program_announcements/list?program_id=' . $this->getProgramInfoDetail('id'));
+        
         $data = [
             'title' => 'Announcements',
-            'announcements' => $this->makeGetRequest('/program_announcements/list?program_id=' . $this->getProgramInfoDetail('id')),
+            'announcements' => $announcements ?? [], // Set empty array as default if null
         ];
 
         return $this->render('landing/announcements', $data);

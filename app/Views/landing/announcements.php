@@ -45,33 +45,22 @@
         <!-- start blog -->
         <section class="section" id="blog">
             <div class="container">
-                <?php
-                usort($announcements, function ($a, $b) {
-                    return strtotime($b['created_at']) - strtotime($a['created_at']);
-                });
-                foreach ($announcements as $announcement):
-                    $formatted_date = date('F j, Y', strtotime($announcement['created_at']));
-                ?>
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="row g-0">
-                                    <div class="col-md-4">
-                                        <img src="<?= $announcement['img_url']; ?>" alt="" class="img-fluid rounded-start h-100" style="object-fit: cover;" />
-                                    </div>
-                                    <div class="col-md-8">
-                                        <div class="card-body">
-                                            <ul class="list-inline fs-14 text-muted">
-                                                <li class="list-inline-item">
-                                                    <i class="ri-calendar-line align-bottom me-1"></i> <?= $formatted_date; ?>
-                                                </li>
-                                            </ul>
-                                            <a href="javascript:void(0);">
-                                                <h1 class=" fw-bold"><?= $announcement['title']; ?></h1>
-                                            </a>
-                                            <p class="card-text text-muted fs-14"><?= substr($announcement['description'], 0, 250); ?>...</p>
-                                            <div class="text-end">
-                                                <a href="<?= base_url('announcements/' . $announcement['slug']); ?>" class="link-success">Read More <i class="ri-arrow-right-line align-bottom ms-1"></i></a>
+                <?php if (empty($announcements)): ?>
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="text-center">
+                                <div class="card">
+                                    <div class="card-body p-4">
+                                        <div class="avatar-lg mx-auto">
+                                            <div class="avatar-title bg-light text-primary display-5 rounded-circle">
+                                                <i class="ri-information-line"></i>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 pt-2">
+                                            <h4>No Announcements Available</h4>
+                                            <p class="text-muted mx-4">There are currently no announcements for <?= $program_info['name']; ?>.</p>
+                                            <div class="mt-4">
+                                                <a href="<?= base_url(); ?>" class="btn btn-soft-primary">Back to Home</a>
                                             </div>
                                         </div>
                                     </div>
@@ -79,7 +68,43 @@
                             </div>
                         </div>
                     </div>
-                <?php endforeach; ?>
+                <?php else: ?>
+                    <?php
+                    usort($announcements, function ($a, $b) {
+                        return strtotime($b['created_at']) - strtotime($a['created_at']);
+                    });
+                    foreach ($announcements as $announcement):
+                        $formatted_date = date('F j, Y', strtotime($announcement['created_at']));
+                    ?>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="row g-0">
+                                        <div class="col-md-4">
+                                            <img src="<?= $announcement['img_url']; ?>" alt="" class="img-fluid rounded-start h-100" style="object-fit: cover;" />
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="card-body">
+                                                <ul class="list-inline fs-14 text-muted">
+                                                    <li class="list-inline-item">
+                                                        <i class="ri-calendar-line align-bottom me-1"></i> <?= $formatted_date; ?>
+                                                    </li>
+                                                </ul>
+                                                <a href="javascript:void(0);">
+                                                    <h1 class=" fw-bold"><?= $announcement['title']; ?></h1>
+                                                </a>
+                                                <p class="card-text text-muted fs-14"><?= substr($announcement['description'], 0, 250); ?>...</p>
+                                                <div class="text-end">
+                                                    <a href="<?= base_url('announcements/' . $announcement['slug']); ?>" class="link-success">Read More <i class="ri-arrow-right-line align-bottom ms-1"></i></a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
             <!-- end container -->
         </section>

@@ -52,7 +52,8 @@
                 <div class="row align-items-center gy-4">
                     <div class="col-lg-12 order-2 order-lg-1">
                         <div>
-                            <h1 class="text-uppercase text-success">About Foundation</h1>
+                            <h1 class="text-uppercase text-success">About YBB Foundation</h1>
+                            <div class="mb-5 mt-4">
                             <?= $about_us['about_ybb']; ?>
                         </div>
                     </div>
@@ -91,7 +92,7 @@
                             <?php
                             $random_photo = $program_photos[array_rand($program_photos)]['img_url'];
                             ?>
-                            <img src="<?= compress_image($random_photo, 100, 100, 80, true); ?>" alt="Random Program Photo" class="img-fluid" style="width: 100%; height: auto;">
+                            <img src="<?= compress_image($random_photo,  600, 400, 80, true); ?>" alt="Random Program Photo" class="img-fluid" style="width: 100%; height: auto;">
                         </div>
                     </div>
                     <div class="col-lg-8">
@@ -113,7 +114,7 @@
                 <?php
                 $random_photo_left = $program_photos[array_rand($program_photos)]['img_url'];
                 ?>
-                <img src="<?= compress_image($random_photo_left, 100, 100, 80, true); ?> ?>" alt="Random Program Photo Left" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
+                <img src="<?= compress_image($random_photo_left,  600, 400, 80, true); ?> ?>" alt="Random Program Photo Left" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
                 </div>
             </div>
             <div class="col-lg-6 p-0">
@@ -121,7 +122,7 @@
                 <?php
                 $random_photo_right = $program_photos[array_rand($program_photos)]['img_url'];
                 ?>
-                <img src="<?= compress_image($random_photo_right, 100, 100, 100, true); ?> ?>" alt="Random Program Photo Right" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
+                <img src="<?= compress_image($random_photo_right,  600, 400, 100, true); ?> ?>" alt="Random Program Photo Right" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
                 </div>
             </div>
             </div>
