@@ -17,7 +17,7 @@ class AboutUs extends BaseController
             $data['program_photos'] = $this->makeGetRequest('/program_photos');
         }
 
-        return $this->render('ybb/about-us', $data);
+        return $this->render('landing/about-us', $data);
     }
 
     public function root($path = '')

@@ -11,7 +11,7 @@ class Announcements extends BaseController
             'announcements' => $this->makeGetRequest('/program_announcements/list?program_id=' . $this->getProgramInfoDetail('id')),
         ];
 
-        return $this->render('ybb/announcements', $data);
+        return $this->render('landing/announcements', $data);
     }
 
     public function root($path = '')

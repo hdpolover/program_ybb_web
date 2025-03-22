@@ -1,0 +1,115 @@
+ERROR - 2025-03-22 18:07:16 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 18:28:26 --> Unable to resolve driver. Argment must be either an instance of Intervention\Image\Interfaces\DriverInterface::class or a qualified namespaced name of the driver class.
+in VENDORPATH\intervention\image\src\ImageManager.php on line 135.
+ 1 VENDORPATH\intervention\image\src\ImageManager.php(29): Intervention\Image\ImageManager::resolveDriver('gd')
+ 2 APPPATH\Controllers\BaseController.php(82): Intervention\Image\ImageManager->__construct('gd')
+ 3 SYSTEMPATH\CodeIgniter.php(905): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
+ 4 SYSTEMPATH\CodeIgniter.php(488): CodeIgniter\CodeIgniter->createController()
+ 5 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 18:29:06 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 18:29:14 --> foreach() argument must be of type array|object, null given
+in APPPATH\Views\landing\home.php on line 331.
+ 1 APPPATH\Views\landing\home.php(331): CodeIgniter\Debug\Exceptions->errorHandler(2, 'foreach() argument must be of type array|object, null given', 'D:\\Work\\program_ybb_web\\app\\Views\\landing\\home.php', 331)
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\landing\\home.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('landing/home', [], true)
+ 5 APPPATH\Controllers\BaseController.php(105): view('landing/home', [...])
+ 6 APPPATH\Controllers\Home.php(22): App\Controllers\BaseController->render('landing/home', [...])
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Home->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Home))
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 18:31:04 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 18:40:38 --> Invalid file: "ybb/about-us.php"
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 33.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('ybb/about-us.php')
+ 2 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('ybb/about-us', [], true)
+ 3 APPPATH\Controllers\BaseController.php(105): view('ybb/about-us', [...])
+ 4 APPPATH\Controllers\AboutUs.php(20): App\Controllers\BaseController->render('ybb/about-us', [...])
+ 5 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\AboutUs->index()
+ 6 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\AboutUs))
+ 7 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+CRITICAL - 2025-03-22 18:43:25 --> Invalid file: "ybb/common/navbar.php"
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 33.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('ybb/common/navbar.php')
+ 2 SYSTEMPATH\View\View.php(452): CodeIgniter\View\View->render('ybb/common/navbar', null, true)
+ 3 APPPATH\Views\landing\about-us.php(28): CodeIgniter\View\View->include('ybb/common/navbar')
+ 4 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\landing\\about-us.php')
+ 5 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 6 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('landing/about-us', [], true)
+ 7 APPPATH\Controllers\BaseController.php(105): view('landing/about-us', [...])
+ 8 APPPATH\Controllers\AboutUs.php(20): App\Controllers\BaseController->render('landing/about-us', [...])
+ 9 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\AboutUs->index()
+10 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\AboutUs))
+11 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+12 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+13 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+CRITICAL - 2025-03-22 18:43:46 --> Invalid file: "ybb/common/footer.php"
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 33.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('ybb/common/footer.php')
+ 2 SYSTEMPATH\View\View.php(452): CodeIgniter\View\View->render('ybb/common/footer', null, true)
+ 3 APPPATH\Views\landing\about-us.php(139): CodeIgniter\View\View->include('ybb/common/footer')
+ 4 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\landing\\about-us.php')
+ 5 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 6 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('landing/about-us', [], true)
+ 7 APPPATH\Controllers\BaseController.php(105): view('landing/about-us', [...])
+ 8 APPPATH\Controllers\AboutUs.php(20): App\Controllers\BaseController->render('landing/about-us', [...])
+ 9 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\AboutUs->index()
+10 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\AboutUs))
+11 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+12 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+13 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+CRITICAL - 2025-03-22 18:49:04 --> Invalid file: "ybb/sponsorships.php"
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 33.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('ybb/sponsorships.php')
+ 2 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('ybb/sponsorships', [], true)
+ 3 APPPATH\Controllers\BaseController.php(105): view('ybb/sponsorships', [...])
+ 4 APPPATH\Controllers\Sponsorships.php(13): App\Controllers\BaseController->render('ybb/sponsorships', [...])
+ 5 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Sponsorships->index()
+ 6 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Sponsorships))
+ 7 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 18:50:17 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 18:50:17 --> Invalid file: "ybb/announcements.php"
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 33.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('ybb/announcements.php')
+ 2 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('ybb/announcements', [], true)
+ 3 APPPATH\Controllers\BaseController.php(105): view('ybb/announcements', [...])
+ 4 APPPATH\Controllers\Announcements.php(14): App\Controllers\BaseController->render('ybb/announcements', [...])
+ 5 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Announcements->index()
+ 6 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Announcements))
+ 7 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 18:50:37 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 18:50:37 --> Invalid file: "ybb/announcements.php"
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 33.
+ 1 SYSTEMPATH\View\View.php(212): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('ybb/announcements.php')
+ 2 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('ybb/announcements', [], true)
+ 3 APPPATH\Controllers\BaseController.php(105): view('ybb/announcements', [...])
+ 4 APPPATH\Controllers\Announcements.php(14): App\Controllers\BaseController->render('ybb/announcements', [...])
+ 5 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Announcements->index()
+ 6 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Announcements))
+ 7 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')
+ERROR - 2025-03-22 18:50:53 --> 22 : The requested URL returned error: 404
+CRITICAL - 2025-03-22 18:50:53 --> usort(): Argument #1 ($array) must be of type array, null given
+in APPPATH\Views\landing\announcements.php on line 51.
+ 1 APPPATH\Views\landing\announcements.php(51): usort(null, Object(Closure))
+ 2 SYSTEMPATH\View\View.php(224): include('D:\\Work\\program_ybb_web\\app\\Views\\landing\\announcements.php')
+ 3 SYSTEMPATH\View\View.php(227): CodeIgniter\View\View->CodeIgniter\View\{closure}()
+ 4 SYSTEMPATH\Common.php(1180): CodeIgniter\View\View->render('landing/announcements', [], true)
+ 5 APPPATH\Controllers\BaseController.php(105): view('landing/announcements', [...])
+ 6 APPPATH\Controllers\Announcements.php(14): App\Controllers\BaseController->render('landing/announcements', [...])
+ 7 SYSTEMPATH\CodeIgniter.php(932): App\Controllers\Announcements->index()
+ 8 SYSTEMPATH\CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Announcements))
+ 9 SYSTEMPATH\CodeIgniter.php(366): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 FCPATH\index.php(67): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Commands\Server\rewrite.php(47): require_once('D:\\Work\\program_ybb_web\\public\\index.php')

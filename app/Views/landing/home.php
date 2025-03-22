@@ -37,7 +37,7 @@
                 <div class="carousel-inner shadow-lg p-2 bg-white rounded">
                     <div class="carousel-item active" data-bs-interval="3000">
                         <div class="position-relative">
-                            <img src="<?= $home_details['banner1_img_url']; ?>" class="d-block w-100" alt="...">
+                            <img src="<?= function_exists('compress_image') ? compress_image($home_details['banner1_img_url'], 1200) : $home_details['banner1_img_url']; ?>" class="d-block w-100" alt="...">
                             <!-- <div class="position-absolute top-0 start-0 w-100 h-100 bg-black opacity-50"></div>
                             <div class="position-absolute top-50 start-20 ms-4 text-white" style="width: 33%;">
                                 <h1 class="mb-4 text-white text-start"><?= $program_info['name'] ?></h1>
@@ -48,7 +48,7 @@
                         </div>
                     </div>
                     <div class="carousel-item" data-bs-interval="3000">
-                        <img src="<?= $home_details['banner2_img_url']; ?>" class="d-block w-100" alt="...">
+                        <img src="<?= function_exists('compress_image') ? compress_image($home_details['banner2_img_url'], 1200) : $home_details['banner2_img_url']; ?>" class="d-block w-100" alt="...">
                     </div>
                 </div>
             </div>
@@ -178,7 +178,7 @@
                 <div class="row">
                     <div class="col-lg-6">
                         <div>
-                            <img src="<?= $program_photos[0]['img_url']; ?>" alt="" class="img-fluid mx-auto">
+                            <img src="<?= compress_image($program_photos[0]['img_url'], 600, null, 80); ?>" alt="" class="img-fluid mx-auto">
                         </div>
                     </div>
                     <div class="col-lg-6">
@@ -255,12 +255,12 @@
                 <div class="row">
                     <div class="col-lg-6">
                         <div style="height: 400px; overflow: hidden;">
-                            <img src="<?= $program_photos[array_rand($program_photos)]['img_url']; ?>" alt="Random Program Photo" class="img-fluid rounded shadow w-100 h-100" style="object-fit: cover;">
+                            <img src="<?= compress_image($program_photos[array_rand($program_photos)]['img_url'], 600, 400, 80, true); ?>" alt="Random Program Photo" class="img-fluid rounded shadow w-100 h-100" style="object-fit: cover;">
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div style="height: 400px; overflow: hidden;">
-                            <img src="<?= $program_photos[array_rand($program_photos)]['img_url']; ?>" alt="Random Program Photo" class="img-fluid rounded shadow w-100 h-100" style="object-fit: cover;">
+                            <img src="<?= compress_image($program_photos[array_rand($program_photos)]['img_url'], 600, 400, 80, true); ?>" alt="Random Program Photo" class="img-fluid rounded shadow w-100 h-100" style="object-fit: cover;">
                         </div>
                     </div>
                 </div>
@@ -334,7 +334,7 @@
                                             <div class="card-body p-4">
                                                 <div class="d-flex align-items-center mb-4">
                                                     <div class="flex-shrink-0">
-                                                        <img src="<?= $testimony['img_url']; ?>" alt="<?= $testimony['person_name']; ?>"
+                                                        <img src="<?= compress_image($testimony['img_url'], 100, 100, 80, true); ?>" alt="<?= $testimony['person_name']; ?>"
                                                             class="avatar-lg rounded-circle border border-primary p-1">
                                                     </div>
                                                     <div class="flex-grow-1 ms-3">

@@ -25,7 +25,7 @@
 
     <!-- Begin page -->
     <div class="layout-wrapper landing">
-        <?= $this->include('ybb/common/navbar') ?>
+        <?= $this->include('landing/common/navbar') ?>
 
         <!-- start hero section -->
         <section class="section bg-light">
@@ -60,7 +60,7 @@
         </section>
         <!-- end canva embed section -->
 
-        <?= $this->include('ybb/common/footer') ?>
+        <?= $this->include('landing/common/footer') ?>
 
     </div>
     <!-- end layout wrapper -->

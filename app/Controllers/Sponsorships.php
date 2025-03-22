@@ -10,7 +10,7 @@ class Sponsorships extends BaseController
             'title' => 'Sponsorships & Partnerships',
        ];
 
-        return $this->render('ybb/sponsorships', $data);
+        return $this->render('landing/sponsorships', $data);
     }
 
     public function root($path = '')

@@ -8,6 +8,7 @@ use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Intervention\Image\ImageManager;
 
 /**
  * Class BaseController
@@ -77,12 +78,15 @@ abstract class BaseController extends Controller
             'verify'  => false, // Set to true in production for SSL verification
         ]);
 
+        // Make sure image helper is loaded
+        helper('image_helper');
+
         // get base domain
         $baseDomain = getBaseDomain();
         $currentUrl = "";
 
         if ($baseDomain === "://localhost:8080") {
-            $currentUrl = "https://koreayouthsummit.com";
+            $currentUrl = "https://worldyouthfest.com";
         } else {
             $currentUrl = $baseDomain;
         }

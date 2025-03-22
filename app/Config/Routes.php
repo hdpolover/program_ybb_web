@@ -54,6 +54,9 @@ $routes->get('sign-in', 'Auth::index', ['filter' => 'noauth']);
 
 $routes->get('sitemap.xml', 'Sitemap::index');
 
+// Add this route to serve cached images
+$routes->get('cached-images/(:any)', 'ImagesController::serve/$1');
+
 /*
  * --------------------------------------------------------------------
  * Additional Routing

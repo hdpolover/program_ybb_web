@@ -29,4 +29,36 @@ class Services extends BaseService
      *     return new \CodeIgniter\Example();
      * }
      */
+
+    /**
+     * Create a new Image Compression service
+     */
+    public static function imageCompression($getShared = true)
+    {
+        if ($getShared) {
+            return static::getSharedInstance('imageCompression');
+        }
+
+        // Check if Intervention/Image is installed
+        if (!class_exists('\Intervention\Image\ImageManager')) {
+            // Try to autoload the class
+            if (file_exists(ROOTPATH . 'vendor/autoload.php')) {
+                require_once ROOTPATH . 'vendor/autoload.php';
+            }
+        }
+
+        if (class_exists('\Intervention\Image\ImageManager')) {
+            // Check if we're using Intervention/Image v3+
+            if (method_exists('\Intervention\Image\ImageManager', 'withDriver')) {
+                $manager = new \Intervention\Image\ImageManager('gd');
+                return $manager->withDriver('gd');
+            } else {
+                // Fallback for older versions
+                $manager = new \Intervention\Image\ImageManager('gd');
+                return $manager;
+            }
+        }
+
+        return new \stdClass(); // Placeholder for service
+    }
 }

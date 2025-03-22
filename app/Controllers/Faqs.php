@@ -12,7 +12,7 @@ class Faqs extends BaseController
         ];
 
 
-        return $this->render('ybb/faqs', $data);
+        return $this->render('landing/faqs', $data);
     }
 
     public function root($path = '')

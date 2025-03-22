@@ -20,10 +20,10 @@ class Auth extends BaseController
 
     public function login()
     {
-        $username = trim($this->request->getPost('username'));
+        $email = trim($this->request->getPost('email'));
         $password = trim($this->request->getPost('password'));
 
-        if ($username == 'admin@themesbrand.com' && $password == '123456') {
+        if ($email == 'admin@themesbrand.com' && $password == '123456') {
             $session = session();
             $session->set('isLoggedIn', 1);
             return redirect()->to('/');
