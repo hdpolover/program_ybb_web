@@ -25,6 +25,9 @@
 
             <div class="page-content">
                 <div class="container-fluid">
+                    <?php echo view('partials/page-title', array('pagetitle' => 'Pages', 'title' => 'Submission')); ?>
+
+
                     <div class="profile-foreground position-relative mx-n4 mt-n4">
                         <div class="profile-wid-bg">
                             <img src="/assets/images/profile-bg.jpg" alt="" class="profile-wid-img" />

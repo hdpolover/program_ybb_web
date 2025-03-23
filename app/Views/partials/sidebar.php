@@ -34,48 +34,48 @@
             <ul class="navbar-nav" id="navbar-nav">
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="<?= base_url() ?>dashboard">
+                    <a class="nav-link menu-link <?= url_is('dashboard*') ? 'active' : '' ?>" href="<?= base_url() ?>dashboard">
                         <i class="ri-dashboard-line"></i> <span>Dashboard</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="<?= base_url() ?>submission">
+                    <a class="nav-link menu-link <?= url_is('submission*') ? 'active' : '' ?>" href="<?= base_url() ?>submission">
                         <i class="ri-file-upload-line"></i> <span>Submission</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="widgets">
+                    <a class="nav-link menu-link <?= url_is('payments*') ? 'active' : '' ?>" href="<?= base_url() ?>payments">
                         <i class="ri-money-dollar-circle-line"></i> <span>Payments</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarApps" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarApps">
+                    <a class="nav-link menu-link <?= url_is('documents*') ? 'active' : '' ?>" href="#sidebarApps" data-bs-toggle="collapse" role="button"
+                        aria-expanded="<?= url_is('documents*') ? 'true' : 'false' ?>" aria-controls="sidebarApps">
                         <i class="ri-apps-2-line"></i> <span>Documents</span>
                     </a>
-                    <div class="collapse menu-dropdown" id="sidebarApps">
+                    <div class="collapse menu-dropdown <?= url_is('documents*') ? 'show' : '' ?>" id="sidebarApps">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="apps-chat" class="nav-link"> Letter of Acceptance </a>
+                                <a href="<?= base_url() ?>documents/acceptance" class="nav-link <?= url_is('documents/acceptance*') ? 'active' : '' ?>"> Letter of Acceptance </a>
                             </li>
                             <li class="nav-item">
-                                <a href="apps-chat" class="nav-link"> Agreement Letter</a>
+                                <a href="<?= base_url() ?>documents/agreement" class="nav-link <?= url_is('documents/agreement*') ? 'active' : '' ?>"> Agreement Letter</a>
                             </li>
                             <li class="nav-item">
-                                <a href="apps-chat" class="nav-link"> Additional Documents </a>
+                                <a href="<?= base_url() ?>documents/additional" class="nav-link <?= url_is('documents/additional*') ? 'active' : '' ?>"> Additional Documents </a>
                             </li>
                             <li class="nav-item">
-                                <a href="apps-chat" class="nav-link"> Certificates </a>
+                                <a href="<?= base_url() ?>documents/certificates" class="nav-link <?= url_is('documents/certificates*') ? 'active' : '' ?>"> Certificates </a>
                             </li>
                         </ul>
                     </div>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="widgets">
+                    <a class="nav-link menu-link <?= url_is('settings*') ? 'active' : '' ?>" href="<?= base_url() ?>settings">
                         <i class="ri-money-dollar-circle-line"></i> <span>Settings</span>
                     </a>
                 </li>

@@ -47,6 +47,14 @@ $routes->get('sponsorships', 'Sponsorships::index');
 $routes->get('announcements', 'Announcements::index');
 $routes->get('announcements/(:segment)', 'Announcements::details/$1');
 
+// Payment routes
+$routes->group('', function($routes) {
+    $routes->get('payments', 'Payment::index');
+    $routes->get('payments/detail/(:num)', 'Payment::detail/$1');
+    $routes->post('payments/make', 'Payment::makePayment');
+    $routes->get('payments/receipt/(:num)', 'Payment::downloadReceipt/$1');
+});
+
 $routes->get('dashboard', 'Dashboard::index');
 
 // auth
