@@ -18,18 +18,19 @@ class Auth extends BaseController
         return $this->render('auth/sign-in', $data);
     }
 
-    public function login()
+    public function authorize()
     {
-        $email = trim($this->request->getPost('email'));
-        $password = trim($this->request->getPost('password'));
+        // $email = trim($this->request->getPost('email'));
+        // $password = trim($this->request->getPost('password'));
 
-        if ($email == 'admin@themesbrand.com' && $password == '123456') {
-            $session = session();
-            $session->set('isLoggedIn', 1);
-            return redirect()->to('/');
-        } else {
-            return redirect()->back()->with('error', 'These credentials do not match our records.');
-        }
+        // if ($email == 'admin@themesbrand.com' && $password == '123456') {
+        //     $session = session();
+        //     $session->set('isLoggedIn', 1);
+        //     return redirect()->to('/');
+        // } else {
+        //     return redirect()->back()->with('error', 'These credentials do not match our records.');
+        // }
+            return redirect()->to('dashboard');
     }
 
     public function logout()

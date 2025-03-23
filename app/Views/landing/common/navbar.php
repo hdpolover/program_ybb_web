@@ -22,6 +22,9 @@
                     <a class="nav-link <?= uri_string() == 'announcements' ? 'active' : ''; ?>" href="<?= base_url("announcements"); ?>">Announcements</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link <?= uri_string() == 'program-report' ? 'active' : ''; ?>" href="<?= base_url("program-report"); ?>">Program Report</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link <?= uri_string() == 'faqs' ? 'active' : ''; ?>" href="<?= base_url("faqs"); ?>">FAQs</a>
                 </li>
             </ul>

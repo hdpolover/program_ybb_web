@@ -50,9 +50,14 @@ $routes->get('announcements/(:segment)', 'Announcements::details/$1');
 $routes->get('dashboard', 'Dashboard::index');
 
 // auth
-$routes->get('sign-in', 'Auth::index', ['filter' => 'noauth']);
+$routes->get('sign-in', 'Auth::index');
+$routes->post('authorize', 'Auth::authorize',);
 
 $routes->get('sitemap.xml', 'Sitemap::index');
+
+// submission
+$routes->get('submission', 'Submission::index', ['filter' => 'noauth']);
+$routes->get('submission/edit', 'Submission::edit', ['filter' => 'noauth']);
 
 // Add this route to serve cached images
 $routes->get('cached-images/(:any)', 'ImagesController::serve/$1');
