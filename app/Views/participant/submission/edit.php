@@ -5,6 +5,44 @@
     <?php echo view('partials/simple-title-meta', array('title' => 'Profile Settings')); ?>
 
     <?= $this->include('partials/head-css') ?>
+    
+    <!-- QuillJS CSS -->
+    <link href="<?= base_url('assets/libs/quill/quill.core.css') ?>" rel="stylesheet" type="text/css" />
+    <link href="<?= base_url('assets/libs/quill/quill.snow.css') ?>" rel="stylesheet" type="text/css" />
+
+    <!-- Custom CSS for nav tabs -->
+    <style>
+        .nav-tabs-custom {
+            border-bottom: 2px solid #e9ebec;
+        }
+        
+        .nav-tabs-custom .nav-item {
+            position: relative;
+        }
+        
+        .nav-tabs-custom .nav-item .nav-link {
+            border: none;
+        }
+        
+        .nav-tabs-custom .nav-item .nav-link.active {
+            color: var(--vz-primary);
+        }
+        
+        .nav-tabs-custom .nav-item .nav-link.active:after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--vz-primary);
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs-custom .nav-item .nav-link:hover {
+            color: var(--vz-primary);
+        }
+    </style>
 
 </head>
 
@@ -22,7 +60,7 @@
 
             <div class="page-content">
                 <div class="container-fluid">
-                    <?php echo view('partials/page-title', array('pagetitle' => 'Pages', 'title' => 'Starter')); ?>
+                    <?php echo view('partials/page-title', array('pagetitle' => 'Submission', 'title' => 'Edit Form')); ?>
 
                     <!--end card-->
                     <div class="row">
@@ -31,27 +69,27 @@
                                 <div class="card-header">
                                     <ul class="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
                                         <li class="nav-item">
-                                            <a class="nav-link active" data-bs-toggle="tab" href="#personalDetails" role="tab">
+                                            <a class="nav-link active" data-bs-toggle="tab" href="#personal-details" role="tab">
                                                 <i class="fas fa-home"></i> Personal Details
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab" href="#changePassword" role="tab">
+                                            <a class="nav-link" data-bs-toggle="tab" href="#achievements" role="tab">
                                                 <i class="far fa-user"></i> Achievements
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab" href="#experience" role="tab">
+                                            <a class="nav-link" data-bs-toggle="tab" href="#questions" role="tab">
                                                 <i class="far fa-envelope"></i> Questions
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab" href="#privacy" role="tab">
+                                            <a class="nav-link" data-bs-toggle="tab" href="#miscs" role="tab">
                                                 <i class="far fa-envelope"></i> Miscs
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab" href="#privacy" role="tab">
+                                            <a class="nav-link" data-bs-toggle="tab" href="#preview" role="tab">
                                                 <i class="far fa-envelope"></i> Preview
                                             </a>
                                         </li>
@@ -59,224 +97,10 @@
                                 </div>
                                 <div class="card-body p-4">
                                     <div class="tab-content">
-                                        <div class="tab-pane active" id="personalDetails" role="tabpanel">
-                                            <form action="javascript:void(0);">
-                                                <div class="row">
-                                                    <div class="text-center">
-                                                        <div class="profile-user position-relative d-inline-block mx-auto  mb-4">
-                                                            <img src="/assets/images/users/avatar-1.jpg" class="rounded-circle avatar-xxl img-thumbnail user-profile-image" alt="user-profile-image">
-                                                            <div class="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                                                <input id="profile-img-file-input" type="file" class="profile-img-file-input">
-                                                                <label for="profile-img-file-input" class="profile-photo-edit avatar-xs">
-                                                                    <span class="avatar-title rounded-circle bg-light text-body">
-                                                                        <i class="ri-camera-fill"></i>
-                                                                    </span>
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <!--end profile-user-->
-                                                    <div class="col-lg-12">
-                                                        <div class="mb-3">
-                                                            <label for="fullnameInput" class="form-label">Full Name (This will be used in your Certificates. Make sure spelling is correct)</label>
-                                                            <input type="text" class="form-control" id="fullnameInput" placeholder="Enter your full name" value="Dave">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <!--end col-->
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-3">
-                                                            <label for="phonenumberInput" class="form-label">Phone Number</label>
-                                                            <input type="text" class="form-control" id="phonenumberInput" placeholder="Enter your phone number" value="+(1) 987 6543">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-3">
-                                                            <label for="emailInput" class="form-label">Email Address</label>
-                                                            <input type="email" class="form-control" id="emailInput" placeholder="Enter your email" value="daveadame@velzon.com">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-12">
-                                                        <div class="mb-3">
-                                                            <label for="JoiningdatInput" class="form-label">Joining Date</label>
-                                                            <input type="text" class="form-control" data-provider="flatpickr" id="JoiningdatInput" data-date-format="d M, Y" data-deafult-date="24 Nov, 2021" placeholder="Select date" />
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-12">
-                                                        <div class="mb-3">
-                                                            <label for="skillsInput" class="form-label">Skills</label>
-                                                            <select class="form-control" name="skillsInput" data-choices data-choices-text-unique-true multiple id="skillsInput">
-                                                                <option value="illustrator">Illustrator</option>
-                                                                <option value="photoshop">Photoshop</option>
-                                                                <option value="css">CSS</option>
-                                                                <option value="html">HTML</option>
-                                                                <option value="javascript" selected>Javascript</option>
-                                                                <option value="python">Python</option>
-                                                                <option value="php">PHP</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-3">
-                                                            <label for="designationInput" class="form-label">Designation</label>
-                                                            <input type="text" class="form-control" id="designationInput" placeholder="Designation" value="Lead Designer / Developer">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-3">
-                                                            <label for="websiteInput1" class="form-label">Website</label>
-                                                            <input type="text" class="form-control" id="websiteInput1" placeholder="www.example.com" value="www.velzon.com" />
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-4">
-                                                        <div class="mb-3">
-                                                            <label for="cityInput" class="form-label">City</label>
-                                                            <input type="text" class="form-control" id="cityInput" placeholder="City" value="California" />
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-4">
-                                                        <div class="mb-3">
-                                                            <label for="countryInput" class="form-label">Country</label>
-                                                            <input type="text" class="form-control" id="countryInput" placeholder="Country" value="United States" />
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-4">
-                                                        <div class="mb-3">
-                                                            <label for="zipcodeInput" class="form-label">Zip Code</label>
-                                                            <input type="text" class="form-control" minlength="5" maxlength="6" id="zipcodeInput" placeholder="Enter zipcode" value="90011">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-12">
-                                                        <div class="mb-3 pb-2">
-                                                            <label for="exampleFormControlTextarea" class="form-label">Description</label>
-                                                            <textarea class="form-control" id="exampleFormControlTextarea" placeholder="Enter your description" rows="3">Hi I'm Anna Adame,It will be as simple as Occidental; in fact, it will be Occidental. To an English person, it will seem like simplified English, as a skeptical Cambridge friend of mine told me what Occidental is European languages are members of the same family.</textarea>
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-12">
-                                                        <div class="hstack gap-2 justify-content-end">
-                                                            <button type="submit" class="btn btn-primary">Updates</button>
-                                                            <button type="button" class="btn btn-soft-success">Cancel</button>
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                </div>
-                                                <!--end row-->
-                                            </form>
-                                        </div>
-                                        <!--end tab-pane-->
-                                        <div class="tab-pane" id="changePassword" role="tabpanel">
-                                            <form action="javascript:void(0);">
-                                                <div class="row g-2">
-                                                    <div class="col-lg-4">
-                                                        <div>
-                                                            <label for="oldpasswordInput" class="form-label">Old Password*</label>
-                                                            <input type="password" class="form-control" id="oldpasswordInput" placeholder="Enter current password">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-4">
-                                                        <div>
-                                                            <label for="newpasswordInput" class="form-label">New Password*</label>
-                                                            <input type="password" class="form-control" id="newpasswordInput" placeholder="Enter new password">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-4">
-                                                        <div>
-                                                            <label for="confirmpasswordInput" class="form-label">Confirm Password*</label>
-                                                            <input type="password" class="form-control" id="confirmpasswordInput" placeholder="Confirm password">
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-12">
-                                                        <div class="mb-3">
-                                                            <a href="javascript:void(0);" class="link-primary text-decoration-underline">Forgot Password ?</a>
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                    <div class="col-lg-12">
-                                                        <div class="text-end">
-                                                            <button type="submit" class="btn btn-success">Change Password</button>
-                                                        </div>
-                                                    </div>
-                                                    <!--end col-->
-                                                </div>
-                                                <!--end row-->
-                                            </form>
-                                            <div class="mt-4 mb-3 border-bottom pb-2">
-                                                <div class="float-end">
-                                                    <a href="javascript:void(0);" class="link-primary">All Logout</a>
-                                                </div>
-                                                <h5 class="card-title">Login History</h5>
-                                            </div>
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="flex-shrink-0 avatar-sm">
-                                                    <div class="avatar-title bg-light text-primary rounded-3 fs-18">
-                                                        <i class="ri-smartphone-line"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h6>iPhone 12 Pro</h6>
-                                                    <p class="text-muted mb-0">Los Angeles, United States - March 16 at 2:47PM</p>
-                                                </div>
-                                                <div>
-                                                    <a href="javascript:void(0);">Logout</a>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="flex-shrink-0 avatar-sm">
-                                                    <div class="avatar-title bg-light text-primary rounded-3 fs-18">
-                                                        <i class="ri-tablet-line"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h6>Apple iPad Pro</h6>
-                                                    <p class="text-muted mb-0">Washington, United States - November 06 at 10:43AM</p>
-                                                </div>
-                                                <div>
-                                                    <a href="javascript:void(0);">Logout</a>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="flex-shrink-0 avatar-sm">
-                                                    <div class="avatar-title bg-light text-primary rounded-3 fs-18">
-                                                        <i class="ri-smartphone-line"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h6>Galaxy S21 Ultra 5G</h6>
-                                                    <p class="text-muted mb-0">Conneticut, United States - June 12 at 3:24PM</p>
-                                                </div>
-                                                <div>
-                                                    <a href="javascript:void(0);">Logout</a>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="flex-shrink-0 avatar-sm">
-                                                    <div class="avatar-title bg-light text-primary rounded-3 fs-18">
-                                                        <i class="ri-macbook-line"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h6>Dell Inspiron 14</h6>
-                                                    <p class="text-muted mb-0">Phoenix, United States - July 26 at 8:10AM</p>
-                                                </div>
-                                                <div>
-                                                    <a href="javascript:void(0);">Logout</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <!--end tab-pane-->
+                                        <?= $this->include('participant/submission/edit-tab-contents/personal') ?>
+
+                                        <?= $this->include('participant/submission/edit-tab-contents/achievements') ?>
+
                                         <div class="tab-pane" id="experience" role="tabpanel">
                                             <form>
                                                 <div id="newlink">

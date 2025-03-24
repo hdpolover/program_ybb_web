@@ -41,21 +41,19 @@
                     $currentProgramId = 1;
                     $currentProgram = (object)[
                         'id' => 1,
-                        'name' => 'Program 1',
-                        'logo_url' => '/assets/images/logo-sm.png',
+                        'name' => 'Istanbul Youth Summit 2025',
                         'short_description' => 'This is program 1'
                     ];
                     $allPrograms = [
                         (object)[
                             'id' => 1,
-                            'name' => 'Program 1',
-                            'logo_url' => '/assets/images/logo-sm.png',
+                            'name' => 'Istanbul Youth Summit 2025',
+
                             'short_description' => 'This is program 1'
                         ],
                         (object)[
                             'id' => 2,
                             'name' => 'Program 2',
-                            'logo_url' => '/assets/images/logo-sm.png',
                             'short_description' => 'This is program 2'
                         ]
                     ];
@@ -82,16 +80,7 @@
                                     <a class="dropdown-item d-flex align-items-center <?= ($program->id == $currentProgramId) ? 'active' : '' ?>"
                                         href="<?= site_url('welcome/set_program/' . $program->id) ?>">
                                         <div class="d-flex align-items-center flex-grow-1">
-                                            <?php if (!empty($program->logo_url)): ?>
-                                                <div class="program-logo-wrapper me-2">
-                                                    <img src="<?= esc($program->logo_url) ?>" alt="<?= esc($program->name) ?>"
-                                                        class="rounded-circle" style="height: 36px; width: 36px; object-fit: cover;">
-                                                </div>
-                                            <?php else: ?>
-                                                <div class="program-icon-wrapper me-2">
-                                                    <i class="ri-building-line fs-22" style="height: 36px; width: 36px; display: flex; align-items: center; justify-content: center;"></i>
-                                                </div>
-                                            <?php endif; ?>
+                                           
                                             <div>
                                                 <span class="fw-medium"><?= esc($program->name) ?></span>
                                                 <?php if (!empty($program->short_description)): ?>

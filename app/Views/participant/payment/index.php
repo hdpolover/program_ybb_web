@@ -133,15 +133,15 @@
                                                             <label class="form-check-label" for="payment1"></label>
                                                         </div>
                                                     </td>
-                                                    <td><a href="<?= site_url('participant/payment/detail/1'); ?>" class="fw-medium">#YBB-REG-001</a></td>
+                                                    <td><a href="<?= site_url('payments/detail/1'); ?>" class="fw-medium">#YBB-REG-001</a></td>
                                                     <td>Program Registration Fee</td>
                                                     <td>Mar 01, 2025</td>
                                                     <td>$200.00</td>
                                                     <td><span class="badge badge-soft-success">Paid</span></td>
                                                     <td>
                                                         <div class="d-flex gap-2">
-                                                            <a href="<?= site_url('participant/payment/detail/1'); ?>" class="btn btn-sm btn-primary">View Details</a>
-                                                            <a href="<?= site_url('participant/payment/receipt/1'); ?>" class="btn btn-sm btn-info">Receipt</a>
+                                                            <a href="<?= site_url('payments/detail/1'); ?>" class="btn btn-sm btn-primary">View Details</a>
+                                                            <a href="<?= site_url('payments/receipt/1'); ?>" class="btn btn-sm btn-info">Receipt</a>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -152,14 +152,14 @@
                                                             <label class="form-check-label" for="payment2"></label>
                                                         </div>
                                                     </td>
-                                                    <td><a href="<?= site_url('participant/payment/detail/2'); ?>" class="fw-medium">#YBB-MAT-002</a></td>
+                                                    <td><a href="<?= site_url('payments/detail/2'); ?>" class="fw-medium">#YBB-MAT-002</a></td>
                                                     <td>Program Materials Fee</td>
                                                     <td>Mar 15, 2025</td>
                                                     <td>$120.00</td>
                                                     <td><span class="badge badge-soft-warning">Pending</span></td>
                                                     <td>
                                                         <div class="d-flex gap-2">
-                                                            <a href="<?= site_url('participant/payment/detail/2'); ?>" class="btn btn-sm btn-primary">View Details</a>
+                                                            <a href="<?= site_url('payments/detail/2'); ?>" class="btn btn-sm btn-primary">View Details</a>
                                                             <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#makePaymentModal" data-payment-id="2" data-payment-amount="120.00" data-payment-description="Program Materials Fee">
                                                                 Make Payment
                                                             </button>
@@ -295,7 +295,6 @@
     </div>
     <!-- END layout-wrapper -->
 
-    <?= $this->include('partials/customizer') ?>
     <?= $this->include('partials/vendor-scripts') ?>
 
     <!-- App js -->

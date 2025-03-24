@@ -59,7 +59,16 @@ $routes->get('dashboard', 'Dashboard::index');
 
 // auth
 $routes->get('sign-in', 'Auth::index');
-$routes->post('authorize', 'Auth::authorize',);
+$routes->post('authorize', 'Auth::authorize');
+$routes->get('sign-out', 'Auth::signOut');
+$routes->get('sign-up', 'Auth::signUp');
+$routes->post('register', 'Auth::register');
+$routes->get('forgot-password', 'Auth::forgotPassword');
+$routes->post('reset-password', 'Auth::resetPassword');
+// two step verification
+$routes->get('two-step-verification', 'Auth::twoStepVerification');
+
+
 
 $routes->get('sitemap.xml', 'Sitemap::index');
 

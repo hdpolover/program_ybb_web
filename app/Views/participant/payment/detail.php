@@ -294,7 +294,6 @@
     </div>
     <!-- END layout-wrapper -->
 
-    <?= $this->include('partials/customizer') ?>
     <?= $this->include('partials/vendor-scripts') ?>
 
     <!-- App js -->
