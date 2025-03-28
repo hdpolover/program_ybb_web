@@ -85,7 +85,7 @@ abstract class BaseController extends Controller
         $baseDomain = getBaseDomain();
         $currentUrl = "";
 
-        if ($baseDomain === "://localhost:8080") {
+        if ($baseDomain === "://localhost:8081") {
             $currentUrl = "https://worldyouthfest.com";
         } else {
             $currentUrl = $baseDomain;

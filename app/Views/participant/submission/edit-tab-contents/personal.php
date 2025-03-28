@@ -17,7 +17,7 @@
             <!--end profile-user-->
             <div class="col-lg-12">
                 <div class="mb-3">
-                    <label for="fullnameInput" class="form-label">Full Name (This will be used in your Certificates. Make sure spelling is correct)</label>
+                    <label for="fullnameInput" class="form-label">Full Name <span class="text-danger">(will be used in your Certificates. spelling must be correct)</span></label>
                     <input type="text" class="form-control" id="fullnameInput" placeholder="Enter your full name" value="Dave">
                 </div>
             </div>

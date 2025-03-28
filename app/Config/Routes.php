@@ -73,8 +73,8 @@ $routes->get('two-step-verification', 'Auth::twoStepVerification');
 $routes->get('sitemap.xml', 'Sitemap::index');
 
 // submission
-$routes->get('submission', 'Submission::index', ['filter' => 'noauth']);
-$routes->get('submission/edit', 'Submission::edit', ['filter' => 'noauth']);
+$routes->get('submission', 'dashboard\Submission::index', ['filter' => 'noauth']);
+$routes->get('submission/edit', 'dashboard\Submission::edit', ['filter' => 'noauth']);
 
 // Add this route to serve cached images
 $routes->get('cached-images/(:any)', 'ImagesController::serve/$1');
