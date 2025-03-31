@@ -64,6 +64,16 @@ abstract class BaseController extends Controller
     // make data variable available to all controllers
     protected $data = [];
 
+    // current url
+    protected $currentUrl = '';
+
+    /**
+     * API base URL, set dynamically based on environment
+     * 
+     * @var string
+     */
+    protected $apiBaseUrl;
+
     /**
      * Constructor.
      */
@@ -72,30 +82,43 @@ abstract class BaseController extends Controller
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
 
-         // Initialize the HTTP client
-         $this->client = \Config\Services::curlrequest([
+        // Initialize the HTTP client
+        $this->client = \Config\Services::curlrequest([
             'timeout' => 30,
             'verify'  => false, // Set to true in production for SSL verification
         ]);
+
+        // Set the API base URL based on environment
+        $this->setApiBaseUrl();
 
         // Make sure image helper is loaded
         helper('image_helper');
 
         // get base domain
         $baseDomain = getBaseDomain();
-        $currentUrl = "";
 
         if ($baseDomain === "://localhost:8081") {
-            $currentUrl = "https://worldyouthfest.com";
+            $this->currentUrl = "https://koreayouthsummit.com";
         } else {
-            $currentUrl = $baseDomain;
+            $this->currentUrl = $baseDomain;
         }
 
-        $this->data['program_info'] = $this->makeGetRequest('/program_categories/web?url=' . $currentUrl); 
+        // Remove protocol (http:// or https://) from the current URL
+        $this->currentUrl = preg_replace('~^https?://~', '', $this->currentUrl);
     }
 
-    function getProgramInfoDetail($key) {
-        return $this->data['program_info'][$key];
+    /**
+     * Set the API base URL based on the current environment
+     */
+    protected function setApiBaseUrl()
+    {
+        // Check if we're in development environment
+        if (ENVIRONMENT === 'development' || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false) {
+            $this->apiBaseUrl = DEV_BASE_API_URL;
+        } else {
+            // Use production URL for all other environments
+            $this->apiBaseUrl = BASE_API_URL;
+        }
     }
 
     protected function render($view, $data = [])
@@ -106,19 +129,32 @@ abstract class BaseController extends Controller
     }
 
     // create a fucntion for get requests that accepts endpoint and headers and returns response as json
-    function makeGetRequest($endpoint, $headers = [])
+    function makeGetRequest($endpoint, $headers = [], $useJwt = false)
     {
         try {
             // combine endpoint with base url
-            $url = BASE_API_URL . $endpoint;
+            $url = $this->apiBaseUrl . $endpoint;
+
+            // Add JWT token to headers if needed
+            if ($useJwt) {
+                $token = $this->getJwtToken();
+                if ($token) {
+                    $headers['Authorization'] = 'Bearer ' . $token;
+                }
+            }
 
             $response = $this->client->request('GET', $url, [
-            'headers' => array_merge($this->defaultHeaders, $headers),
+                'headers' => array_merge($this->defaultHeaders, $headers),
             ]);
 
             $bodyDecoded = json_decode($response->getBody(), true);
 
-            return $bodyDecoded['data'];
+            if (isset($bodyDecoded['data'])) {
+                return $bodyDecoded['data'];
+            } else {
+                log_message('error', 'Data key not found in response');
+                return null;
+            }
         } catch (\Exception $e) {
             // Log the error or handle it as needed
             log_message('error', $e->getMessage());
@@ -126,4 +162,150 @@ abstract class BaseController extends Controller
         }
     }
 
+    /**
+     * Make a POST request to an API endpoint with optional JWT authentication
+     * 
+     * @param string $endpoint The API endpoint
+     * @param array|string $data The data to send
+     * @param array $headers Additional headers
+     * @param bool $useJwt Whether to use JWT authorization
+     * @return mixed Response data or null on error
+     */
+    function makePostRequest($endpoint, $data, $headers = [], $useJwt = false)
+    {
+        try {
+            $url = $this->apiBaseUrl . $endpoint;
+            
+            // Prepare the request body
+            $requestBody = is_array($data) ? json_encode($data) : $data;
+            
+            // Add JWT token to headers if needed
+            if ($useJwt) {
+                $token = $this->getJwtToken();
+                if ($token) {
+                    $headers['Authorization'] = 'Bearer ' . $token;
+                }
+            }
+            
+            $response = $this->client->request('POST', $url, [
+                'headers' => array_merge($this->defaultHeaders, $headers),
+                'body' => $requestBody,
+            ]);
+            
+            $bodyDecoded = json_decode($response->getBody(), true);
+            
+            if (isset($bodyDecoded['data'])) {
+                return $bodyDecoded['data'];
+            } else {
+                return $bodyDecoded; // Return the whole response if 'data' key is not present
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'POST Request Error: ' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Make a PUT request to an API endpoint with optional JWT authentication
+     * 
+     * @param string $endpoint The API endpoint
+     * @param array|string $data The data to send
+     * @param array $headers Additional headers
+     * @param bool $useJwt Whether to use JWT authorization
+     * @return mixed Response data or null on error
+     */
+    function makePutRequest($endpoint, $data, $headers = [], $useJwt = false)
+    {
+        try {
+            $url = $this->apiBaseUrl . $endpoint;
+            
+            // Prepare the request body
+            $requestBody = is_array($data) ? json_encode($data) : $data;
+            
+            // Add JWT token to headers if needed
+            if ($useJwt) {
+                $token = $this->getJwtToken();
+                if ($token) {
+                    $headers['Authorization'] = 'Bearer ' . $token;
+                }
+            }
+            
+            $response = $this->client->request('PUT', $url, [
+                'headers' => array_merge($this->defaultHeaders, $headers),
+                'body' => $requestBody,
+            ]);
+            
+            $bodyDecoded = json_decode($response->getBody(), true);
+            
+            if (isset($bodyDecoded['data'])) {
+                return $bodyDecoded['data'];
+            } else {
+                return $bodyDecoded; // Return the whole response if 'data' key is not present
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'PUT Request Error: ' . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Make a DELETE request to an API endpoint with optional JWT authentication
+     * 
+     * @param string $endpoint The API endpoint
+     * @param array $headers Additional headers
+     * @param bool $useJwt Whether to use JWT authorization
+     * @return mixed Response data or null on error
+     */
+    function makeDeleteRequest($endpoint, $headers = [], $useJwt = false)
+    {
+        try {
+            $url = $this->apiBaseUrl . $endpoint;
+            
+            // Add JWT token to headers if needed
+            if ($useJwt) {
+                $token = $this->getJwtToken();
+                if ($token) {
+                    $headers['Authorization'] = 'Bearer ' . $token;
+                }
+            }
+            
+            $response = $this->client->request('DELETE', $url, [
+                'headers' => array_merge($this->defaultHeaders, $headers),
+            ]);
+            
+            $bodyDecoded = json_decode($response->getBody(), true);
+            
+            if (isset($bodyDecoded['data'])) {
+                return $bodyDecoded['data'];
+            } else {
+                return $bodyDecoded; // Return the whole response if 'data' key is not present
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'DELETE Request Error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get JWT token from session or request a new one from the API
+     * 
+     * @return string|null JWT token or null if not available
+     */
+    protected function getJwtToken()
+    {
+        // Check if token exists in session
+        if (session()->has('jwt_token')) {
+            // You might want to check if the token is expired here
+            return session()->get('jwt_token');
+        }
+        
+        // If implementation requires fetching a new token, add that logic here
+        // Example:
+        // $response = $this->client->request('POST', $this->apiBaseUrl . '/auth/token', [...]);
+        // $token = json_decode($response->getBody(), true)['token'];
+        // session()->set('jwt_token', $token);
+        // return $token;
+        
+        return null;
+    }
 }

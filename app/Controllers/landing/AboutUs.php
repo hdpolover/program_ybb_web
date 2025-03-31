@@ -8,8 +8,6 @@ class AboutUs extends BaseController
     {
         $data = [
             'title' => 'About Us',
-            'about_us' => $this->makeGetRequest('/web_setting_about?program_id=' . $this->getProgramInfoDetail('id')),
-            'program_photos' => $this->makeGetRequest('/program_photos?program_category_id=' . $this->getProgramInfoDetail('program_category_id')),
         ];
 
          // if program has no photos, use photos from other programs

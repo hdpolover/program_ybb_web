@@ -95,3 +95,5 @@ define('EVENT_PRIORITY_HIGH', 10);
 
 // In app/Config/Constants.php (or any custom config file)
 define('BASE_API_URL', 'https://master-api.ybbfoundation.com');
+
+define('DEV_BASE_API_URL', 'http://localhost:8080/api');

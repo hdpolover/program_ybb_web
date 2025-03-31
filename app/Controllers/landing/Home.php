@@ -1,23 +1,33 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\landing;
+
+use App\Controllers\BaseController;
 
 class Home extends BaseController
 {
     public function index()
     {
+        // get home data from API
+        $homeData = $this->makeGetRequest('/landing/home?web_url=' . $this->currentUrl);
+
         $data = [
             'title' => 'Home',
-            'home_details' => $this->makeGetRequest('/web_setting_home?program_id=' . $this->getProgramInfoDetail('id')),
-            'program_photos' => $this->makeGetRequest('/program_photos?program_category_id=' . $this->getProgramInfoDetail('program_category_id')),
-            'program_schedules' => $this->makeGetRequest('/program_schedules?program_id=' . $this->getProgramInfoDetail('id')),
-            'program_testimonies' => $this->makeGetRequest('/program_testimonies/program?id=' . $this->getProgramInfoDetail('id')),
+            'category' => $homeData['category'] ?? [],
+            'programs' => $homeData['programs'] ?? [],
+            'testimonies' => $homeData['testimonies'] ?? [],
+            'photos' => $homeData['photos'] ?? [],
         ];
 
+        log_message('info', 'Home data retrieved: ' . print_r($homeData, true));
+
         // if program has no photos, use photos from other programs
-        if (empty($data['program_photos'])) {
-            $data['program_photos'] = $this->makeGetRequest('/program_photos');
+        if (empty($data['photos'])) {
+            $data['photos'] = $this->makeGetRequest('/program-photos');
         }
+
+
+        log_message('info', 'Photos data retrieved: ' . print_r($data['photos'], true));
 
         return $this->render('landing/home', $data);
     }
@@ -25,7 +35,7 @@ class Home extends BaseController
     public function root($path = '')
     {
         if ($path !== '') {
-            if(@file_exists(APPPATH.'Views/'.$path.'.php')) {
+            if (@file_exists(APPPATH . 'Views/' . $path . '.php')) {
                 return view($path);
             } else {
                 throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();

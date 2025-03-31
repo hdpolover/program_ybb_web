@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-landing fixed-top" id="navbar">
     <div class="container">
         <a class="navbar-brand" href="<?= base_url('/'); ?>">
-            <img src="<?= $program_info['logo_url'] ?>" class="card-logo" alt="logo" height="50">
+            <img src="<?= $category['logo_url'] ?? '/assets/images/logo-dark.png' ?>" class="card-logo" alt="logo" height="50">
         </a>
         <button class="navbar-toggler py-0 fs-20 text-body" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <i class="mdi mdi-menu"></i>
@@ -10,30 +10,28 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mx-auto mt-2 mt-lg-0" id="navbar-example">
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == '' || uri_string() == 'home' ? 'active' : ''; ?>" href="<?= base_url(); ?>">Home</a>
+                    <a class="nav-link <?= uri_string() == '' || uri_string() == 'home' ? 'active text-primary' : ''; ?>" href="<?= base_url(); ?>">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'about-us' ? 'active' : ''; ?>" href="<?= base_url("about-us"); ?>">About Us</a>
+                    <a class="nav-link <?= uri_string() == 'programs' ? 'active text-primary' : ''; ?>" href="<?= base_url("programs"); ?>">Programs</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'sponsorships' ? 'active' : ''; ?>" href="<?= base_url("sponsorships"); ?>">Partnerships & Sponsorships</a>
+                    <a class="nav-link <?= uri_string() == 'insights' ? 'active text-primary' : ''; ?>" href="<?= base_url("insights"); ?>">Insights</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'announcements' ? 'active' : ''; ?>" href="<?= base_url("announcements"); ?>">Announcements</a>
+                    <a class="nav-link <?= uri_string() == 'partners-sponsors' ? 'active text-primary' : ''; ?>" href="<?= base_url("partners-sponsors"); ?>">Partners & Sponsors</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'program-report' ? 'active' : ''; ?>" href="<?= base_url("program-report"); ?>">Program Report</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'faqs' ? 'active' : ''; ?>" href="<?= base_url("faqs"); ?>">FAQs</a>
+                    <a class="nav-link <?= uri_string() == 'help-news' ? 'active text-primary' : ''; ?>" href="<?= base_url("help-news"); ?>">Help & News</a>
                 </li>
             </ul>
 
             <div class="">
                 <?php
                 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+                $webUrl = $program_info['web_url'] ?? $category['web_url'] ?? 'ybbfoundation.com';
                 ?>
-                <a href="<?= $protocol . 'app.' . $program_info['web_url']; ?>" class="btn btn-primary" target="_blank">Get Started</a>
+                <a href="<?= $protocol . 'app.' . $webUrl; ?>" class="btn btn-primary" target="_blank">Get Started</a>
             </div>
         </div>
 

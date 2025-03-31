@@ -40,12 +40,19 @@ $routes->setAutoRoute(false);
 //     $routes->get('/(:any)', 'Home::root/$1');
 // });
 
-$routes->get('/', 'Home::index');
-$routes->get('faqs', 'Faqs::index');
-$routes->get('about-us', 'AboutUs::index');
-$routes->get('sponsorships', 'Sponsorships::index');
-$routes->get('announcements', 'Announcements::index');
-$routes->get('announcements/(:segment)', 'Announcements::details/$1');
+$routes->get('/', 'landing\Home::index');
+$routes->get('programs', 'landing\Programs::index');
+$routes->get('programs/(:any)', 'landing\Programs::detail/$1');
+$routes->get('insights', 'landing\Insights::index');
+$routes->get('partners-sponsors', 'landing\PartnersSponsors::index');
+$routes->get('help-news', 'landing\HelpNews::index');
+
+// Legacy routes - can be removed if not needed
+// $routes->get('faqs', 'Faqs::index');
+// $routes->get('about-us', 'AboutUs::index');
+// $routes->get('sponsorships', 'Sponsorships::index');
+// $routes->get('announcements', 'Announcements::index');
+// $routes->get('announcements/(:segment)', 'Announcements::details/$1');
 
 // Payment routes
 $routes->group('', function($routes) {
