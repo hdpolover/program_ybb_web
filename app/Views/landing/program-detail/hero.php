@@ -66,60 +66,60 @@
         <!-- Key info badges -->
         <div class="row mt-5">
             <div class="col-12">
-                <div class="row justify-content-center">
-                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                        <div class="card bg-white bg-opacity-10 border-0 text-center">
-                            <div class="card-body p-3">
-                                <div class="avatar-sm mx-auto mb-3">
-                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                                        <i class="ri-calendar-line"></i>
-                                    </div>
-                                </div>
-                                <h5 class="text-white fs-16"><?= isset($program['start_date']) ? date('M d, Y', strtotime($program['start_date'])) : 'Date TBA' ?></h5>
-                                <p class="text-white-75 mb-0">Start Date</p>
-                            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                <div class="card bg-white bg-opacity-10 border-0 text-center">
+                    <div class="card-body p-3">
+                    <div class="avatar-sm mx-auto mb-3">
+                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                        <i class="ri-calendar-line"></i>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                        <div class="card bg-white bg-opacity-10 border-0 text-center">
-                            <div class="card-body p-3">
-                                <div class="avatar-sm mx-auto mb-3">
-                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                                        <i class="ri-map-pin-line"></i>
-                                    </div>
-                                </div>
-                                <h5 class="text-white fs-16"><?= $program['location'] ?? 'Location TBA' ?></h5>
-                                <p class="text-white-75 mb-0">Venue</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                        <div class="card bg-white bg-opacity-10 border-0 text-center">
-                            <div class="card-body p-3">
-                                <div class="avatar-sm mx-auto mb-3">
-                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                                        <i class="ri-time-line"></i>
-                                    </div>
-                                </div>
-                                <h5 class="text-white fs-16"><?= $program['duration'] ?? 'Duration TBA' ?></h5>
-                                <p class="text-white-75 mb-0">Program Length</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                        <div class="card bg-white bg-opacity-10 border-0 text-center">
-                            <div class="card-body p-3">
-                                <div class="avatar-sm mx-auto mb-3">
-                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                                        <i class="ri-group-line"></i>
-                                    </div>
-                                </div>
-                                <h5 class="text-white fs-16"><?= $program['capacity'] ?? 'Limited Spots' ?></h5>
-                                <p class="text-white-75 mb-0">Capacity</p>
-                            </div>
-                        </div>
+                    <h5 class="text-black fs-16"><?= isset($program['start_date']) ? date('M d, Y', strtotime($program['start_date'])) : 'Date TBA' ?></h5>
+                    <p class="text-black-75 mb-0">Start Date</p>
                     </div>
                 </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                <div class="card bg-white bg-opacity-10 border-0 text-center">
+                    <div class="card-body p-3">
+                    <div class="avatar-sm mx-auto mb-3">
+                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                        <i class="ri-map-pin-line"></i>
+                        </div>
+                    </div>
+                    <h5 class="text-black fs-16"><?= $program['location'] ?? 'Location TBA' ?></h5>
+                    <p class="text-black-75 mb-0">Venue</p>
+                    </div>
+                </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                <div class="card bg-white bg-opacity-10 border-0 text-center">
+                    <div class="card-body p-3">
+                    <div class="avatar-sm mx-auto mb-3">
+                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                        <i class="ri-time-line"></i>
+                        </div>
+                    </div>
+                    <h5 class="text-black fs-16"><?= $program['duration'] ?? 'Duration TBA' ?></h5>
+                    <p class="text-black-75 mb-0">Program Length</p>
+                    </div>
+                </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                <div class="card bg-white bg-opacity-10 border-0 text-center">
+                    <div class="card-body p-3">
+                    <div class="avatar-sm mx-auto mb-3">
+                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                        <i class="ri-group-line"></i>
+                        </div>
+                    </div>
+                    <h5 class="text-black fs-16"><?= $program['capacity'] ?? 'Limited Spots' ?></h5>
+                    <p class="text-black-75 mb-0">Capacity</p>
+                    </div>
+                </div>
+                </div>
+            </div>
             </div>
         </div>
     </div>

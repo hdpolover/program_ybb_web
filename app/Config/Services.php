@@ -3,6 +3,7 @@
 namespace Config;
 
 use CodeIgniter\Config\BaseService;
+use App\Services\WebSettings;
 
 /**
  * Services Configuration file.
@@ -19,46 +20,29 @@ use CodeIgniter\Config\BaseService;
  */
 class Services extends BaseService
 {
-    /*
-     * public static function example($getShared = true)
-     * {
-     *     if ($getShared) {
-     *         return static::getSharedInstance('example');
-     *     }
-     *
-     *     return new \CodeIgniter\Example();
-     * }
-     */
-
     /**
-     * Create a new Image Compression service
+     * The WebSettings service that manages the website settings 
+     * for maintenance mode and other configurations
+     *
+     * @param bool $getShared
+     *
+     * @return WebSettings
      */
-    public static function imageCompression($getShared = true)
+    public static function webSettings(bool $getShared = true)
     {
         if ($getShared) {
-            return static::getSharedInstance('imageCompression');
+            return static::getSharedInstance('webSettings');
         }
 
-        // Check if Intervention/Image is installed
-        if (!class_exists('\Intervention\Image\ImageManager')) {
-            // Try to autoload the class
-            if (file_exists(ROOTPATH . 'vendor/autoload.php')) {
-                require_once ROOTPATH . 'vendor/autoload.php';
-            }
-        }
-
-        if (class_exists('\Intervention\Image\ImageManager')) {
-            // Check if we're using Intervention/Image v3+
-            if (method_exists('\Intervention\Image\ImageManager', 'withDriver')) {
-                $manager = new \Intervention\Image\ImageManager('gd');
-                return $manager->withDriver('gd');
-            } else {
-                // Fallback for older versions
-                $manager = new \Intervention\Image\ImageManager('gd');
-                return $manager;
-            }
-        }
-
-        return new \stdClass(); // Placeholder for service
+        return new WebSettings();
     }
+
+    // public static function example($getShared = true)
+    // {
+    //     if ($getShared) {
+    //         return static::getSharedInstance('example');
+    //     }
+    //
+    //     return new \CodeIgniter\Example();
+    // }
 }

@@ -10,19 +10,19 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mx-auto mt-2 mt-lg-0" id="navbar-example">
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == '' || uri_string() == 'home' ? 'active text-primary' : ''; ?>" href="<?= base_url(); ?>">Home</a>
+                    <a class="nav-link <?= uri_string() == '' || uri_string() == 'home' || strpos(uri_string(), 'home') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url(); ?>">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'programs' ? 'active text-primary' : ''; ?>" href="<?= base_url("programs"); ?>">Programs</a>
+                    <a class="nav-link <?= strpos(uri_string(), 'programs') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("programs"); ?>">Programs</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'insights' ? 'active text-primary' : ''; ?>" href="<?= base_url("insights"); ?>">Insights</a>
+                    <a class="nav-link <?= strpos(uri_string(), 'insights') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("insights"); ?>">Insights</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'partners-sponsors' ? 'active text-primary' : ''; ?>" href="<?= base_url("partners-sponsors"); ?>">Partners & Sponsors</a>
+                    <a class="nav-link <?= strpos(uri_string(), 'partners-sponsors') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("partners-sponsors"); ?>">Partners & Sponsors</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= uri_string() == 'help-news' ? 'active text-primary' : ''; ?>" href="<?= base_url("help-news"); ?>">Help & News</a>
+                    <a class="nav-link <?= strpos(uri_string(), 'help-news') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("help-news"); ?>">Help & News</a>
                 </li>
             </ul>
 

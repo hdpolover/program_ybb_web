@@ -40,6 +40,9 @@ $routes->setAutoRoute(false);
 //     $routes->get('/(:any)', 'Home::root/$1');
 // });
 
+// Maintenance route
+$routes->get('maintenance', 'landing\Maintenance::index');
+
 $routes->get('/', 'landing\Home::index');
 $routes->get('programs', 'landing\Programs::index');
 $routes->get('programs/(:any)/details', 'landing\Programs::detail/$1');

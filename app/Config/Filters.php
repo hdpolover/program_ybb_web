@@ -10,6 +10,7 @@ use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\SecureHeaders;
 
 use App\Filters\Auth;
+use App\Filters\Maintenance;
 use App\Filters\NoAuth;
 
 class Filters extends BaseConfig
@@ -26,6 +27,7 @@ class Filters extends BaseConfig
         'secureheaders' => SecureHeaders::class,
         'auth'          => Auth::class,
         'noauth'        => NoAuth::class,
+        'maintenance'   => Maintenance::class,
     ];
 
     /**
@@ -37,6 +39,7 @@ class Filters extends BaseConfig
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
+            'maintenance',
         ],
         'after' => [
             'toolbar',

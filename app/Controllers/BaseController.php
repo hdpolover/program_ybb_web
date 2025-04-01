@@ -105,6 +105,59 @@ abstract class BaseController extends Controller
 
         // Remove protocol (http:// or https://) from the current URL
         $this->currentUrl = preg_replace('~^https?://~', '', $this->currentUrl);
+
+        $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
+
+        // Debug log for web settings data
+        log_message('debug', 'BaseController - Web settings retrieved: ' . json_encode($webSettingData));
+
+        // Check if the web settings data is empty and handle accordingly
+        if (empty($webSettingData)) {
+            // Just store null settings instead of redirecting here
+            $this->data['webSettings'] = null;
+            log_message('warning', 'BaseController - No web settings found');
+        } else {
+            $this->data['webSettings'] = $webSettingData;
+            
+            // Store maintenance mode status in session for filter to access
+            if (isset($webSettingData['is_maintenance_mode'])) {
+                // Store in session
+                session()->set('is_maintenance_mode', $webSettingData['is_maintenance_mode']);
+                log_message('debug', 'BaseController - Saved is_maintenance_mode to session: ' . $webSettingData['is_maintenance_mode']);
+            }
+            
+            // Initialize the WebSettings service as a backup approach
+            try {
+                $webSettingsService = \Config\Services::webSettings(true);
+                $webSettingsService->setSettings($webSettingData);
+            } catch (\Exception $e) {
+                log_message('error', 'BaseController - Failed to initialize WebSettings service: ' . $e->getMessage());
+            }
+            
+            // Direct maintenance mode check
+            if (
+                isset($webSettingData['is_maintenance_mode']) && 
+                ($webSettingData['is_maintenance_mode'] === 1 || $webSettingData['is_maintenance_mode'] === '1') && 
+                uri_string() !== 'maintenance'
+            ) {
+                log_message('info', 'BaseController - Redirecting to maintenance page');
+                header('Location: ' . base_url('maintenance'));
+                exit();
+            }
+        }
+    }
+
+    /**
+     * Override the before method to check for maintenance mode
+     * This runs before each controller method execution
+     */
+    public function before()
+    {
+        // Check if site is in maintenance mode and redirect if necessary
+        if (!empty($this->data['maintenance_mode']) && uri_string() !== 'maintenance') {
+            // This will properly redirect and exit
+            return redirect()->to(base_url('maintenance'))->send();
+        }
     }
 
     /**
@@ -175,10 +228,10 @@ abstract class BaseController extends Controller
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
-            
+
             // Prepare the request body
             $requestBody = is_array($data) ? json_encode($data) : $data;
-            
+
             // Add JWT token to headers if needed
             if ($useJwt) {
                 $token = $this->getJwtToken();
@@ -186,14 +239,14 @@ abstract class BaseController extends Controller
                     $headers['Authorization'] = 'Bearer ' . $token;
                 }
             }
-            
+
             $response = $this->client->request('POST', $url, [
                 'headers' => array_merge($this->defaultHeaders, $headers),
                 'body' => $requestBody,
             ]);
-            
+
             $bodyDecoded = json_decode($response->getBody(), true);
-            
+
             if (isset($bodyDecoded['data'])) {
                 return $bodyDecoded['data'];
             } else {
@@ -204,7 +257,7 @@ abstract class BaseController extends Controller
             return null;
         }
     }
-    
+
     /**
      * Make a PUT request to an API endpoint with optional JWT authentication
      * 
@@ -218,10 +271,10 @@ abstract class BaseController extends Controller
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
-            
+
             // Prepare the request body
             $requestBody = is_array($data) ? json_encode($data) : $data;
-            
+
             // Add JWT token to headers if needed
             if ($useJwt) {
                 $token = $this->getJwtToken();
@@ -229,14 +282,14 @@ abstract class BaseController extends Controller
                     $headers['Authorization'] = 'Bearer ' . $token;
                 }
             }
-            
+
             $response = $this->client->request('PUT', $url, [
                 'headers' => array_merge($this->defaultHeaders, $headers),
                 'body' => $requestBody,
             ]);
-            
+
             $bodyDecoded = json_decode($response->getBody(), true);
-            
+
             if (isset($bodyDecoded['data'])) {
                 return $bodyDecoded['data'];
             } else {
@@ -247,7 +300,7 @@ abstract class BaseController extends Controller
             return null;
         }
     }
-    
+
     /**
      * Make a DELETE request to an API endpoint with optional JWT authentication
      * 
@@ -260,7 +313,7 @@ abstract class BaseController extends Controller
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
-            
+
             // Add JWT token to headers if needed
             if ($useJwt) {
                 $token = $this->getJwtToken();
@@ -268,13 +321,13 @@ abstract class BaseController extends Controller
                     $headers['Authorization'] = 'Bearer ' . $token;
                 }
             }
-            
+
             $response = $this->client->request('DELETE', $url, [
                 'headers' => array_merge($this->defaultHeaders, $headers),
             ]);
-            
+
             $bodyDecoded = json_decode($response->getBody(), true);
-            
+
             if (isset($bodyDecoded['data'])) {
                 return $bodyDecoded['data'];
             } else {
@@ -298,14 +351,14 @@ abstract class BaseController extends Controller
             // You might want to check if the token is expired here
             return session()->get('jwt_token');
         }
-        
+
         // If implementation requires fetching a new token, add that logic here
         // Example:
         // $response = $this->client->request('POST', $this->apiBaseUrl . '/auth/token', [...]);
         // $token = json_decode($response->getBody(), true)['token'];
         // session()->set('jwt_token', $token);
         // return $token;
-        
+
         return null;
     }
 }
