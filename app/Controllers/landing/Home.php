@@ -29,7 +29,7 @@ class Home extends BaseController
 
         log_message('info', 'Photos data retrieved: ' . print_r($data['photos'], true));
 
-        return $this->render('landing/home', $data);
+        return $this->render('landing/home/home', $data);
     }
 
     public function root($path = '')

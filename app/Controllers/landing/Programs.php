@@ -19,42 +19,46 @@ class Programs extends BaseController
 
         return $this->render('landing/programs', $data);
     }
-    
+
     public function detail($slug)
     {
         // Get program details from API using the slug
         $programDetails = $this->makeGetRequest('/programs/' . $slug); // Updated to use $slug instead of $this->currentUrl
-        
-        // Find the specific program by slug
-        $program = null;
-        foreach ($programDetails as $p) {
-            if (isset($p['slug']) && $p['slug'] == $slug) {
-                $program = $p;
-                break;
-            } else if (isset($p['id']) && $p['id'] == $slug) {
-                // Fallback to ID if slug doesn't match
-                $program = $p;
-                break;
-            }
+
+        if (empty($programDetails)) {
+            // Handle the case where no program details are found
+            return redirect()->to(base_url('programs'))->with('error', 'Program not found.');
         }
-        
-        if (!$program) {
-            // Program not found, redirect to programs list
-            return redirect()->to(base_url('programs'));
-        }
-        
+
         // Get additional program details if needed
-        $programSchedules = $this->makeGetRequest('/program_schedules?program_id=' . ($program['id'] ?? ''));
-        $programTestimonials = $this->makeGetRequest('/program_testimonies?program_id=' . ($program['id'] ?? ''));
-        
+        $program = $programDetails;
+
+        // You can also fetch related programs or other data here if needed
+        $category = $this->makeGetRequest('/landing/programs?web_url=' . $this->currentUrl); // Fetch category data again if needed
+
+        $photos = $this->makeGetRequest('/program_photos/category/' . $program['program_category_id']); // Fetch photos related to the program
+
+        // if no photos are found, use photos from other programs
+        if (empty($photos)) {
+            $photos = $this->makeGetRequest('/program-photos'); // Fetch all program photos
+        }
+
+        // get participant photos
+        $participant_photos = $this->makeGetRequest('/participants/program/' . $program['id'] . '/photos'); // Fetch participant photos related to the program
+
+        // get program schedules by program id
+        $program_schedules = $this->makeGetRequest('/program-schedules/program/' . $program['id']); // Fetch program schedules related to the program
         $data = [
             'title' => $program['name'] ?? 'Program Detail',
             'program' => $program,
-            'schedules' => $programSchedules,
-            'testimonials' => $programTestimonials,
+            'category' => $category['category'] ?? [],
+            'photos' => $photos,
+            'participant_photos' => $participant_photos,
+            'schedules' => $program_schedules,
             // Add more program-related data as needed
         ];
         
+
         return $this->render('landing/program-detail', $data);
     }
 }

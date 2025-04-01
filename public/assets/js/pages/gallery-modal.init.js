@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const modalImg = document.getElementById('galleryModalImg');
         const modalTitle = document.getElementById('galleryModalLabel');
         const modalDesc = document.getElementById('galleryModalDesc');
-        const modalDownload = document.getElementById('galleryModalDownload');
         
         // Add click event to each gallery item
         galleryItems.forEach(item => {
@@ -38,7 +37,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 modalImg.src = imgSrc;
                 modalTitle.textContent = title || 'Gallery Image';
                 modalDesc.textContent = description || '';
-                modalDownload.href = imgSrc;
                 
                 // Show the modal
                 modalInstance.show();
@@ -80,7 +78,6 @@ document.addEventListener("DOMContentLoaded", function() {
             modalImg.src = imgSrc;
             modalTitle.textContent = title || 'Gallery Image';
             modalDesc.textContent = description || '';
-            modalDownload.href = imgSrc;
         }
     } else {
         console.log("Gallery items or modal not found:", { 

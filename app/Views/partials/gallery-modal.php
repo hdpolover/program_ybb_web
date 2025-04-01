@@ -20,9 +20,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                <a href="#" class="btn btn-primary" id="galleryModalDownload" download>
-                    <i class="ri-download-2-line align-bottom me-1"></i> Download
-                </a>
+            
             </div>
         </div>
     </div>

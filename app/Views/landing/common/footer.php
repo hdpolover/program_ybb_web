@@ -5,53 +5,57 @@
             <div class="col-lg-4 col-md-6">
                 <div class="mb-4">
                     <a href="<?= base_url() ?>" class="d-flex align-items-center mb-3">
-                        <?php if (isset($program_info['logo_url']) && !empty($program_info['logo_url'])) : ?>
-                            <img src="<?= $program_info['logo_url'] ?>" alt="Logo" height="40" class="me-2">
+                        <?php if (isset($category['logo_url']) && !empty($category['logo_url'])) : ?>
+                            <img src="<?= $category['logo_url'] ?>" alt="Logo" height="40" class="me-2">
                         <?php else : ?>
                             <i class="ri-graduation-cap-line text-primary fs-24 me-2"></i>
                         <?php endif; ?>
-                        <h3 class="text-white fw-semibold mb-0"><?= $program_info['name'] ?? 'Program Name' ?></h3>
                     </a>
-                    <p class="text-white-50 mb-4 fs-15"><?= $program_info['tagline'] ?? 'Empowering through education' ?></p>
+
+                    <h4 class="text-white fw-semibold mb-0"><?= $category['name'] ?? 'Program Name' ?></h3>
+
+                    <br>
+
+                    <p class="text-white-50 mb-4 fs-15"><?= $category['tagline'] ?? 'Empowering through education' ?></p>
                     
-                    <h5 class="text-white mb-3">Connect with us</h5>
+                    <p class="text-white mb-3">Connect with us</p>
                     <div class="d-flex gap-2">
-                        <?php if (isset($program_info['social_facebook']) && !empty($program_info['social_facebook'])) : ?>
-                            <a href="<?= $program_info['social_facebook'] ?>" target="_blank" class="avatar-xs d-block">
+                        <?php if (isset($category['email']) && !empty($category['email'])) : ?>
+                            <a href="mailto:<?= $category['email'] ?>" class="avatar-xs d-block">
                                 <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
-                                    <i class="ri-facebook-fill"></i>
+                                    <i class="ri-mail-fill"></i>
                                 </span>
                             </a>
                         <?php endif; ?>
                         
-                        <?php if (isset($program_info['social_twitter']) && !empty($program_info['social_twitter'])) : ?>
-                            <a href="<?= $program_info['social_twitter'] ?>" target="_blank" class="avatar-xs d-block">
-                                <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
-                                    <i class="ri-twitter-fill"></i>
-                                </span>
-                            </a>
-                        <?php endif; ?>
-                        
-                        <?php if (isset($program_info['social_linkedin']) && !empty($program_info['social_linkedin'])) : ?>
-                            <a href="<?= $program_info['social_linkedin'] ?>" target="_blank" class="avatar-xs d-block">
-                                <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
-                                    <i class="ri-linkedin-fill"></i>
-                                </span>
-                            </a>
-                        <?php endif; ?>
-                        
-                        <?php if (isset($program_info['social_instagram']) && !empty($program_info['social_instagram'])) : ?>
-                            <a href="<?= $program_info['social_instagram'] ?>" target="_blank" class="avatar-xs d-block">
+                        <?php if (isset($category['instagram']) && !empty($category['instagram'])) : ?>
+                            <a href="<?= $category['instagram'] ?>" target="_blank" class="avatar-xs d-block">
                                 <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
                                     <i class="ri-instagram-fill"></i>
                                 </span>
                             </a>
                         <?php endif; ?>
                         
-                        <?php if (isset($program_info['social_youtube']) && !empty($program_info['social_youtube'])) : ?>
-                            <a href="<?= $program_info['social_youtube'] ?>" target="_blank" class="avatar-xs d-block">
+                        <?php if (isset($category['tiktok']) && !empty($category['tiktok'])) : ?>
+                            <a href="<?= $category['tiktok'] ?>" target="_blank" class="avatar-xs d-block">
+                                <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
+                                    <i class="ri-tiktok-fill"></i>
+                                </span>
+                            </a>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($category['youtube']) && !empty($category['youtube'])) : ?>
+                            <a href="<?= $category['youtube'] ?>" target="_blank" class="avatar-xs d-block">
                                 <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
                                     <i class="ri-youtube-fill"></i>
+                                </span>
+                            </a>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($category['telegram']) && !empty($category['telegram'])) : ?>
+                            <a href="<?= $category['telegram'] ?>" target="_blank" class="avatar-xs d-block">
+                                <span class="avatar-title rounded-circle bg-soft-light text-white fs-16">
+                                    <i class="ri-telegram-fill"></i>
                                 </span>
                             </a>
                         <?php endif; ?>
@@ -63,11 +67,11 @@
                 <div class="mb-4">
                     <h5 class="text-white mb-3">Quick Links</h5>
                     <ul class="list-unstyled footer-list">
-                        <li><a href="<?= base_url() ?>"><i class="ri-arrow-right-s-line me-1 align-middle"></i> Home</a></li>
-                        <li><a href="<?= base_url('about') ?>"><i class="ri-arrow-right-s-line me-1 align-middle"></i> About</a></li>
-                        <li><a href="<?= base_url('programs') ?>"><i class="ri-arrow-right-s-line me-1 align-middle"></i> Programs</a></li>
-                        <li><a href="<?= base_url('insights') ?>"><i class="ri-arrow-right-s-line me-1 align-middle"></i> Insights</a></li>
-                        <li><a href="<?= base_url('contact') ?>"><i class="ri-arrow-right-s-line me-1 align-middle"></i> Contact</a></li>
+                        <li><a href="<?= base_url() ?>">Home</a></li>
+                        <li><a href="<?= base_url('about') ?>">About</a></li>
+                        <li><a href="<?= base_url('programs') ?>">Programs</a></li>
+                        <li><a href="<?= base_url('insights') ?>">Insights</a></li>
+                        <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                     </ul>
                 </div>
             </div>
@@ -77,29 +81,19 @@
                     <h5 class="text-white mb-3">Useful Resources</h5>
                     <ul class="list-unstyled footer-list">
                         <li>
-                            <a href="<?= base_url('faq') ?>">
-                                <i class="ri-arrow-right-s-line me-1 align-middle"></i> FAQ
-                            </a>
+                            <a href="<?= base_url('faq') ?>">FAQ</a>
                         </li>
                         <li>
-                            <a href="<?= $program_info['guideline'] ?? '#' ?>" target="_blank">
-                                <i class="ri-arrow-right-s-line me-1 align-middle"></i> Program Guidelines
-                            </a>
+                            <a href="<?= $category['guideline'] ?? '#' ?>" target="_blank">Program Guidelines</a>
                         </li>
                         <li>
-                            <a href="<?= base_url('privacy-policy') ?>">
-                                <i class="ri-arrow-right-s-line me-1 align-middle"></i> Privacy Policy
-                            </a>
+                            <a href="<?= base_url('privacy-policy') ?>">Privacy Policy</a>
                         </li>
                         <li>
-                            <a href="<?= base_url('terms-conditions') ?>">
-                                <i class="ri-arrow-right-s-line me-1 align-middle"></i> Terms & Conditions
-                            </a>
+                            <a href="<?= base_url('terms-conditions') ?>">Terms & Conditions</a>
                         </li>
                         <li>
-                            <a href="<?= base_url('sitemap.xml') ?>">
-                                <i class="ri-arrow-right-s-line me-1 align-middle"></i> Sitemap
-                            </a>
+                            <a href="<?= base_url('sitemap.xml') ?>">Sitemap</a>
                         </li>
                     </ul>
                 </div>
@@ -133,12 +127,12 @@
                     <div class="row">
                         <div class="col-sm-6">
                             <div class="text-white-50">
-                                <p class="mb-0">&copy; <?= date('Y') ?> <?= $program_info['name'] ?? 'Program Name' ?>. All rights reserved.</p>
+                                <p class="mb-0">&copy; <?= date('Y') ?> <?= $category['name'] ?? 'Program Name' ?>. All rights reserved.</p>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="text-sm-end text-white-50">
-                                <p class="mb-0">Designed with <i class="mdi mdi-heart text-danger"></i> by <a href="https://themesbrand.com/" target="_blank" class="text-reset text-decoration-underline">Themesbrand</a></p>
+                                <p class="mb-0">Designed with <i class="mdi mdi-heart text-danger"></i> by <a href="#" class="text-reset text-decoration-underline">YBB Dev Team</a></p>
                             </div>
                         </div>
                     </div>

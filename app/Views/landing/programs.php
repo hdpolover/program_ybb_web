@@ -16,7 +16,7 @@
         <?= $this->include('landing/common/navbar') ?>
 
         <!-- start Programs title section -->
-        <section class="section position-relative pb-5" id="programs-title" style="background-color: #f8f9fa;">
+        <section class="section position-relative pb-5 bg-light" id="programs-title">
             <div class="bg-overlay bg-overlay-pattern opacity-50"></div>
             <div class="container">
                 <div class="row justify-content-center">
@@ -139,6 +139,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                       
                                             </div>
                                         </div>
                                     </div>
@@ -148,7 +149,7 @@
                                             $slug = isset($program['slug']) ? $program['slug'] : strtolower(str_replace([' ', '&', '+', '/', '(', ')', ','], '-', trim($program['name'])));
                                             $slug = preg_replace('/-+/', '-', $slug); // Replace multiple dashes with single dash
                                             ?>
-                                            <a href="<?= base_url('programs/' . $slug) ?>" class="btn btn-soft-primary btn-sm">Learn More</a>
+                                            <a href="<?= base_url('programs/' . $slug . '/details') ?>" class="btn btn-soft-primary btn-sm">Learn More</a>
                                             <a href="<?= base_url('apply/' . $slug) ?>" class="btn btn-primary btn-sm">Apply Now</a>
                                         </div>
                                     </div>

@@ -2,7 +2,6 @@
 // Extract the current active program (usually the latest one)
 $program_info = !empty($programs) ? $programs[0] : [];
 $program_testimonies = $testimonies ?? [];
-$program_photos = $photos ?? [];
 ?>
 
 <?= $this->include('partials/main') ?>
@@ -18,25 +17,25 @@ $program_photos = $photos ?? [];
         <?= $this->include('landing/common/navbar') ?>
 
         <!-- Hero Section -->
-        <?= $this->include('landing/home/hero', ['program_photos' => $program_photos]) ?>
+        <?= $this->include('landing/home/hero') ?>
 
         <!-- Program Category Section -->
-        <?= $this->include('landing/home/program_category', ['category' => $category ?? []]) ?>
+        <?= $this->include('landing/home/program_category') ?>
 
         <!-- Current Programs Section -->
-        <?= $this->include('landing/home/upcoming_programs', ['programs' => $programs ?? [], 'category' => $category ?? []]) ?>
+        <?= $this->include('landing/home/upcoming_programs') ?>
 
         <!-- Program Details Section -->
-        <?= $this->include('landing/home/program_details', ['program_photos' => $program_photos, 'category' => $category ?? []]) ?>
+        <?= $this->include('landing/home/program_details') ?>
 
         <!-- Video Section -->
-        <?= $this->include('landing/home/video_section', ['program_info' => $program_info]) ?>
+        <?= $this->include('landing/home/video_section') ?>
 
         <!-- Gallery Section -->
-        <?= $this->include('landing/home/program-gallery', ['program_photos' => $program_photos]) ?>
+        <?= $this->include('landing/home/program-gallery') ?>
 
         <!-- Testimonial Section -->
-        <?= $this->include('landing/home/testimonials', ['program_testimonies' => $program_testimonies]) ?>
+        <?= $this->include('landing/home/testimonials') ?>
 
         <?= $this->include('landing/common/footer') ?>
 
@@ -46,7 +45,7 @@ $program_photos = $photos ?? [];
     <?= $this->include('partials/vendor-scripts') ?>
     
     <!-- Home page specific scripts -->
-    <?= $this->include('landing/home/home_scripts', ['program_info' => $program_info]) ?>
+    <?= $this->include('landing/home/home_scripts') ?>
     
     <!-- Home page specific styles -->
     <?= $this->include('landing/home/home_styles') ?>
