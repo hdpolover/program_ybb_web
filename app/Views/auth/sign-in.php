@@ -21,15 +21,14 @@
                         <div class="card overflow-hidden">
                             <div class="row g-0">
                                 <div class="col-lg-6">
-                                    <div class="p-lg-5 p-4 auth-one-bg h-100">
+                                    <div class="p-lg-5 p-4 auth-one-bg h-100" style="background-image: url('<?= $webSettings['img_url'] ?>');">
                                         <div class="bg-overlay"></div>
-                                        <div class="position-relative h-100 d-flex flex-column">
-                                            <div class="mb-4">
+                                        <div class="position-relative h-100 d-flex flex-column justify-content-center align-items-center">
+                                            <div class="mb-4 text-center">
                                                 <a href="/" class="d-block">
-                                                    <img src="<?= $program_info['logo_url'] ?>" alt="" height="50">
+                                                    <img src="<?= $webSettings['logo_url'] ?>" alt="" height="50">
                                                 </a>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -42,12 +41,28 @@
                                             <p class="text-muted">Sign in to continue.</p>
                                         </div>
 
+                                        <?php if (session()->has('error')): ?>
+                                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                                <?= session('error') ?>
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if (session()->has('success')): ?>
+                                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                                <?= session('success') ?>
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        <?php endif; ?>
+
                                         <div class="mt-4">
                                             <form action="<?= base_url('authorize') ?>" method="post">
+                                                <!-- Hidden field for user type (2=participant) -->
+                                                <input type="hidden" name="type" value="2">
 
                                                 <div class="mb-3">
                                                     <label for="email" class="form-label">Email</label>
-                                                    <input type="text" class="form-control" id="email" placeholder="Enter email">
+                                                    <input type="text" class="form-control" id="email" name="email" placeholder="Enter email">
                                                 </div>
 
                                                 <div class="mb-3">
@@ -56,15 +71,10 @@
                                                     </div>
                                                     <label class="form-label" for="password-input">Password</label>
                                                     <div class="position-relative auth-pass-inputgroup mb-3">
-                                                        <input type="password" class="form-control pe-5 password-input" placeholder="Enter password" id="password-input">
+                                                        <input type="password" class="form-control pe-5 password-input" name="password" placeholder="Enter password" id="password-input">
                                                         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
                                                     </div>
                                                 </div>
-
-                                                <!-- <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" value="" id="auth-remember-check">
-                                                    <label class="form-check-label" for="auth-remember-check">Remember me</label>
-                                                </div> -->
 
                                                 <div class="mt-4">
                                                     <button class="btn btn-success w-100" type="submit">Sign In</button>
@@ -104,7 +114,7 @@
                             <p class="mb-0">&copy;
                                 <script>
                                     document.write(new Date().getFullYear())
-                                </script> <?= $program_info['name'] ?>. Crafted with <i class="mdi mdi-heart text-danger"></i> by Youth Break the Boundaries Foundation
+                                </script> <?= $webSettings['name'] ?>. All rights reserved.
                             </p>
                         </div>
                     </div>

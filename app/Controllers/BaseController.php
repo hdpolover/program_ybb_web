@@ -222,31 +222,69 @@ abstract class BaseController extends Controller
      * @param array|string $data The data to send
      * @param array $headers Additional headers
      * @param bool $useJwt Whether to use JWT authorization
+     * @param bool $asJson Whether to send data as JSON or form data
      * @return mixed Response data or null on error
      */
-    function makePostRequest($endpoint, $data, $headers = [], $useJwt = false)
+    function makePostRequest($endpoint, $data, $headers = [], $useJwt = false, $asJson = false)
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
+            $options = [];
 
-            // Prepare the request body
-            $requestBody = is_array($data) ? json_encode($data) : $data;
+            // Handle data format based on $asJson parameter
+            if ($asJson) {
+                // Use JSON format
+                $options['body'] = is_array($data) ? json_encode($data) : $data;
+                $options['headers'] = array_merge($this->defaultHeaders, $headers);
+            } else {
+                // Use form data format
+                $options['form_params'] = $data;
+                
+                // Only include Content-Type: application/json if explicitly requested
+                $formHeaders = [
+                    'Accept' => 'application/json'
+                ];
+                $options['headers'] = array_merge($formHeaders, $headers);
+            }
 
             // Add JWT token to headers if needed
             if ($useJwt) {
                 $token = $this->getJwtToken();
                 if ($token) {
-                    $headers['Authorization'] = 'Bearer ' . $token;
+                    $options['headers']['Authorization'] = 'Bearer ' . $token;
                 }
             }
+            
+            // Log the URL and request data for debugging
+            log_message('debug', "POST Request URL: " . $url);
+            log_message('debug', "POST Request Data: " . json_encode($data));
+            log_message('debug', "POST Request Headers: " . json_encode($options['headers']));
+            log_message('debug', "POST Request as JSON: " . ($asJson ? 'Yes' : 'No'));
 
-            $response = $this->client->request('POST', $url, [
-                'headers' => array_merge($this->defaultHeaders, $headers),
-                'body' => $requestBody,
-            ]);
+            // Set up additional options
+            $options['http_errors'] = false; // Don't throw exceptions for error responses
+            
+            // Make the request
+            $response = $this->client->request('POST', $url, $options);
 
-            $bodyDecoded = json_decode($response->getBody(), true);
+            // Log the response status code for debugging
+            $statusCode = $response->getStatusCode();
+            log_message('debug', "POST Response Status Code: " . $statusCode);
+            
+            // Get response body
+            $responseBody = $response->getBody();
+            $bodyDecoded = json_decode($responseBody, true);
+            
+            // Log response body for debugging
+            log_message('debug', "POST Response Body: " . json_encode($bodyDecoded));
 
+            // Check for non-success status codes
+            if ($statusCode >= 400) {
+                log_message('error', "API Error: Status $statusCode, Response: " . json_encode($bodyDecoded));
+                return $bodyDecoded ?: ['error' => true, 'message' => "HTTP Error $statusCode"];
+            }
+
+            // Return the data or full response based on response structure
             if (isset($bodyDecoded['data'])) {
                 return $bodyDecoded['data'];
             } else {
@@ -348,16 +386,20 @@ abstract class BaseController extends Controller
     {
         // Check if token exists in session
         if (session()->has('jwt_token')) {
-            // You might want to check if the token is expired here
+            // In a real implementation, you would check token expiration here
+            // For now, we'll just return the token
             return session()->get('jwt_token');
         }
 
-        // If implementation requires fetching a new token, add that logic here
-        // Example:
-        // $response = $this->client->request('POST', $this->apiBaseUrl . '/auth/token', [...]);
-        // $token = json_decode($response->getBody(), true)['token'];
-        // session()->set('jwt_token', $token);
-        // return $token;
+        // If user is logged in but token is missing, redirect to login
+        if (session()->get('isLoggedIn') && !session()->has('jwt_token')) {
+            session()->remove('isLoggedIn');
+            session()->remove('user');
+            
+            // In a production app, you might want to redirect to login here
+            // but for a library function, we'll just return null
+            log_message('error', 'JWT token missing for logged in user');
+        }
 
         return null;
     }

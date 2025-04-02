@@ -25,8 +25,15 @@ class Auth implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to(base_url('login'));
+        // Check if user is logged in with a valid token
+        if (!session()->get('isLoggedIn') || !session()->has('jwt_token')) {
+            // If token missing but still marked as logged in, clean up the session
+            if (session()->get('isLoggedIn') && !session()->has('jwt_token')) {
+                session()->remove('isLoggedIn');
+                session()->remove('user');
+            }
+            
+            return redirect()->to(base_url('sign-in'))->with('error', 'Please sign in to access this page');
         }
     }
 

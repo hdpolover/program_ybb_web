@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\dashboard;
+use App\Controllers\BaseController; 
 
 class Submission extends BaseController
 {

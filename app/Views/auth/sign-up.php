@@ -41,12 +41,26 @@
                                             <p class="text-muted">Get your Free Velzon account now.</p>
                                         </div>
 
+                                        <?php if (session()->has('error')): ?>
+                                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                                <?= session('error') ?>
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if (session()->has('success')): ?>
+                                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                                <?= session('success') ?>
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        <?php endif; ?>
+
                                         <div class="mt-4">
-                                            <form class="needs-validation" novalidate action="/">
+                                            <form action="<?= base_url('register') ?>" method="post" class="needs-validation" novalidate>
 
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control" id="fullname" placeholder="Enter your full name" required>
+                                                    <input type="text" class="form-control" id="fullname" name="fullname" placeholder="Enter your full name" required>
                                                     <div class="invalid-feedback">
                                                         Please enter your full name
                                                     </div>
@@ -54,16 +68,16 @@
 
                                                 <div class="mb-3">
                                                     <label for="useremail" class="form-label">Email <span class="text-danger">*</span></label>
-                                                    <input type="email" class="form-control" id="useremail" placeholder="Enter email address" required>
+                                                    <input type="email" class="form-control" id="useremail" name="email" placeholder="Enter email address" required>
                                                     <div class="invalid-feedback">
-                                                        Please enter email
+                                                        Please enter a valid email
                                                     </div>
                                                 </div>
 
                                                 <div class="mb-3">
-                                                    <label class="form-label" for="password-input">Password</label>
+                                                    <label class="form-label" for="password-input">Password <span class="text-danger">*</span></label>
                                                     <div class="position-relative auth-pass-inputgroup">
-                                                        <input type="password" class="form-control pe-5 password-input" onpaste="return false" placeholder="Enter password" id="password-input" aria-describedby="passwordInput" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required>
+                                                        <input type="password" class="form-control pe-5 password-input" name="password" onpaste="return false" placeholder="Enter password" id="password-input" aria-describedby="passwordInput" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required>
                                                         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
                                                         <div class="invalid-feedback">
                                                             Please enter password
@@ -72,9 +86,9 @@
                                                 </div>
 
                                                 <div class="mb-3">
-                                                    <label class="form-label" for="confirm-password-input">Confirm Password</label>
+                                                    <label class="form-label" for="confirm-password-input">Confirm Password <span class="text-danger">*</span></label>
                                                     <div class="position-relative auth-pass-inputgroup">
-                                                        <input type="password" class="form-control pe-5 password-input" onpaste="return false" placeholder="Confirm password" id="confirm-password-input" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required>
+                                                        <input type="password" class="form-control pe-5 password-input" name="confirm_password" onpaste="return false" placeholder="Confirm password" id="confirm-password-input" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" required>
                                                         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="confirm-password-addon"><i class="ri-eye-fill align-middle"></i></button>
                                                         <div class="invalid-feedback">
                                                             Please confirm your password
@@ -83,7 +97,7 @@
                                                 </div>
 
                                                 <div class="mb-4">
-                                                    <p class="mb-0 fs-12 text-muted fst-italic">By registering you agree to the Velzon <a href="#" class="text-primary text-decoration-underline fst-normal fw-medium">Terms of Use</a></p>
+                                                    <p class="mb-0 fs-12 text-muted fst-italic">By registering you agree to the <a href="#" class="text-primary text-decoration-underline fst-normal fw-medium">Terms of Use</a></p>
                                                 </div>
 
                                                 <div id="password-contain" class="p-3 bg-light mb-2 rounded">

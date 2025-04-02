@@ -6,7 +6,7 @@
             </div>
             <div class="col-sm-6">
                 <div class="text-sm-end d-none d-sm-block">
-                    Istanbul Youth Summit 2025
+                   <?= $webSettings['name'] ?>. All rights reserved.
                 </div>
             </div>
         </div>

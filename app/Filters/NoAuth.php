@@ -25,8 +25,9 @@ class NoAuth implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (session()->get('isLoggedIn')) {
-            return redirect()->to(base_url('/'));
+        // Check if user is logged in with a valid token
+        if (session()->get('isLoggedIn') && session()->has('jwt_token')) {
+            return redirect()->to(base_url('/dashboard'));
         }
     }
 

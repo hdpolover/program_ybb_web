@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\dashboard;
+use App\Controllers\BaseController;
 
 class Payment extends BaseController
 {
@@ -14,7 +15,7 @@ class Payment extends BaseController
         // $paymentModel = new \App\Models\ProgramPaymentModel();
         // $payments = $paymentModel->getParticipantPayments(session()->get('participant_id'));
         
-        return view('participant/payment/index');
+        return $this->render('participant/payment/index');
     }
 
     /**
@@ -30,7 +31,7 @@ class Payment extends BaseController
         // $paymentDetails = $paymentModel->getPaymentById($id);
         // $paymentHistory = $paymentModel->getPaymentHistory($id);
         
-        return view('participant/payment/detail', ['paymentId' => $id]);
+        return $this->render('participant/payment/detail', ['paymentId' => $id]);
     }
     
     /**

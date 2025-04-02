@@ -57,34 +57,31 @@ $routes->get('help-news', 'landing\HelpNews::index');
 // $routes->get('announcements', 'Announcements::index');
 // $routes->get('announcements/(:segment)', 'Announcements::details/$1');
 
-// Payment routes
-$routes->group('', function($routes) {
-    $routes->get('payments', 'Payment::index');
-    $routes->get('payments/detail/(:num)', 'Payment::detail/$1');
-    $routes->post('payments/make', 'Payment::makePayment');
-    $routes->get('payments/receipt/(:num)', 'Payment::downloadReceipt/$1');
+// Authentication routes
+$routes->get('sign-in', 'Auth::index', ['filter' => 'noauth']);
+$routes->get('sign-up', 'Auth::signUp', ['filter' => 'noauth']);
+$routes->post('authorize', 'Auth::authorize', ['filter' => 'noauth']);
+$routes->get('sign-out', 'Auth::signOut');
+$routes->get('forgot-password', 'Auth::forgotPassword', ['filter' => 'noauth']);
+$routes->get('reset-password', 'Auth::resetPassword', ['filter' => 'noauth']);
+$routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 'noauth']);
+
+// Protected routes for logged in users
+$routes->group('', ['filter' => 'auth'], function ($routes) {
+    $routes->get('dashboard', 'dashboard\Dashboard::index');
+
+    // submission
+    $routes->get('submission', 'dashboard\Submission::index');
+    $routes->get('submission/edit', 'dashboard\Submission::edit');
+
+    // payment
+    $routes->get('payments', 'dashboard\Payment::index');
+    $routes->get('payments/detail/(:num)', 'dashboard\Payment::detail/$1');
+    $routes->post('payments/make', 'dashboard\Payment::makePayment');
+    $routes->get('payments/receipt/(:num)', 'dashboard\Payment::downloadReceipt/$1');
 });
 
-$routes->get('dashboard', 'Dashboard::index');
-
-// auth
-$routes->get('sign-in', 'Auth::index');
-$routes->post('authorize', 'Auth::authorize');
-$routes->get('sign-out', 'Auth::signOut');
-$routes->get('sign-up', 'Auth::signUp');
-$routes->post('register', 'Auth::register');
-$routes->get('forgot-password', 'Auth::forgotPassword');
-$routes->post('reset-password', 'Auth::resetPassword');
-// two step verification
-$routes->get('two-step-verification', 'Auth::twoStepVerification');
-
-
-
 $routes->get('sitemap.xml', 'Sitemap::index');
-
-// submission
-$routes->get('submission', 'dashboard\Submission::index', ['filter' => 'noauth']);
-$routes->get('submission/edit', 'dashboard\Submission::edit', ['filter' => 'noauth']);
 
 // Add this route to serve cached images
 $routes->get('cached-images/(:any)', 'ImagesController::serve/$1');

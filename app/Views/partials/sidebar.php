@@ -5,19 +5,19 @@
         <!-- Dark Logo-->
         <a href="/" class="logo logo-dark">
             <span class="logo-sm">
-                <img src="/assets/images/logo-sm.png" alt="" height="22">
+                <img src="<?= isset($webSettings['logo_url']) ? $webSettings['logo_url'] : '/assets/images/logo-sm.png' ?>" alt="" height="35">
             </span>
             <span class="logo-lg">
-                <img src="/assets/images/logo-dark.png" alt="" height="17">
+                <img src="<?= isset($webSettings['logo_url']) ? $webSettings['logo_url'] : '/assets/images/logo-dark.png' ?>" alt="" height="35">
             </span>
         </a>
         <!-- Light Logo-->
         <a href="/" class="logo logo-light">
             <span class="logo-sm">
-                <img src="/assets/images/logo-sm.png" alt="" height="22">
+                <img src="<?= isset($webSettings['logo_url']) ? $webSettings['logo_url'] : '/assets/images/logo-sm.png' ?>" alt="" height="35">
             </span>
             <span class="logo-lg">
-                <img src="/assets/images/logo-light.png" alt="" height="17">
+                <img src="<?= isset($webSettings['logo_url']) ? $webSettings['logo_url'] : '/assets/images/logo-light.png' ?>" alt="" height="35">
             </span>
         </a>
         <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
@@ -58,14 +58,9 @@
                     </a>
                     <div class="collapse menu-dropdown <?= url_is('documents*') ? 'show' : '' ?>" id="sidebarApps">
                         <ul class="nav nav-sm flex-column">
+                          
                             <li class="nav-item">
-                                <a href="<?= base_url() ?>documents/acceptance" class="nav-link <?= url_is('documents/acceptance*') ? 'active' : '' ?>"> Letter of Acceptance </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url() ?>documents/agreement" class="nav-link <?= url_is('documents/agreement*') ? 'active' : '' ?>"> Agreement Letter</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url() ?>documents/additional" class="nav-link <?= url_is('documents/additional*') ? 'active' : '' ?>"> Additional Documents </a>
+                                <a href="<?= base_url() ?>documents/program" class="nav-link <?= url_is('documents/program*') ? 'active' : '' ?>"> Program Documents </a>
                             </li>
                             <li class="nav-item">
                                 <a href="<?= base_url() ?>documents/certificates" class="nav-link <?= url_is('documents/certificates*') ? 'active' : '' ?>"> Certificates </a>
