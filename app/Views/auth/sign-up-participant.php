@@ -59,7 +59,8 @@
                                                 <!-- Hidden fields for program information -->
                                                 <input type="hidden" name="program_id" value="<?= $program['id'] ?? '' ?>">
                                                 <input type="hidden" name="program_category_id" value="<?= $program['program_category_id'] ?? '' ?>">
-
+                                                <input type="hidden" name="ambassador_id" value="<?= $ambassadorId ?? '' ?>">
+                                                
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>
                                                     <input type="text" class="form-control" id="fullname" name="fullname" placeholder="Enter your full name" required>
@@ -96,10 +97,6 @@
                                                             Please confirm your password
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                <div class="mb-4">
-                                                    <p class="mb-0 fs-12 text-muted fst-italic">By registering you agree to the <a href="#" class="text-primary text-decoration-underline fst-normal fw-medium">Terms of Use</a></p>
                                                 </div>
 
                                                 <div id="password-contain" class="p-3 bg-light mb-2 rounded">

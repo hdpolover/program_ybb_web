@@ -5,11 +5,12 @@
                 <i class="ri-checkbox-circle-fill"></i>
             </div>
         </div>
-        <h5>Review Your Submission</h5>
-        <p class="text-muted">Please review all the information you've provided before submitting.</p>
+
+        <p class="text-muted mb-4">
+            <?= isset($currentProgram['confirmation_desc']) ? $currentProgram['confirmation_desc'] : 'Please review your submission details before submitting.' ?>
+        </p>
 
         <div class="d-flex justify-content-center gap-3 mt-4">
-            <button type="button" class="btn btn-light btn-label previestab" data-previous="steparrow-misc-tab"><i class="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>Back to Edit</button>
             <button type="submit" class="btn btn-success">Submit Application</button>
         </div>
     </div>

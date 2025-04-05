@@ -66,6 +66,8 @@ $routes->post('register', 'Auth::register', ['filter' => 'noauth']);
 $routes->get('sign-out', 'Auth::signOut');
 $routes->get('forgot-password', 'Auth::forgotPassword', ['filter' => 'noauth']);
 $routes->get('reset-password', 'Auth::resetPassword', ['filter' => 'noauth']);
+// verify email
+$routes->get('verify-email', 'Auth::verifyEmail', ['filter' => 'noauth']);
 // set new password
 $routes->post('set-new-password', 'Auth::setNewPassword', ['filter' => 'noauth']);
 $routes->post('send-reset-link', 'Auth::sendResetLink', ['filter' => 'noauth']);

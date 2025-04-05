@@ -149,6 +149,11 @@ class TopbarController extends BaseController
         $profileImage = $currentParticipant['picture_url'] ?? null;
         $name = $participantName ?: 'Guest';
 
+        // set current program to session
+        if ($currentProgram !== null) {
+            session()->set('current_program', $currentProgram);
+        }
+
         return [
             'sorted_programs' => $sorted_programs,
             'currentProgramId' => $currentProgramId,

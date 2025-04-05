@@ -25,6 +25,23 @@ class Auth extends BaseController
             return redirect()->to('/dashboard');
         }
 
+        // get q from query parameter
+        $q = $this->request->getGet('q');
+
+        if ($q) {
+            // check query value
+            $queryData = $this->makePostRequest('/ambassadors/check-query/', ['encrypted_query' => $q], [], false, false);
+
+            if ($queryData) {
+                // check if query is valid
+                if (isset($queryData['is_valid']) && $queryData['is_valid'] == false) {
+                    return redirect()->to('sign-in')->with('error', 'Invalid query. Please contact support.');
+                }
+            } else {
+                return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
+            }
+        } 
+
         // Get program slug from query parameter
         $programSlug = $this->request->getGet('program');
         $programData = null;
@@ -85,11 +102,20 @@ class Auth extends BaseController
         // log program data for debugging
         log_message('info', 'Program data: ' . json_encode($programData));
 
+        // set ambassador ref_code data
+        if (isset($queryData['ambassador']['id'])) {
+            // check if ref_code is valid
+            $ambassadorId = $queryData['ambassador']['id'];
+        } else {
+            $ambassadorId = null;
+        }
+
         // Prepare data for the view
         $data = [
             'title' => 'Sign Up',
             'program' => $programData,
-            'programSlug' => $programSlug
+            'programSlug' => $programSlug,
+            'ambassadorId' => $ambassadorId,
         ];
 
         return $this->render('auth/sign-up-participant', $data);
@@ -351,6 +377,8 @@ class Auth extends BaseController
         $confirmPassword = $this->request->getPost('confirm_password');
         $programId = $this->request->getPost('program_id'); // Get program ID from form data
         $programCategoryId = $this->request->getPost('program_category_id'); // Get program category ID from form data
+        $ambassadorId = $this->request->getPost('ambassador_id');
+        
 
         // Validate input
         if (!$fullname || !$email || !$password) {
@@ -370,6 +398,11 @@ class Auth extends BaseController
             'program_id' => $programId, // Include program ID in registration data
             'program_category_id' => $programCategoryId, // Include program category ID in registration data
         ];
+
+        // Include ambassador ID if provided
+        if ($ambassadorId) {
+            $registerData['ambassador_id'] = $ambassadorId;
+        }
 
         try {
             // Make API call to register endpoint - use form data instead of JSON
@@ -402,6 +435,40 @@ class Auth extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Registration error: ' . $e->getMessage());
             return redirect()->back()->withInput()->with('error', 'Registration failed. Please try again later.');
+        }
+    }
+
+    /**
+     * Verify email address
+     */
+    public function verifyEmail()
+    {
+        $token = $this->request->getGet('token');
+        $email = $this->request->getGet('email');
+
+        if (!$email) {
+            return redirect()->to('sign-in')->with('error', 'Email address is missing. Please request a new verification link.');
+        }
+
+        if (!$token) {
+            return redirect()->to('sign-in')->with('error', 'Verification token is missing. Please request a new verification link.');
+        }
+        
+        try {
+            $response = $this->makeGetRequest('/auth/verify-email?token=' . $token . '&email=' . $email, [], false);
+            
+            // Log response for debugging
+            log_message('debug', 'API Email Verification Response: ' . json_encode($response));
+            
+            if (!isset($response)) {
+                return redirect()->to('sign-in')->with('error', 'Invalid or expired token. Please request a new verification link.');
+            }
+            
+            // Token is valid, proceed with email verification
+            return redirect()->to('sign-in')->with('success', 'Email verified successfully! You can now sign in.');
+        } catch (\Exception $e) {
+            log_message('error', 'Email verification error: ' . $e->getMessage());
+            return redirect()->to('sign-in')->with('error', 'Failed to verify email. Please try again.');
         }
     }
 }

@@ -10,15 +10,16 @@ class Payments extends BaseController
      */
     public function index()
     {
-        $programPayments = $this->makeGetRequest('program-payments', [
-            'programId' => $this->request->getGet('programId'),
-        ]);
-        
-        if (!$programPayments) {
-            return redirect()->back()->with('error', 'Failed to retrieve program payments');
-        }
+        $programPayments = $this->makeGetRequest('/program-payments/program/' . session()->get('current_program_id'), [], false);
+        $participantPayments = $this->makeGetRequest('/payments/participant/' . session()->get('current_participant_id'), [], false);
+       
+        $data = [
+            'title' => 'Payments',
+            'programPayments' => $programPayments,
+            'participantPayments' => $participantPayments,
+        ];
 
-        return $this->render('participant/payment/index', ['programPayments' => $programPayments]);
+        return $this->render('participant/payment/index', $data);
     }
 
     /**

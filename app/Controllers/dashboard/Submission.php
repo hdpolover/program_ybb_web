@@ -52,10 +52,19 @@ class Submission extends BaseController
 
     public function edit()
     {
-        $subthemes = $this->makeGetRequest('/program-subthemes/program/' . $this->currentUrl);
+        $currentProgram = session()->get('current_program') ?? null;
+
+        $formData = $this->makeGetRequest('/submissions/program/' . $currentProgram['id'] . '/form');
+        $programSubthemes = $formData['subthemes'] ?? [];
+        $programEssays = $formData['essays'] ?? [];
+        $competitionCategories = $formData['competition_categories'] ?? [];
+
         $data = [
             'title' => 'Submission',
-            'subthemes' => $subthemes,
+            'currentProgram' => $currentProgram,
+            'subthemes' => $programSubthemes,
+            'essays' => $programEssays,
+            'competitionCategories' => $competitionCategories,
         ];
 
         return $this->render('participant/submission/edit', $data);

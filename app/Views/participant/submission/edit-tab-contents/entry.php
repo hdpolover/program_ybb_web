@@ -1,29 +1,184 @@
 <div class="tab-pane fade" id="steparrow-entry" role="tabpanel" aria-labelledby="steparrow-entry-tab">
     <div>
+
         <div class="mb-3">
-            <label class="form-label" for="entry-title">Entry Title</label>
-            <input type="text" class="form-control" id="entry-title" placeholder="Enter your entry title" required>
-            <div class="invalid-feedback">Please enter your entry title</div>
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="entry-category">Category</label>
-            <select class="form-select" id="entry-category" required>
-                <option value="">Select category</option>
-                <option value="category1">Category 1</option>
-                <option value="category2">Category 2</option>
-                <option value="category3">Category 3</option>
+            <label class="form-label" for="entry-competition-category">Competition Category</label>
+            <select class="form-select" id="entry-competition-category" required>
+            <option value="">Select competition category</option>
+            <?php foreach ($competitionCategories as $category): ?>
+                <option value="<?= $category['id'] ?>" data-description="<?= htmlspecialchars($category['desc'] ?? '') ?>"><?= $category['category'] ?></option>
+            <?php endforeach; ?>
             </select>
-            <div class="invalid-feedback">Please select a category</div>
+            <div class="invalid-feedback">Please select a competition category</div>
+            <div id="category-description" class="form-text mt-2 fst-italic d-none"></div>
         </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+            const categorySelect = document.getElementById('entry-competition-category');
+            const descriptionDiv = document.getElementById('category-description');
+            
+            categorySelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const description = selectedOption.getAttribute('data-description');
+                
+                if (description && description.trim() !== '') {
+                descriptionDiv.textContent = description;
+                descriptionDiv.classList.remove('d-none');
+                } else {
+                descriptionDiv.classList.add('d-none');
+                }
+            });
+            });
+        </script>
+
         <div class="mb-3">
-            <label class="form-label" for="entry-description">Project Description</label>
-            <textarea class="form-control" id="entry-description" rows="4" placeholder="Describe your project" required></textarea>
-            <div class="invalid-feedback">Please provide a project description</div>
+            <label class="form-label" for="entry-subtheme">Program Subthemes</label>
+            <select class="form-select" id="entry-subtheme" required>
+            <option value="">Select subtheme</option>
+            <?php foreach ($subthemes as $subtheme): ?>
+            <option value="<?= $subtheme['id'] ?>" data-description="<?= htmlspecialchars($subtheme['desc'] ?? '') ?>"><?= $subtheme['name'] ?></option>
+            <?php endforeach; ?>
+            </select>
+            <div class="invalid-feedback">Please select a subtheme</div>
+            <div id="subtheme-description" class="form-text mt-2 fst-italic d-none"></div>
         </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+            const subthemeSelect = document.getElementById('entry-subtheme');
+            const descriptionDiv = document.getElementById('subtheme-description');
+            
+            subthemeSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const description = selectedOption.getAttribute('data-description');
+            
+            if (description && description.trim() !== '') {
+            descriptionDiv.textContent = description;
+            descriptionDiv.classList.remove('d-none');
+            } else {
+            descriptionDiv.classList.add('d-none');
+            }
+            });
+            });
+        </script>
+
+        <div class="hstack gap-2 mb-3">
+            <div class="flex-grow-1">
+                <hr class="text-muted">
+            </div>
+            <div>Entry Details</div>
+            <div class="flex-grow-1">
+                <hr class="text-muted">
+            </div>
+        </div>
+
+        <?php if (isset($currentProgram['main_essay_question']) && !empty($currentProgram['main_essay_question'])): ?>
+            <div class="mb-3">
+                <div class="alert alert-primary mb-0"><strong><?= htmlspecialchars($currentProgram['main_essay_question']) ?></strong></div>
+            </div>
+        <?php endif; ?>
+
+        <?php if (isset($essays) && !empty($essays)): ?>
+            <?php foreach ($essays as $index => $essay): ?>
+                <div class="mb-3">
+                    <label class="form-label" for="entry-essay-<?= $index ?>"><?= $essay['questions'] . ' (max ' . $essay['max_word_count'] . ' words)' ?></label>
+                    <textarea class="form-control essay-textarea" id="entry-essay-<?= $index ?>"
+                        name="essays[<?= $essay['id'] ?>]" rows="4"
+                        placeholder="Your answer" required
+                        data-max-words="<?= $essay['max_word_count'] ?>"></textarea>
+                    <small class="word-count-info text-muted">
+                        <span class="current-word-count">0</span>/<span class="max-word-count"><?= $essay['max_word_count'] ?></span> words
+                    </small>
+                    <div class="invalid-feedback">Please provide an answer</div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
     <div class="d-flex align-items-start gap-3 mt-4">
-        <button type="button" class="btn btn-light btn-label previestab" data-previous="steparrow-professional-tab"><i class="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>Previous</button>
         <button type="button" class="btn btn-success btn-label right ms-auto nexttab" data-nexttab="steparrow-misc-tab"><i class="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>Next Step</button>
     </div>
 </div>
 <!-- end tab pane -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const essayTextareas = document.querySelectorAll('.essay-textarea');
+
+        essayTextareas.forEach(function(textarea) {
+            const wordCountInfo = textarea.nextElementSibling;
+            const currentWordCount = wordCountInfo.querySelector('.current-word-count');
+            const maxWordCount = parseInt(textarea.getAttribute('data-max-words'), 10);
+
+            // Store the last valid state of the textarea
+            let lastValidValue = textarea.value;
+            let lastWordCount = countWords(textarea.value);
+
+            // Initial word count update
+            updateWordCount();
+
+            // Add event listener for input changes
+            textarea.addEventListener('input', function(e) {
+                updateWordCount();
+            });
+
+            // Handle edge cases like pasting long content
+            textarea.addEventListener('paste', function(e) {
+                // Get current text and new text being pasted
+                const currentText = textarea.value;
+                const pastedText = e.clipboardData.getData('text');
+
+                // Calculate what the combined text would be
+                const combinedText = currentText + pastedText;
+                const wordCount = countWords(combinedText);
+
+                // If pasting would exceed the word limit, prevent it
+                if (wordCount > maxWordCount) {
+                    e.preventDefault();
+                    alert('Pasting this text would exceed the maximum word count of ' + maxWordCount + ' words.');
+                }
+            });
+
+            // Function to count words in a text
+            function countWords(text) {
+                const trimmedText = (text || '').trim();
+                return trimmedText === '' ? 0 : trimmedText.split(/\s+/).length;
+            }
+
+            // Function to update the word count display and handle max words
+            function updateWordCount() {
+                const text = textarea.value;
+                const wordCount = countWords(text);
+
+                // Update the display
+                currentWordCount.textContent = wordCount;
+
+                // If word count exceeds max, prevent the input
+                if (wordCount > maxWordCount) {
+                    // Restore the last valid state
+                    textarea.value = lastValidValue;
+                    currentWordCount.textContent = lastWordCount;
+
+                    // Add visual indicator
+                    currentWordCount.classList.add('text-danger');
+                    currentWordCount.classList.add('fw-bold');
+                } else {
+                    // Update the last valid state
+                    lastValidValue = textarea.value;
+                    lastWordCount = wordCount;
+
+                    // Visual feedback based on word count
+                    if (wordCount === maxWordCount) {
+                        currentWordCount.classList.add('text-warning');
+                        currentWordCount.classList.add('fw-bold');
+                        currentWordCount.classList.remove('text-danger');
+                    } else {
+                        currentWordCount.classList.remove('text-danger');
+                        currentWordCount.classList.remove('text-warning');
+                        currentWordCount.classList.remove('fw-bold');
+                    }
+                }
+            }
+        });
+    });
+</script>

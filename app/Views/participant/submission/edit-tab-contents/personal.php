@@ -2,9 +2,11 @@
     <div>
         <div class="text-center">
             <div class="profile-user position-relative d-inline-block mx-auto mb-4">
-                <img src="" class="rounded-circle avatar-xxl img-thumbnail user-profile-image" alt="user-profile-image">
+                <img src="" onerror="this.src='/assets/images/users/avatar-blank.jpg'; this.onerror=null;"
+                    class="rounded-circle avatar-xxl img-thumbnail user-profile-image"
+                    alt="user-profile-image" style="width: 120px; height: 120px; object-fit: cover;">
                 <div class="avatar-xs p-0 rounded-circle profile-photo-edit">
-                    <input id="profile-img-file-input" type="file" class="profile-img-file-input">
+                    <input id="profile-img-file-input" type="file" class="profile-img-file-input" accept="image/*">
                     <label for="profile-img-file-input" class="profile-photo-edit avatar-xs">
                         <span class="avatar-title rounded-circle bg-light text-body">
                             <i class="ri-camera-fill"></i>
@@ -13,6 +15,7 @@
                 </div>
             </div>
         </div>
+
         <div class="row">
             <div class="col-lg-12">
                 <div class="mb-3">
@@ -160,3 +163,38 @@
         <button type="button" class="btn btn-success btn-label right ms-auto nexttab" data-nexttab="steparrow-professional-tab"><i class="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>Next Step</button>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile image handling
+        const profileImgInput = document.getElementById('profile-img-file-input');
+        const profileImg = document.querySelector('.user-profile-image');
+        const defaultImgSrc = '/assets/images/users/avatar-blank.jpg';
+
+        // Check if there's a previously saved profile image
+        const savedProfileImg = localStorage.getItem('userProfileImg');
+        if (savedProfileImg) {
+            profileImg.src = savedProfileImg;
+        } else {
+            profileImg.src = defaultImgSrc;
+        }
+
+        // Handle image selection
+        profileImgInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profileImg.src = e.target.result;
+                    // Save selected image to localStorage for persistence
+                    localStorage.setItem('userProfileImg', e.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // No file selected or selection canceled, revert to default or saved
+                const savedImg = localStorage.getItem('userProfileImg');
+                profileImg.src = savedImg || defaultImgSrc;
+            }
+        });
+    });
+</script>
