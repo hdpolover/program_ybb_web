@@ -80,10 +80,14 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('submission/edit', 'dashboard\Submission::edit');
 
     // payment
-    $routes->get('payments', 'dashboard\Payment::index');
-    $routes->get('payments/detail/(:num)', 'dashboard\Payment::detail/$1');
-    $routes->post('payments/make', 'dashboard\Payment::makePayment');
-    $routes->get('payments/receipt/(:num)', 'dashboard\Payment::downloadReceipt/$1');
+    $routes->get('payments', 'dashboard\Payments::index');
+    $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
+    $routes->post('payments/make', 'dashboard\Payments::makePayment');
+    $routes->get('payments/receipt/(:num)', 'dashboard\Payments::downloadReceipt/$1');
+
+    // documents
+    $routes->get('documents/program', 'dashboard\Documents::index');
+    $routes->get('documents/certificates', 'dashboard\Documents::certificates');
 });
 
 $routes->get('sitemap.xml', 'Sitemap::index');

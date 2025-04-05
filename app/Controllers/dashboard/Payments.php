@@ -3,19 +3,22 @@
 namespace App\Controllers\dashboard;
 use App\Controllers\BaseController;
 
-class Payment extends BaseController
+class Payments extends BaseController
 {
     /**
      * Display the list of program payments required from the participant
      */
     public function index()
     {
-        // In a real implementation, you would fetch the program payments required for the logged-in participant
-        // For example:
-        // $paymentModel = new \App\Models\ProgramPaymentModel();
-        // $payments = $paymentModel->getParticipantPayments(session()->get('participant_id'));
+        $programPayments = $this->makeGetRequest('program-payments', [
+            'programId' => $this->request->getGet('programId'),
+        ]);
         
-        return $this->render('participant/payment/index');
+        if (!$programPayments) {
+            return redirect()->back()->with('error', 'Failed to retrieve program payments');
+        }
+
+        return $this->render('participant/payment/index', ['programPayments' => $programPayments]);
     }
 
     /**

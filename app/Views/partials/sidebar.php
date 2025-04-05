@@ -69,11 +69,11 @@
                     </div>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('settings*') ? 'active' : '' ?>" href="<?= base_url() ?>settings">
                         <i class="ri-money-dollar-circle-line"></i> <span>Settings</span>
                     </a>
-                </li>
+                </li> -->
 
             </ul>
         </div>

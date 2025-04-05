@@ -92,14 +92,14 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-primary text-primary rounded-circle">
+                                            <div class="avatar-title bg-soft-success text-success rounded-circle">
                                                 <i class="ri-calendar-line"></i>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-0 fs-13">Program Duration</h6>
-                                        <small class="text-muted"><?= esc($duration) ?></small>
+                                        <h6 class="mb-0 fs-13 text-dark">Program Duration</h6>
+                                        <small class="text-secondary"><?= esc($duration) ?></small>
                                     </div>
                                 </div>
                             </div>
@@ -110,14 +110,14 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-primary text-primary rounded-circle">
+                                            <div class="avatar-title bg-soft-info text-info rounded-circle">
                                                 <i class="ri-calendar-event-line"></i>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-0 fs-13">Start Date</h6>
-                                        <small class="text-muted"><?= esc($formatted_start_date) ?></small>
+                                        <h6 class="mb-0 fs-13 text-dark">Start Date</h6>
+                                        <small class="text-secondary"><?= esc($formatted_start_date) ?></small>
                                     </div>
                                 </div>
                             </div>
@@ -128,14 +128,14 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-primary text-primary rounded-circle">
+                                            <div class="avatar-title bg-soft-danger text-danger rounded-circle">
                                                 <i class="ri-calendar-check-line"></i>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-0 fs-13">End Date</h6>
-                                        <small class="text-muted"><?= esc($formatted_end_date) ?></small>
+                                        <h6 class="mb-0 fs-13 text-dark">End Date</h6>
+                                        <small class="text-secondary"><?= esc($formatted_end_date) ?></small>
                                     </div>
                                 </div>
                             </div>
@@ -146,14 +146,14 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-primary text-primary rounded-circle">
+                                            <div class="avatar-title bg-soft-warning text-warning rounded-circle">
                                                 <i class="ri-timer-line"></i>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-0 fs-13">Days Until Start</h6>
-                                        <small class="text-muted"><?= esc($days_until_start) ?> days</small>
+                                        <h6 class="mb-0 fs-13 text-dark">Days Until Start</h6>
+                                        <small class="text-secondary"><?= esc($days_until_start) ?> days</small>
                                     </div>
                                 </div>
                             </div>

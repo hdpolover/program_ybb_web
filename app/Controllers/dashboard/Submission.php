@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Controllers\dashboard;
-use App\Controllers\BaseController; 
+
+use App\Controllers\BaseController;
 
 class Submission extends BaseController
 {
@@ -10,21 +11,40 @@ class Submission extends BaseController
     {
         $currentParticipantId = session()->get('current_participant_id');
 
-        // participants data from session
-        $participants = session()->get('participants');
+        $submissionData = $this->makeGetRequest('/submissions/participants/' . $currentParticipantId);
 
+        // Get programs from session
+        $programs = session()->get('programs') ?? [];
+
+        $currentProgramId = session()->get('current_program_id') ?? null;
+        $currentProgram = null;
         $currentParticipant = null;
 
-        foreach ($participants as $participant) {
-            if ($participant['id'] == $currentParticipantId) {
-                $currentParticipant = $participant;
-                break;
+        // get current program based on current program id
+        if ($currentProgramId !== null) {
+            foreach ($programs as $program) {
+                if (($program['id'] ?? null) === $currentProgramId) {
+                    $currentProgram = $program;
+                    break;
+                }
             }
         }
 
+        $participant = $submissionData['participant'] ?? null;
+        $participantEssays = $submissionData['participant_essays'] ?? null;
+        $participantSubtheme = $submissionData['participant_subtheme'] ?? null;
+        $programEssays = $submissionData['program_essays'] ?? null;
+        $programSubthemes = $submissionData['program_subthemes'] ?? null;
+
         $data = [
             'title' => 'Submission',
-            'currentParticipant' => $currentParticipant,
+            'currentParticipant' => $participant,
+            'currentProgram' => $currentProgram,
+            'currentParticipantId' => $currentParticipantId,
+            'submittedEssays' => $participantEssays,
+            'submittedSubtheme' => $participantSubtheme,
+            'programEssays' => $programEssays,
+            'programSubthemes' => $programSubthemes,
         ];
 
         return $this->render('participant/submission/index', $data);

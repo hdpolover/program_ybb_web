@@ -90,7 +90,7 @@
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link fs-14" data-bs-toggle="tab" href="#entry" role="tab">
-                                                <i class="ri-price-tag-line d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Entry Infomration</span>
+                                                <i class="ri-price-tag-line d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Entry Information</span>
                                             </a>
                                         </li>
                                         <li class="nav-item">
