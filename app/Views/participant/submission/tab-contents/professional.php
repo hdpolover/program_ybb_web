@@ -8,7 +8,7 @@
                                 <div class="mb-4">
                                     <h6 class="fw-semibold">Education Level</h6>
                                     <div class="text-muted">
-                                        <?= $currentParticipant['education_level'] ?? '-' ?>
+                                        <?= !empty($currentParticipant['education_level']) ? $currentParticipant['education_level'] : '-' ?>
                                     </div>
                                 </div>
                             </div>
@@ -26,7 +26,7 @@
                                 <div class="mb-4">
                                     <h6 class="fw-semibold">Major</h6>
                                     <div class="text-muted">
-                                        <?= $currentParticipant['major'] ?? '-'  ?>
+                                        <?= !empty($currentParticipant['major']) ? $currentParticipant['major'] : '-'  ?>
                                     </div>
                                 </div>
                             </div>

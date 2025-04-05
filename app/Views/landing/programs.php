@@ -42,15 +42,22 @@
                 <div class="row program-grid">
                     <?php
                     if (isset($programs) && !empty($programs)) {
-                        foreach ($programs as $program) {
-                    ?>
-                            <?= view('landing/common/program_card_widget', ['program' => $program]) ?>
-                        <?php
+                        // if programs is just one, make it an array
+                        if (isset($programs['programs']) && !empty($programs['programs'])) {
+                            $programs = $programs['programs'];
+                        } else {
+                            $programs = [$programs];
                         }
-                    } else { ?>
 
-
-
+                        // loop through programs
+                        if (isset($programs) && !empty($programs)) {
+                            foreach ($programs as $program) { ?>
+                                <div class="col-lg-12 col-md-12 mb-4 <?= isset($program['category']) ? strtolower(str_replace(' ', '-', $program['category'])) : '' ?>">
+                                    <?= view('landing/common/program_card_widget', ['program' => $program]); ?>
+                                </div>
+                            <?php } ?>
+                        <?php } ?>
+                    <?php } else { ?>
                         <div class="col-12 text-center">
                             <p class="text-muted fs-16">No programs are available at this time. Please check back later.</p>
                         </div>

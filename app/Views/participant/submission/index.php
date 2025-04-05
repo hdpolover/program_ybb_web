@@ -48,11 +48,11 @@
                             <div class="col">
                                 <div class="p-2">
                                     <h3 class="text-white mb-1"><?= $currentParticipant['full_name'] ?></h3>
-                                    <p class="text-white text-opacity-75"><?= $currentParticipant['occupation'] ?></p>
+                                    <p class="text-white text-opacity-75"><?= !empty($currentParticipant['occupation']) ? $currentParticipant['occupation'] : '-' ?></p>
                                     <div class="hstack text-white-50 gap-1">
-                                        <div class="me-2"><i class="ri-map-pin-user-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= $currentParticipant['nationality'] ?></div>
+                                        <div class="me-2"><i class="ri-map-pin-user-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= !empty($currentParticipant['nationality']) ? $currentParticipant['nationality'] : '-' ?></div>
                                         <div>
-                                            <i class="ri-building-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= $currentParticipant['institution'] ?>
+                                            <i class="ri-building-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= !empty($currentParticipant['institution']) ? $currentParticipant['institution'] : '-' ?>
                                         </div>
 
                                     </div>
@@ -99,9 +99,11 @@
                                             </a>
                                         </li>
                                     </ul>
+                                    <?php if (isset($currentProgram) && $currentProgram['is_active']): ?>
                                     <div class="flex-shrink-0">
                                         <a href="<?= base_url() ?>submission/edit" class="btn btn-success"><i class="ri-edit-box-line align-bottom"></i> Edit Submission</a>
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                                 <!-- Tab panes -->
                                 <div class="tab-content pt-4 text-muted">

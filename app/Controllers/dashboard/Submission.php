@@ -21,6 +21,7 @@ class Submission extends BaseController
                 break;
             }
         }
+
         $data = [
             'title' => 'Submission',
             'currentParticipant' => $currentParticipant,
