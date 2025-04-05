@@ -2,7 +2,7 @@
 
 <head>
 
-    <?php echo view('partials/title-meta', array('title' => 'Sign In')); ?>
+    <?php echo view('partials/title-meta', array('title'=>'Reset Password')); ?>
 
     <?= $this->include('partials/head-css') ?>
 
@@ -19,8 +19,8 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="card overflow-hidden">
-                            <div class="row g-0">
-                                <div class="col-lg-6">
+                            <div class="row justify-content-center g-0">
+                            <div class="col-lg-6">
                                     <div class="p-lg-5 p-4 auth-one-bg h-100" style="background-image: url('<?= $webSettings['img_url'] ?>');">
                                         <div class="bg-overlay"></div>
                                         <div class="position-relative h-100 d-flex flex-column justify-content-center align-items-center">
@@ -36,10 +36,8 @@
 
                                 <div class="col-lg-6">
                                     <div class="p-lg-5 p-4">
-                                        <div>
-                                            <h2 class="text-primary">Welcome Back!</h2>
-                                            <p class="text-muted">Sign in to continue.</p>
-                                        </div>
+                                        <h5 class="text-primary">Forgot Password?</h5>
+                                        <p class="text-muted">Reset password for your account</p>
 
                                         <?php if (session()->has('error')): ?>
                                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -55,38 +53,30 @@
                                             </div>
                                         <?php endif; ?>
 
-                                        <div class="mt-4">
-                                            <form action="<?= base_url('authorize') ?>" method="post">
-                                                <!-- Hidden field for user type (2=participant) -->
-                                                <input type="hidden" name="type" value="2">
+                                        <div class="mt-2 text-center">
+                                            <lord-icon
+                                                src="https://cdn.lordicon.com/rhvddzym.json" trigger="loop" colors="primary:#0ab39c" class="avatar-xl">
+                                            </lord-icon>
+                                        </div>
 
-                                                <div class="mb-3">
-                                                    <label for="email" class="form-label">Email</label>
-                                                    <input type="text" class="form-control" id="email" name="email" placeholder="Enter email">
+                                        <div class="alert alert-borderless alert-warning text-center mb-2 mx-2" role="alert">
+                                            Enter your email and instructions will be sent to you!
+                                        </div>
+                                        <div class="p-2">
+                                            <form action="<?= site_url('send-reset-link') ?>" method="POST" class="mt-4">
+                                                <div class="mb-4">
+                                                    <label class="form-label">Email</label>
+                                                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address" required>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <div class="float-end">
-                                                        <a href="<?= site_url('forgot-password') ?>" class="text-muted">Forgot password?</a>
-                                                    </div>
-                                                    <label class="form-label" for="password-input">Password</label>
-                                                    <div class="position-relative auth-pass-inputgroup mb-3">
-                                                        <input type="password" class="form-control pe-5 password-input" name="password" placeholder="Enter password" id="password-input">
-                                                        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
-                                                    </div>
+                                                <div class="text-center mt-4">
+                                                    <button class="btn btn-success w-100" type="submit">Send Reset Link</button>
                                                 </div>
-
-                                                <div class="mt-4">
-                                                    <button class="btn btn-success w-100" type="submit">Sign In</button>
-                                                </div>
-
-
-
-                                            </form>
+                                            </form><!-- end form -->
                                         </div>
 
                                         <div class="mt-5 text-center">
-                                            <p class="mb-0">Don't have an account? <a href="<?= site_url('sign-up') ?>" class="fw-semibold text-primary text-decoration-underline"> Sign up now!</a> </p>
+                                            <p class="mb-0">Wait, I remember my password... <a href="<?= site_url('sign-in') ?>" class="fw-semibold text-primary text-decoration-underline"> Click here </a> </p>
                                         </div>
                                     </div>
                                 </div>
@@ -105,8 +95,8 @@
         </div>
         <!-- end auth page content -->
 
-        <!-- footer -->
-        <footer class="footer">
+         <!-- footer -->
+         <footer class="footer">
             <div class="container">
                 <div class="row">
                     <div class="col-lg-12">
@@ -122,13 +112,11 @@
             </div>
         </footer>
         <!-- end Footer -->
+
     </div>
     <!-- end auth-page-wrapper -->
 
     <?= $this->include('partials/vendor-scripts') ?>
-
-    <!-- password-addon init -->
-    <script src="/assets/js/pages/password-addon.init.js"></script>
 </body>
 
 </html>

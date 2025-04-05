@@ -2,14 +2,16 @@
 <html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable">
 
 <head>
-
-    <meta charset="utf-8" />
-    <title><?= lang('Errors.pageNotFound') ?> | Velzon - Admin & Dashboard Template</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
-    <meta content="Themesbrand" name="author" />
-    <!-- App favicon -->
-    <link rel="shortcut icon" href="/assets/images/favicon.ico">
+    <?php 
+    // Define variables needed for title-meta.php
+    $meta_title = lang('Errors.pageNotFound');
+    $meta_description = lang('Errors.sorryCannotFind');
+    $tags = 'error, 404, page not found';
+    $slug = 'error-404';
+    $img_url = $webSettings['logo_url']; 
+    ?>
+    
+    <?= view('partials/title-meta', ['meta_title' => $meta_title]) ?>
 
     <!-- Layout config Js -->
     <script src="/assets/js/layout.js"></script>

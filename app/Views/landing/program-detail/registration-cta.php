@@ -5,14 +5,14 @@
             <div class="bg-overlay bg-overlay-pattern opacity-50"></div>
             <div class="card-body p-5 position-relative">
                 <div class="row align-items-center">
-                    <div class="col-lg-1 col-md-2 text-center">
-                        <div class="avatar-lg">
+                    <div class="col-lg-2 col-md-2 text-center">
+                        <div class="avatar-lg mx-auto mb-4">
                             <div class="avatar-title bg-white bg-opacity-25 rounded-circle">
                                 <i class="ri-file-list-3-line text-white fs-24"></i>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-11 col-md-11">
+                    <div class="col-lg-10 col-md-10">
                         <h2 class="text-white mb-2">Registration Guidelines</h2>
                         <p class="text-white mb-4 fs-16">Download our comprehensive registration guide to understand the application process, requirements, and important deadlines for this program.</p>
                         <div class="d-flex flex-wrap gap-2">

@@ -2,6 +2,9 @@
 
 <head>
 
+    <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Programs"]) ?>
+
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
 
@@ -22,8 +25,8 @@
                 <div class="row justify-content-center">
                     <div class="col-lg-8">
                         <div class="text-center pt-5 mt-5">
-                            <h1 class="mb-3 ff-secondary fw-semibold text-capitalize lh-base">Our Programs</h1>
-                            <p class="text-muted fs-16">Discover our diverse range of educational programs designed to help you achieve your goals.</p>
+                            <h1 class="mb-3 ff-secondary fw-semibold text-capitalize lh-base"><?= $webSettings['name'] ?> Programs</h1>
+                            <p class="text-muted fs-16">Explore our innovative programs designed to empower youth with the skills and knowledge needed for tomorrow's challenges.</p>
                         </div>
                     </div>
                 </div>
@@ -34,300 +37,41 @@
         <!-- start Programs content section -->
         <section class="section py-5 position-relative" id="programs">
             <div class="container">
-                <!-- Program Filter Buttons -->
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="text-center mb-4">
-                            <div class="filter-buttons">
-                                <button class="btn btn-primary me-2 mb-2 filter-btn active" data-filter="all">All Programs</button>
-                                <?php
-                                $categories = [];
-                                if (isset($programs) && !empty($programs)) {
-                                    foreach ($programs as $program) {
-                                        if (isset($program['category']) && !in_array($program['category'], $categories)) {
-                                            $categories[] = $program['category'];
-                                        }
-                                    }
-                                } else {
-                                    $categories = ['Technical', 'Leadership', 'Business', 'Creative'];
-                                }
-
-                                foreach ($categories as $category) :
-                                ?>
-                                    <button class="btn btn-outline-primary me-2 mb-2 filter-btn" data-filter="<?= strtolower(str_replace(' ', '-', $category)) ?>"><?= $category ?></button>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Program Cards -->
                 <div class="row program-grid">
                     <?php
                     if (isset($programs) && !empty($programs)) {
                         foreach ($programs as $program) {
-                            $category = isset($program['category']) ? strtolower(str_replace(' ', '-', $program['category'])) : 'general';
-                            $duration = isset($program['duration']) ? $program['duration'] : '8 weeks';
-                            $level = isset($program['level']) ? $program['level'] : 'Intermediate';
-                            $format = isset($program['format']) ? $program['format'] : 'Online';
-                            $img_url = isset($program['image_url']) ? $program['image_url'] : '/assets/images/program-placeholder.jpg';
-                            $start_date = isset($program['start_date']) ? date('M d, Y', strtotime($program['start_date'])) : 'Flexible';
-                            $price = isset($program['price']) ? $program['price'] : 'Free';
-                            $spots = isset($program['available_spots']) ? $program['available_spots'] : rand(5, 30);
-                            $total_spots = isset($program['total_spots']) ? $program['total_spots'] : $spots + rand(0, 20);
-                            $percent_filled = ($total_spots - $spots) / $total_spots * 100;
                     ?>
-                            <div class="col-lg-4 col-md-6 program-item <?= $category ?> mb-4">
-                                <div class="card program-card h-100 border-0 shadow-sm">
-                                    <div class="position-relative">
-                                        <img src="<?= $img_url ?>" class="card-img-top" alt="<?= $program['name'] ?>" style="height: 200px; object-fit: cover;">
-                                        <div class="program-overlay">
-                                            <div class="program-badges">
-                                                <?php if ($format == 'Online') : ?>
-                                                    <span class="badge bg-info"><i class="ri-global-line me-1"></i> Online</span>
-                                                <?php elseif ($format == 'Hybrid') : ?>
-                                                    <span class="badge bg-warning"><i class="ri-compass-3-line me-1"></i> Hybrid</span>
-                                                <?php else : ?>
-                                                    <span class="badge bg-success"><i class="ri-map-pin-line me-1"></i> In-person</span>
-                                                <?php endif; ?>
-
-                                                <?php if ($level == 'Beginner') : ?>
-                                                    <span class="badge bg-success">Beginner</span>
-                                                <?php elseif ($level == 'Intermediate') : ?>
-                                                    <span class="badge bg-primary">Intermediate</span>
-                                                <?php else : ?>
-                                                    <span class="badge bg-danger">Advanced</span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span class="badge badge-soft-primary"><?= ucfirst($category) ?></span>
-                                            <span class="text-muted"><i class="ri-time-line align-bottom"></i> <?= $duration ?></span>
-                                        </div>
-                                        <h5 class="card-title"><?= $program['name'] ?></h5>
-                                        <p class="card-text text-muted mb-3"><?= isset($program['short_description']) ? substr($program['short_description'], 0, 120) . '...' : 'This program provides comprehensive training to enhance your skills and knowledge in this field.' ?></p>
-
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between mb-1">
-                                                <span class="text-muted fs-12">Availability</span>
-                                                <span class="text-muted fs-12"><?= $spots ?> spots left</span>
-                                            </div>
-                                            <div class="progress animated-progress">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: <?= $percent_filled ?>%" aria-valuenow="<?= $percent_filled ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                                            </div>
-                                        </div>
-
-                                        <div class="program-info">
-                                            <div class="row g-3">
-                                                <div class="col-6">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="ri-calendar-line text-primary fs-17 me-2"></i>
-                                                        <div>
-                                                            <h6 class="fs-13 mb-0">Start Date</h6>
-                                                            <p class="text-muted mb-0 fs-12"><?= $start_date ?></p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="ri-price-tag-3-line text-primary fs-17 me-2"></i>
-                                                        <div>
-                                                            <h6 class="fs-13 mb-0">Price</h6>
-                                                            <p class="text-muted mb-0 fs-12"><?= $price ?></p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                       
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer bg-transparent border-top-0 p-4 pt-0">
-                                        <div class="d-flex justify-content-between">
-                                            <?php
-                                            $slug = isset($program['slug']) ? $program['slug'] : strtolower(str_replace([' ', '&', '+', '/', '(', ')', ','], '-', trim($program['name'])));
-                                            $slug = preg_replace('/-+/', '-', $slug); // Replace multiple dashes with single dash
-                                            ?>
-                                            <a href="<?= base_url('programs/' . $slug . '/details') ?>" class="btn btn-soft-primary btn-sm">Learn More</a>
-                                            <a href="<?= base_url('apply/' . $slug) ?>" class="btn btn-primary btn-sm">Apply Now</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <?= view('landing/common/program_card_widget', ['program' => $program]) ?>
                         <?php
                         }
-                    } else {
-                        // Dummy programs if no data provided
-                        $dummyPrograms = [
-                            [
-                                'name' => 'Web Development Bootcamp',
-                                'category' => 'technical',
-                                'level' => 'Intermediate',
-                                'format' => 'Online',
-                                'duration' => '12 weeks',
-                                'start_date' => 'Apr 15, 2025',
-                                'price' => '$2,999',
-                                'spots' => 8,
-                                'total_spots' => 25,
-                            ],
-                            [
-                                'name' => 'Leadership Excellence',
-                                'category' => 'leadership',
-                                'level' => 'Advanced',
-                                'format' => 'Hybrid',
-                                'duration' => '8 weeks',
-                                'start_date' => 'May 1, 2025',
-                                'price' => '$1,499',
-                                'spots' => 12,
-                                'total_spots' => 20,
-                            ],
-                            [
-                                'name' => 'Digital Marketing Fundamentals',
-                                'category' => 'business',
-                                'level' => 'Beginner',
-                                'format' => 'Online',
-                                'duration' => '6 weeks',
-                                'start_date' => 'Apr 10, 2025',
-                                'price' => '$999',
-                                'spots' => 15,
-                                'total_spots' => 30,
-                            ],
-                            [
-                                'name' => 'UX/UI Design Masterclass',
-                                'category' => 'creative',
-                                'level' => 'Intermediate',
-                                'format' => 'Online',
-                                'duration' => '10 weeks',
-                                'start_date' => 'Jun 5, 2025',
-                                'price' => '$1,799',
-                                'spots' => 6,
-                                'total_spots' => 20,
-                            ],
-                            [
-                                'name' => 'Data Science Fundamentals',
-                                'category' => 'technical',
-                                'level' => 'Intermediate',
-                                'format' => 'Online',
-                                'duration' => '14 weeks',
-                                'start_date' => 'May 20, 2025',
-                                'price' => '$2,499',
-                                'spots' => 10,
-                                'total_spots' => 25,
-                            ],
-                            [
-                                'name' => 'Project Management Professional',
-                                'category' => 'business',
-                                'level' => 'Advanced',
-                                'format' => 'Hybrid',
-                                'duration' => '12 weeks',
-                                'start_date' => 'Jul 8, 2025',
-                                'price' => '$1,999',
-                                'spots' => 4,
-                                'total_spots' => 15,
-                            ]
-                        ];
+                    } else { ?>
 
-                        foreach ($dummyPrograms as $program) {
-                            $percent_filled = ($program['total_spots'] - $program['spots']) / $program['total_spots'] * 100;
-                        ?>
-                            <div class="col-lg-4 col-md-6 program-item <?= $program['category'] ?> mb-4">
-                                <div class="card program-card h-100 border-0 shadow-sm">
-                                    <div class="position-relative">
-                                        <img src="/assets/images/small/img-<?= rand(1, 12) ?>.jpg" class="card-img-top" alt="<?= $program['name'] ?>" style="height: 200px; object-fit: cover;">
-                                        <div class="program-overlay">
-                                            <div class="program-badges">
-                                                <?php if ($program['format'] == 'Online') : ?>
-                                                    <span class="badge bg-info"><i class="ri-global-line me-1"></i> Online</span>
-                                                <?php elseif ($program['format'] == 'Hybrid') : ?>
-                                                    <span class="badge bg-warning"><i class="ri-compass-3-line me-1"></i> Hybrid</span>
-                                                <?php else : ?>
-                                                    <span class="badge bg-success"><i class="ri-map-pin-line me-1"></i> In-person</span>
-                                                <?php endif; ?>
 
-                                                <?php if ($program['level'] == 'Beginner') : ?>
-                                                    <span class="badge bg-success">Beginner</span>
-                                                <?php elseif ($program['level'] == 'Intermediate') : ?>
-                                                    <span class="badge bg-primary">Intermediate</span>
-                                                <?php else : ?>
-                                                    <span class="badge bg-danger">Advanced</span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-body p-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span class="badge badge-soft-primary"><?= ucfirst($program['category']) ?></span>
-                                            <span class="text-muted"><i class="ri-time-line align-bottom"></i> <?= $program['duration'] ?></span>
-                                        </div>
-                                        <h5 class="card-title"><?= $program['name'] ?></h5>
-                                        <p class="card-text text-muted mb-3">A comprehensive program designed to enhance your skills and advance your career in this field. Learn practical skills from industry experts.</p>
 
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between mb-1">
-                                                <span class="text-muted fs-12">Availability</span>
-                                                <span class="text-muted fs-12"><?= $program['spots'] ?> spots left</span>
-                                            </div>
-                                            <div class="progress animated-progress">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: <?= $percent_filled ?>%" aria-valuenow="<?= $percent_filled ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                                            </div>
-                                        </div>
-
-                                        <div class="program-info">
-                                            <div class="row g-3">
-                                                <div class="col-6">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="ri-calendar-line text-primary fs-17 me-2"></i>
-                                                        <div>
-                                                            <h6 class="fs-13 mb-0">Start Date</h6>
-                                                            <p class="text-muted mb-0 fs-12"><?= $program['start_date'] ?></p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="ri-price-tag-3-line text-primary fs-17 me-2"></i>
-                                                        <div>
-                                                            <h6 class="fs-13 mb-0">Price</h6>
-                                                            <p class="text-muted mb-0 fs-12"><?= $program['price'] ?></p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer bg-transparent border-top-0 p-4 pt-0">
-                                        <div class="d-flex justify-content-between">
-                                            <a href="<?= base_url('program/' . strtolower(str_replace(' ', '-', $program['name']))) ?>" class="btn btn-soft-primary btn-sm">Learn More</a>
-                                            <a href="<?= base_url('apply/' . strtolower(str_replace(' ', '-', $program['name']))) ?>" class="btn btn-primary btn-sm">Apply Now</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="col-12 text-center">
+                            <p class="text-muted fs-16">No programs are available at this time. Please check back later.</p>
+                        </div>
                     <?php
-                        }
                     }
                     ?>
                 </div>
 
-                <!-- CTA Section -->
-                <div class="row mt-5">
-                    <div class="col-lg-12">
-                        <div class="card bg-gradient text-white shadow-lg border-0">
-                            <div class="card-body p-4">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <h4 class="fw-semibold mb-3">Still have questions?</h4>
-                                        <p class="mb-md-0">Our team is ready to help you find the right program for your goals. Contact us for personalized guidance.</p>
-                                    </div>
-                                    <div class="col-md-4 text-md-end">
-                                        <a href="<?= base_url('contact') ?>" class="btn btn-light">Contact Us <i class="ri-arrow-right-line ms-1 align-bottom"></i></a>
-                                    </div>
-                                </div>
-                            </div>
+                <!-- <div class="row justify-content-center mt-5 mb-4">
+                    <div class="col-lg-8">
+                        <div class="text-center mb-5">
+                            <h2 class="mb-3 fw-semibold">Our Other Programs</h2>
+                            <p class="text-muted">Explore other programs initiated by Youth Break the Boundaries Foundation</p>
                         </div>
                     </div>
-                </div>
+                </div> -->
+
+                <!-- other program grid -->
+
+                <?= $this->include('landing/common/contact-widget') ?>
+
             </div>
         </section>
         <!-- end Programs content section -->

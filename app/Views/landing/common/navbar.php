@@ -27,11 +27,7 @@
             </ul>
 
             <div class="">
-                <?php
-                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-                $webUrl = $program_info['web_url'] ?? $category['web_url'] ?? 'ybbfoundation.com';
-                ?>
-                <a href="<?= $protocol . 'app.' . $webUrl; ?>" class="btn btn-primary" target="_blank">Get Started</a>
+                <a href="<?= base_url('sign-in'); ?>" class="btn btn-primary">Get Started</a>
             </div>
         </div>
 

@@ -1,12 +1,5 @@
 <?php
-$participants = session()->get('participants') ?? [];
-$participant = !empty($participants) ? $participants[0] : null;
-$profileImage = ($participant && !empty($participant['picture_url']))
-    ? $participant['picture_url']
-    : '/assets/images/users/avatar-1.jpg';
-$name = ($participant && !empty($participant['full_name']))
-    ? $participant['full_name']
-    : 'Guest User';
+// No direct logic here - data is now provided by TopbarController
 ?>
 
 <header id="page-topbar">
@@ -46,37 +39,12 @@ $name = ($participant && !empty($participant['full_name']))
             <div class="d-flex align-items-center">
 
                 <div class="d-flex align-items-center">
-                    <!-- Program Selector Dropdown -->
 
-                    <?php
-                    $currentProgramId = 1;
-                    $currentProgram = (object)[
-                        'id' => 1,
-                        'name' => 'Istanbul Youth Summit 2025',
-                        'short_description' => 'This is program 1'
-                    ];
-                    $allPrograms = [
-                        (object)[
-                            'id' => 1,
-                            'name' => 'Istanbul Youth Summit 2025',
-
-                            'short_description' => 'This is program 1'
-                        ],
-                        (object)[
-                            'id' => 2,
-                            'name' => 'Program 2',
-                            'short_description' => 'This is program 2'
-                        ]
-                    ];
-                    ?>
                     <div class="dropdown ms-1 topbar-head-dropdown header-item">
                         <button type="button" class="btn btn-ghost-secondary px-3" id="program-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <div class="d-flex align-items-center">
-                                <?php if (!empty($currentProgram->logo_url)): ?>
-                                    <img src="<?= esc($currentProgram->logo_url) ?>" alt="Program Logo" class="rounded-circle header-profile-user me-2" style="height: 36px; width: 36px;">
-                                <?php endif; ?>
                                 <div class="text-start">
-                                    <span class="fw-medium fs-14"><?= esc($currentProgram->name) ?></span>
+                                    <span class="fw-medium fs-14"><?= isset($currentProgram) && isset($currentProgram['name']) ? esc($currentProgram['name']) : 'Select Program' ?></span>
                                     <i class="mdi mdi-chevron-down ms-1"></i>
                                 </div>
                             </div>
@@ -86,24 +54,44 @@ $name = ($participant && !empty($participant['full_name']))
                             <h6 class="dropdown-header">Select Program</h6>
 
                             <!-- List of Programs -->
-                            <div class="dropdown-programs-container" style="max-height: 350px; overflow-y: auto;">
-                                <?php foreach ($allPrograms as $program): ?>
-                                    <a class="dropdown-item d-flex align-items-center <?= ($program->id == $currentProgramId) ? 'active' : '' ?>"
-                                        href="<?= site_url('welcome/set_program/' . $program->id) ?>">
-                                        <div class="d-flex align-items-center flex-grow-1">
-
-                                            <div>
-                                                <span class="fw-medium"><?= esc($program->name) ?></span>
-                                                <?php if (!empty($program->short_description)): ?>
-                                                    <p class="text-muted mb-0 fs-12"><?= esc(substr($program->short_description, 0, 30)) ?><?= (strlen($program->short_description) > 30) ? '...' : '' ?></p>
-                                                <?php endif; ?>
+                            <div class="dropdown-programs-container" style="max-height: 350px; overflow-y: auto; padding: 8px 0;">
+                                <?php if (isset($sorted_programs) && is_array($sorted_programs) && count($sorted_programs) > 0): ?>
+                                    <?php foreach ($sorted_programs as $program): ?>
+                                        <a class="dropdown-item d-flex align-items-center <?= (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId) ? 'active' : '' ?>"
+                                            href="<?= site_url('topbar/setProgram/' . $program['id']) ?>"
+                                            style="padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                                            <div class="d-flex align-items-center flex-grow-1">
+                                                <div style="max-width: 85%;">
+                                                    <span class="fw-medium"><?= isset($program['name']) ? esc($program['name']) : 'Unnamed Program' ?></span>
+                                                    
+                                                    <div class="d-flex align-items-center mt-1">
+                                                        <?php if (isset($program['is_active']) && $program['is_active']): ?>
+                                                            <span class="badge bg-success-subtle text-success fs-11 me-2">Active</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-danger-subtle text-danger fs-11 me-2">Inactive</span>
+                                                        <?php endif; ?>
+                                                        
+                                                        <?php if (isset($program['start_date']) && !empty($program['start_date'])): ?>
+                                                            <span class="text-muted fs-11 me-2">
+                                                                <i class="ri-calendar-line align-bottom"></i> 
+                                                                <?= date('M d, Y', strtotime($program['start_date'])) ?>
+                                                                <?php if (isset($program['end_date']) && !empty($program['end_date'])): ?>
+                                                                    - <?= date('M d, Y', strtotime($program['end_date'])) ?>
+                                                                <?php endif; ?>
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    
+                                                </div>
                                             </div>
-                                        </div>
-                                        <?php if ($program->id == $currentProgramId): ?>
-                                            <i class="ri-checkbox-circle-fill text-success ms-2 fs-17"></i>
-                                        <?php endif; ?>
-                                    </a>
-                                <?php endforeach; ?>
+                                            <?php if (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId): ?>
+                                                <i class="ri-checkbox-circle-fill text-success ms-2 fs-17"></i>
+                                            <?php endif; ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="dropdown-item py-3 text-center">No programs available</div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -111,16 +99,19 @@ $name = ($participant && !empty($participant['full_name']))
                     <div class="dropdown ms-sm-3 header-item topbar-user">
                         <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <span class="d-flex align-items-center">
-
-                                <img class="rounded-circle header-profile-user" src="<?= esc($profileImage) ?>" alt="Header Avatar">
+                                <?php if (isset($profileImage) && !empty($profileImage)): ?>
+                                    <img class="rounded-circle header-profile-user" src="<?= esc($profileImage) ?>" alt="Header Avatar">
+                                <?php else: ?>
+                                    <i class="ri-user-3-line fs-24 rounded-circle header-profile-user d-flex align-items-center justify-content-center bg-light text-primary"></i>
+                                <?php endif; ?>
                                 <span class="text-start ms-xl-2">
-                                    <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text"><?= esc($name) ?></span>
+                                    <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text"><?= isset($name) ? esc($name) : 'Guest' ?></span>
                                 </span>
                             </span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end">
                             <!-- item-->
-                            <h6 class="dropdown-header">Welcome, <?= esc($name) ?>!</h6>
+                            <h6 class="dropdown-header">Welcome, <?= isset($name) ? esc($name) : 'Guest' ?>!</h6>
                             <a class="dropdown-item" href="pages-profile"><i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span class="align-middle">Profile</span></a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="<?= base_url('sign-out') ?>"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Sign Out</span></a>
@@ -155,3 +146,6 @@ $name = ($participant && !empty($participant['full_name']))
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
+<!-- Topbar JavaScript -->
+<script src="<?= base_url('assets/js/topbar.js') ?>"></script>

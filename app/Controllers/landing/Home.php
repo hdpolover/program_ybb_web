@@ -26,7 +26,6 @@ class Home extends BaseController
             $data['photos'] = $this->makeGetRequest('/program-photos');
         }
 
-
         log_message('info', 'Photos data retrieved: ' . print_r($data['photos'], true));
 
         return $this->render('landing/home/home', $data);

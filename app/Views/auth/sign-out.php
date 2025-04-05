@@ -2,7 +2,7 @@
 
 <head>
 
-    <?php echo view('partials/minimal-title-meta', array('title'=>'Log Out')); ?>
+    <?php echo view('partials/title-meta', array('title'=>'Log Out')); ?>
 
     <?= $this->include('partials/head-css') ?>
 

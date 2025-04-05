@@ -8,7 +8,7 @@ class Auth extends BaseController
     public function index()
     {
         if (session()->get('isLoggedIn')) {
-            return redirect()->to('/');
+            return redirect()->to('/dashboard');
         }
 
         $data = [
@@ -21,11 +21,78 @@ class Auth extends BaseController
     // sign up
     public function signUp()
     {
+        if (session()->get('isLoggedIn')) {
+            return redirect()->to('/dashboard');
+        }
+
+        // Get program slug from query parameter
+        $programSlug = $this->request->getGet('program');
+        $programData = null;
+
+        // If program slug is provided, fetch program data
+        if ($programSlug) {
+            try {
+                $programData = $this->makeGetRequest('/programs/slug/' . $programSlug, [], true);
+                if (!$programData) {
+                    log_message('error', 'Failed to fetch program data for slug: ' . $programSlug);
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'Error fetching program data: ' . $e->getMessage());
+            }
+        }
+
+        // if program slug is not provided, get programs by category id
+        if (!$programSlug) {
+            // get category id from web settings (access from controller data)
+            $categoryId = $this->data['webSettings']['program_category_id'] ?? null;
+
+            if (!$categoryId) {
+                log_message('error', 'No category ID found in web settings');
+                return redirect()->to('sign-in')->with('error', 'No category ID found. Please contact support.');
+            }
+
+            if ($categoryId) {
+                try {
+                    $programs = $this->makeGetRequest('/programs/category/' . $categoryId, [], true);
+
+                    if (!$programs) {
+                        log_message('error', 'Failed to fetch programs for category ID: ' . $categoryId);
+                    }
+
+                    // get the first program from the list which is active
+                    $programData = null;
+
+                    foreach ($programs as $program) {
+                        if (isset($program['is_active']) && $program['is_active'] == '1') {
+                            $programData = $program;
+                            break; // Exit loop after finding the first active program
+                        }
+                    }
+                } catch (\Exception $e) {
+                    log_message('error', 'Error fetching programs by category: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // If program data is not found, redirect to sign-in page with error message
+        if ($programSlug && !$programData) {
+            return redirect()->to('sign-in')->with('error', 'Program not found. Please check the link or contact support.');
+        }
+
+        // Log the program slug for debugging
+        log_message('info', 'Program slug used for sign up: ' . $programSlug);
+
+        // log program data for debugging
+        log_message('info', 'Program data: ' . json_encode($programData));
+
+        // Prepare data for the view
         $data = [
             'title' => 'Sign Up',
+            'program' => $programData,
+            'programSlug' => $programSlug
         ];
 
-        return $this->render('auth/sign-up', $data);
+        return $this->render('auth/sign-up-participant', $data);
     }
 
     public function signOut()
@@ -50,17 +117,128 @@ class Auth extends BaseController
             'title' => 'Forgot Password',
         ];
 
-        return $this->render('auth/pass-reset', $data);
+        return $this->render('auth/pass-forgot', $data);
+    }
+
+    // send reset link
+    public function sendResetLink()
+    {
+        $email = $this->request->getPost('email');
+
+        if (!$email) {
+            return redirect()->back()->with('error', 'Please provide an email address');
+        }
+
+        try {
+            // Prepare the data for API using the format required by sign-in-jwt endpoint
+            $resetData = [
+                'email' => $email,
+                'web_url' => $this->currentUrl, // Add web_url if available
+            ];
+
+            // Log request for debugging
+            log_message('debug', 'Reset password request data: ' . json_encode($resetData));
+
+            // Use the correct endpoint /api/auth/reset-password
+            $response = $this->makePostRequest('/auth/forgot-password', $resetData, [], false, false);
+
+            // Log response for debugging
+            log_message('debug', 'API Reset Password Response: ' . json_encode($response));
+
+            if (!$response) {
+                return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
+            }
+
+            // Check for successful response
+            if (isset($response['message']) && $response['message']) {
+                return redirect()->to('forgot-password')->with('success', 'Reset link sent to your email. Please check your inbox.');
+            } else {
+                return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Reset password error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
+        }
     }
 
     // reset password
     public function resetPassword()
     {
-        $data = [
-            'title' => 'Reset Password',
+        // Check if token exists in the query parameters
+        $token = $this->request->getGet('token');
+        
+        if (!$token) {
+            return redirect()->to('forgot-password')->with('error', 'Reset token is missing. Please request a new password reset link.');
+        }
+        
+        try {
+            
+            $response = $this->makeGetRequest('/auth/verify-token?token=' . $token, [], false);
+            
+            // Log response for debugging
+            log_message('debug', 'API Token Verification Response: ' . json_encode($response));
+            
+            if (!isset($response)) {
+                return redirect()->to('forgot-password')->with('error', 'Invalid or expired token. Please request a new password reset link.');
+            }
+            
+            // Token is valid, proceed with password reset
+            $data = [
+                'title' => 'Reset Password',
+                'token' => $token,
+            ];
+            
+            return $this->render('auth/pass-reset', $data);
+        } catch (\Exception $e) {
+            log_message('error', 'Token verification error: ' . $e->getMessage());
+            return redirect()->to('forgot-password')->with('error', 'Failed to verify reset token. Please try again.');
+        }
+    }
+
+    // set new password
+    public function setNewPassword()
+    {
+        $token = $this->request->getPost('token');
+        $password = $this->request->getPost('password');
+        $confirmPassword = $this->request->getPost('confirm_password');
+
+        // Validate input
+        if (!$token || !$password) {
+            return redirect()->back()->withInput()->with('error', 'All fields are required');
+        }
+
+        // Check if passwords match
+        if ($password !== $confirmPassword) {
+            return redirect()->back()->withInput()->with('error', 'Passwords do not match');
+        }
+
+        // Create reset data
+        $resetData = [
+            'token' => $token,
+            'password' => $password,
         ];
 
-        return $this->render('auth/pass-change', $data);
+        try {
+            // Make API call to reset password endpoint - use form data instead of JSON
+            $response = $this->makePostRequest('/auth/reset-password', $resetData, [], false, false);
+
+            // Log response for debugging
+            log_message('debug', 'API Reset Password Response: ' . json_encode($response));
+
+            if (!$response) {
+                return redirect()->back()->withInput()->with('error', 'Failed to reset password. Please try again later.');
+            }
+
+            // Check for successful response
+            if (isset($response['message']) && $response['message']) {
+                return redirect()->to('sign-in')->with('success', 'Password reset successfully. You can now sign in.');
+            } else {
+                return redirect()->back()->withInput()->with('error', 'Failed to reset password. Please try again later.');
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Reset password error: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Failed to reset password. Please try again later.');
+        }
     }
 
     // two step verification
@@ -122,7 +300,7 @@ class Auth extends BaseController
                 if (isset($response['user'])) {
                     $session->set('user', $response['user']);
                 }
-                
+
                 // get participants data from api
                 $participants = $this->makeGetRequest('/participants/user/' . $response['user']['id'], [], true);
 
@@ -132,6 +310,16 @@ class Auth extends BaseController
 
                     $session->set('isLoggedIn', true);
                     log_message('info', 'User logged in successfully: ' . $response['user']['id']);
+
+                    // get programs by category id
+                    $programs = $this->makeGetRequest('/programs/category/' . $response['user']['program_category_id'], [], true);
+
+                    if ($programs) {
+                        $session->set('programs', $programs);
+                    } else {
+                        log_message('error', 'Failed to fetch programs for user ID: ' . $response['user']['id']);
+                        return redirect()->back()->with('error', 'Failed to fetch programs. Please try again later.');
+                    }
 
                     return redirect()->to('/dashboard');
                 } else {
@@ -161,6 +349,8 @@ class Auth extends BaseController
         $email = $this->request->getPost('email');
         $password = $this->request->getPost('password');
         $confirmPassword = $this->request->getPost('confirm_password');
+        $programId = $this->request->getPost('program_id'); // Get program ID from form data
+        $programCategoryId = $this->request->getPost('program_category_id'); // Get program category ID from form data
 
         // Validate input
         if (!$fullname || !$email || !$password) {
@@ -177,17 +367,13 @@ class Auth extends BaseController
             'full_name' => $fullname,
             'email' => $email,
             'password' => $password,
-            'type' => '2', // participant
+            'program_id' => $programId, // Include program ID in registration data
+            'program_category_id' => $programCategoryId, // Include program category ID in registration data
         ];
-
-        // Add web_url if available
-        if (isset($this->currentUrl)) {
-            $registerData['web_url'] = $this->currentUrl;
-        }
 
         try {
             // Make API call to register endpoint - use form data instead of JSON
-            $response = $this->makePostRequest('/api/auth/register', $registerData, [], false, false);
+            $response = $this->makePostRequest('/auth/participant/sign-up', $registerData, [], false, false);
 
             // Log response for debugging
             log_message('debug', 'API Registration Response: ' . json_encode($response));
@@ -197,10 +383,20 @@ class Auth extends BaseController
             }
 
             // Check for successful registration
-            if (isset($response['success']) && $response['success']) {
-                return redirect()->to('sign-in')->with('success', 'Registration successful! Please sign in with your credentials.');
+            if (isset($response['participant']) && $response['participant']) {
+
+                // check if user is already registered
+                $message = 'Registration successful! Please check your email to verify your account.';
+
+                if (isset($response['is_new']) && $response['is_new'] == true) {
+                    $message = 'Registration successful! Please check your email to verify your account.';
+                } else {
+                    $message = 'Registration successful! You can now sign in to continue.';
+                }
+
+                return redirect()->to('sign-in')->with('success', $message);
             } else {
-                $errorMessage = isset($response['message']) ? $response['message'] : 'Registration failed. Please try again.';
+                $errorMessage = isset($response['errors']) ? implode(' ', $response['errors']) : 'Registration failed. Please try again.';
                 return redirect()->back()->withInput()->with('error', $errorMessage);
             }
         } catch (\Exception $e) {

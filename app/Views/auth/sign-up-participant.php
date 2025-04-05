@@ -2,7 +2,7 @@
 
 <head>
 
-    <?php echo view('partials/minimal-title-meta', array('title' => 'Sign Up')); ?>
+    <?php echo view('partials/title-meta', array('title' => 'Sign Up')); ?>
 
     <?= $this->include('partials/head-css') ?>
 
@@ -21,15 +21,14 @@
                         <div class="card overflow-hidden m-0">
                             <div class="row justify-content-center g-0">
                                 <div class="col-lg-6">
-                                    <div class="p-lg-5 p-4 auth-one-bg h-100">
+                                    <div class="p-lg-5 p-4 auth-one-bg h-100" style="background-image: url('<?= $webSettings['img_url'] ?? '/assets/images/bg-auth.jpg' ?>');">
                                         <div class="bg-overlay"></div>
-                                        <div class="position-relative h-100 d-flex flex-column">
-                                            <div class="mb-4">
+                                        <div class="position-relative h-100 d-flex flex-column justify-content-center align-items-center">
+                                            <div class="mb-4 text-center">
                                                 <a href="/" class="d-block">
-                                                    <img src="/assets/images/logo-light.png" alt="" height="18">
+                                                    <img src="<?= $webSettings['logo_url'] ?? '/assets/images/logo-light.png' ?>" alt="Logo" height="80" class="mx-auto">
                                                 </a>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -37,8 +36,8 @@
                                 <div class="col-lg-6">
                                     <div class="p-lg-5 p-4">
                                         <div>
-                                            <h5 class="text-primary">Create an Account</h5>
-                                            <p class="text-muted">Get your Free Velzon account now.</p>
+                                            <h5 class="text-primary">Participate in <?= $program['name'] ?? 'Our Programs' ?></h5>
+                                            <p class="text-muted">Create your account to get started.</p>
                                         </div>
 
                                         <?php if (session()->has('error')): ?>
@@ -57,6 +56,9 @@
 
                                         <div class="mt-4">
                                             <form action="<?= base_url('register') ?>" method="post" class="needs-validation" novalidate>
+                                                <!-- Hidden fields for program information -->
+                                                <input type="hidden" name="program_id" value="<?= $program['id'] ?? '' ?>">
+                                                <input type="hidden" name="program_category_id" value="<?= $program['program_category_id'] ?? '' ?>">
 
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>
@@ -136,17 +138,18 @@
         <!-- footer -->
         <footer class="footer">
             <div class="container">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="text-center">
-                            <p class="mb-0">&copy;
-                                <script>
-                                    document.write(new Date().getFullYear())
-                                </script> Velzon. Crafted with <i class="mdi mdi-heart text-danger"></i> by Themesbrand
-                            </p>
-                        </div>
-                    </div>
+            <div class="row">
+                <div class="col-lg-12">
+                <div class="text-center">
+                    <p class="mb-0">&copy; 
+                    <script>
+                        document.write(new Date().getFullYear())
+                    </script> 
+                    <?= $webSettings['name'] ?? 'Your Company Name' ?>. All Rights Reserved.
+                    </p>
                 </div>
+                </div>
+            </div>
             </div>
         </footer>
         <!-- end Footer -->
@@ -159,6 +162,40 @@
     <script src="/assets/js/pages/form-validation.init.js"></script>
     <!-- password create init -->
     <script src="/assets/js/pages/passowrd-create.init.js"></script>
+    
+    <!-- Custom script for password confirmation validation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password-input');
+            const confirmPasswordInput = document.getElementById('confirm-password-input');
+            const confirmPasswordFeedback = confirmPasswordInput.nextElementSibling.nextElementSibling;
+            
+            // Function to validate passwords match
+            function validatePasswordMatch() {
+                if(confirmPasswordInput.value === '') {
+                    confirmPasswordFeedback.textContent = 'Please confirm your password';
+                    confirmPasswordInput.setCustomValidity('');
+                    return;
+                }
+                
+                if(passwordInput.value !== confirmPasswordInput.value) {
+                    confirmPasswordFeedback.textContent = 'Passwords do not match';
+                    confirmPasswordInput.classList.add('is-invalid');
+                    confirmPasswordInput.setCustomValidity('Passwords do not match');
+                } else {
+                    confirmPasswordInput.classList.remove('is-invalid');
+                    if(confirmPasswordInput.value !== '') {
+                        confirmPasswordInput.classList.add('is-valid');
+                    }
+                    confirmPasswordInput.setCustomValidity('');
+                }
+            }
+            
+            // Add event listeners to both password fields
+            passwordInput.addEventListener('input', validatePasswordMatch);
+            confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+        });
+    </script>
 </body>
 
 </html>

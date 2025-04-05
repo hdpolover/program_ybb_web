@@ -2,7 +2,7 @@
 
 <head>
 
-    <?php echo view('partials/simple-title-meta', array('title' => 'Profile Settings')); ?>
+    <?php echo view('partials/title-meta', array('title' => 'Submission Edit')); ?>
 
     <?= $this->include('partials/head-css') ?>
 

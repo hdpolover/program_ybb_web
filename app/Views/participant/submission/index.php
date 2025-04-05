@@ -2,7 +2,7 @@
 
 <head>
 
-    <?php echo view('partials/simple-title-meta', array('title' => 'Profile')); ?>
+    <?php echo view('partials/title-meta', array('title' => 'Submission')); ?>
 
     <!-- swiper css -->
     <link rel="stylesheet" href="/assets/libs/swiper/swiper-bundle.min.css">
@@ -25,7 +25,7 @@
 
             <div class="page-content">
                 <div class="container-fluid">
-                    <?php echo view('partials/page-title', array('pagetitle' => 'Pages', 'title' => 'Submission')); ?>
+                    <?php echo view('partials/page-title', array('pagetitle' => 'Submission', 'title' => 'Registration Form')); ?>
                     <div class="profile-foreground position-relative mx-n4 mt-n4">
                         <div class="profile-wid-bg">
                             <div class="profile-wid-img" style="background: linear-gradient(135deg, #1e3c72 50%, #2a5298 100%); height:auto;"></div>
@@ -35,23 +35,38 @@
                         <div class="row g-4">
                             <div class="col-auto">
                                 <div class="avatar-lg">
-                                    <img src="/assets/images/users/avatar-1.jpg" alt="user-img" class="img-thumbnail rounded-circle" />
+                                    <?php if (!empty($currentParticipant['picture_url'])): ?>
+                                        <img src="<?= $currentParticipant['picture_url'] ?>" alt="user-img" class="img-thumbnail rounded-circle" />
+                                    <?php else: ?>
+                                        <div class="avatar-lg bg-light rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="ri-user-3-fill text-primary fs-1"></i>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <!--end col-->
                             <div class="col">
                                 <div class="p-2">
-                                    <h3 class="text-white mb-1">Anna Adame</h3>
-                                    <p class="text-white text-opacity-75">Owner & Founder</p>
+                                    <h3 class="text-white mb-1"><?= $currentParticipant['full_name'] ?></h3>
+                                    <p class="text-white text-opacity-75"><?= $currentParticipant['occupation'] ?></p>
                                     <div class="hstack text-white-50 gap-1">
-                                        <div class="me-2"><i class="ri-map-pin-user-line me-1 text-white text-opacity-75 fs-16 align-middle"></i>California, United States</div>
+                                        <div class="me-2"><i class="ri-map-pin-user-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= $currentParticipant['nationality'] ?></div>
                                         <div>
-                                            <i class="ri-building-line me-1 text-white text-opacity-75 fs-16 align-middle"></i>Themesbrand
+                                            <i class="ri-building-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= $currentParticipant['institution'] ?>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
                             <!--end col-->
+                            <!--end col-->
+                            <div class="col-auto">
+                                <div class="d-flex flex-column align-items-end">
+                                    <div class="badge bg-light text-dark fs-13">
+                                        <i class="ri-user-3-line me-1"></i> Account ID: <?= $currentParticipant['account_id'] ?>
+                                    </div>
+                                </div>
+                            </div>
 
                         </div>
                         <!--end row-->
@@ -69,18 +84,18 @@
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link fs-14" data-bs-toggle="tab" href="#achievements" role="tab">
-                                                <i class="ri-list-unordered d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Achievements</span>
+                                            <a class="nav-link fs-14" data-bs-toggle="tab" href="#professional" role="tab">
+                                                <i class="ri-list-unordered d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Professional Profile</span>
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link fs-14" data-bs-toggle="tab" href="#questions" role="tab">
-                                                <i class="ri-price-tag-line d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Questions</span>
+                                            <a class="nav-link fs-14" data-bs-toggle="tab" href="#entry" role="tab">
+                                                <i class="ri-price-tag-line d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Entry Infomration</span>
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link fs-14" data-bs-toggle="tab" href="#miscs" role="tab">
-                                                <i class="ri-folder-4-line d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Miscs</span>
+                                                <i class="ri-folder-4-line d-inline-block d-md-none"></i> <span class="d-none d-md-inline-block">Miscellaneous</span>
                                             </a>
                                         </li>
                                     </ul>
@@ -90,12 +105,10 @@
                                 </div>
                                 <!-- Tab panes -->
                                 <div class="tab-content pt-4 text-muted">
-
                                     <?= $this->include('participant/submission/tab-contents/personal') ?>
-                                    <?= $this->include('participant/submission/tab-contents/achievements') ?>
-                                    <?= $this->include('participant/submission/tab-contents/questions') ?>
+                                    <?= $this->include('participant/submission/tab-contents/professional') ?>
+                                    <?= $this->include('participant/submission/tab-contents/entry') ?>
                                     <?= $this->include('participant/submission/tab-contents/miscs') ?>
-
                                 </div>
                                 <!--end tab-content-->
                             </div>

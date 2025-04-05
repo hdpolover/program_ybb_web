@@ -1,4 +1,4 @@
-<div class="tab-pane" id="questions" role="tabpanel">
+<div class="tab-pane" id="entry" role="tabpanel">
     <div class="row">
         <div class="col-lg-12">
             <div class="card">

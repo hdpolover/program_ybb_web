@@ -8,6 +8,10 @@ $program_testimonies = $testimonies ?? [];
 
 <head>
     <?= $this->include('landing/home/home_head') ?>
+
+    <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Home"]) ?>
+
     <?= $this->include('partials/head-css') ?>
 </head>
 

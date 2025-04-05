@@ -15,6 +15,7 @@ class Programs extends BaseController
             'title' => 'Programs',
             'category' => $programs['category'] ?? [],
             'programs' => $programs['programs'] ?? [],
+            'otherPrograms' => $programs['otherPrograms'] ?? [],
         ];
 
         return $this->render('landing/programs', $data);
@@ -23,7 +24,7 @@ class Programs extends BaseController
     public function detail($slug)
     {
         // Get program details from API using the slug
-        $programDetails = $this->makeGetRequest('/programs/' . $slug); // Updated to use $slug instead of $this->currentUrl
+        $programDetails = $this->makeGetRequest('/programs/slug/' . $slug); // Updated to use $slug instead of $this->currentUrl
 
         if (empty($programDetails)) {
             // Handle the case where no program details are found

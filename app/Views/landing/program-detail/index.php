@@ -1,6 +1,8 @@
 <?= $this->include('partials/main') ?>
 
 <head>
+    <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Program Details"]) ?>
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
     <?= $this->include('partials/head-css') ?>
@@ -13,7 +15,7 @@
 
         <!-- Hero Section with Program Banner and Quick Info -->
         <?= $this->include('landing/program-detail/hero') ?>
-        
+
         <!-- start Program Detail section -->
         <section class="section py-5 position-relative bg-light" id="program-detail">
             <div class="container">
@@ -25,12 +27,12 @@
                     <div class="col-lg-8">
                         <!-- Program Overview -->
                         <?= $this->include('landing/program-detail/overview') ?>
-                        
+
                         <!-- Program Timeline -->
                         <?php if (isset($schedules) && !empty($schedules)) : ?>
                             <?= $this->include('landing/program-detail/timeline') ?>
                         <?php endif; ?>
-                        
+
                         <!-- Program Testimonials -->
                         <?php if (isset($testimonials) && !empty($testimonials)) : ?>
                             <?= $this->include('landing/program-detail/testimonials') ?>
@@ -60,7 +62,7 @@
 
     <!-- Initialize Lightbox for Gallery -->
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function() {
             // Initialize image popups if Magnific Popup is available
             if (typeof $.fn.magnificPopup !== 'undefined') {
                 $('.image-popup').magnificPopup({

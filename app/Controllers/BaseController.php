@@ -174,8 +174,29 @@ abstract class BaseController extends Controller
         }
     }
 
+    /**
+     * Process and prepare the topbar data for views
+     */
+    protected function prepareTopbarData()
+    {
+        // Create an instance of TopbarController
+        $topbarController = new \App\Controllers\TopbarController();
+        
+        // Get the topbar data
+        $topbarData = $topbarController->processTopbarData();
+        
+        // Merge topbar data with the existing data array
+        $this->data = array_merge($this->data, $topbarData);
+    }
+
+    /**
+     * Override the render method to include topbar data
+     */
     protected function render($view, $data = [])
     {
+        // Prepare topbar data before rendering
+        $this->prepareTopbarData();
+        
         // Merge global data with view-specific data
         $data = array_merge($this->data, $data);
         return view($view, $data);
@@ -206,7 +227,17 @@ abstract class BaseController extends Controller
                 return $bodyDecoded['data'];
             } else {
                 log_message('error', 'Data key not found in response');
-                return null;
+
+                // get error data if available
+                if (isset($bodyDecoded['errors'])) {
+                    log_message('error', 'Error data: ' . json_encode($bodyDecoded['errors']));
+                } else {
+                    log_message('error', 'No error data available in response');
+                }
+                // Log the entire response for debugging
+                log_message('debug', 'Response: ' . json_encode($bodyDecoded));
+                
+                return $bodyDecoded; // Return the whole response if 'data' key is not present
             }
         } catch (\Exception $e) {
             // Log the error or handle it as needed
@@ -266,10 +297,6 @@ abstract class BaseController extends Controller
             
             // Make the request
             $response = $this->client->request('POST', $url, $options);
-
-            // Log the response status code for debugging
-            $statusCode = $response->getStatusCode();
-            log_message('debug', "POST Response Status Code: " . $statusCode);
             
             // Get response body
             $responseBody = $response->getBody();
@@ -277,12 +304,6 @@ abstract class BaseController extends Controller
             
             // Log response body for debugging
             log_message('debug', "POST Response Body: " . json_encode($bodyDecoded));
-
-            // Check for non-success status codes
-            if ($statusCode >= 400) {
-                log_message('error', "API Error: Status $statusCode, Response: " . json_encode($bodyDecoded));
-                return $bodyDecoded ?: ['error' => true, 'message' => "HTTP Error $statusCode"];
-            }
 
             // Return the data or full response based on response structure
             if (isset($bodyDecoded['data'])) {

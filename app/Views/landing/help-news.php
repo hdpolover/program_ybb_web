@@ -2,6 +2,8 @@
 
 <head>
 
+    <?= $this->include('partials/title-meta', ['meta_title' => "Help & News"]) ?>
+
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
 
@@ -15,18 +17,26 @@
     <div class="layout-wrapper landing">
         <?= $this->include('landing/common/navbar') ?>
 
+        <!-- start Help & News title section -->
+        <section class="section position-relative pb-5 bg-light" id="help-news-title">
+            <div class="bg-overlay bg-overlay-pattern opacity-50"></div>
+            <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                <div class="text-center pt-5 mt-5">
+                    <h1 class="mb-3 ff-secondary fw-semibold text-capitalize lh-base">Help & News</h1>
+                    <p class="text-muted fs-16">Access helpful resources and stay updated with the latest news about our programs.</p>
+                </div>
+                </div>
+            </div>
+            </div>
+        </section>
+        <!-- end Help & News title section -->
+
         <!-- start Help & News section -->
         <section class="section py-5 position-relative bg-light" id="help-news">
-            <div class="bg-overlay bg-overlay-pattern opacity-25"></div>
+
             <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <div class="text-center mb-5">
-                            <h1 class="mb-3 ff-secondary fw-semibold text-capitalize lh-base">Help & News</h1>
-                            <p class="text-muted mb-4">Get assistance and stay updated with the latest announcements about our programs.</p>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Tabs for Help and News -->
                 <div class="row">
@@ -40,7 +50,7 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link" data-bs-toggle="tab" href="#announcements-tab" role="tab">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#news-tab" role="tab">
                                             <i class="ri-megaphone-line me-1 align-bottom"></i> Announcements
                                         </a>
                                     </li>
@@ -103,7 +113,7 @@
                                     </div>
 
                                     <!-- Announcements Tab -->
-                                    <div class="tab-pane" id="announcements-tab" role="tabpanel">
+                                    <div class="tab-pane" id="news-tab" role="tabpanel">
                                         <div class="d-flex align-items-center mb-4">
                                             <div class="flex-shrink-0">
                                                 <div class="avatar-sm">
@@ -118,9 +128,9 @@
                                             </div>
                                         </div>
 
-                                        <?php if (isset($announcements) && !empty($announcements)) : ?>
+                                        <?php if (isset($news) && !empty($news)) : ?>
                                             <div class="row">
-                                                <?php foreach ($announcements as $announcement) : ?>
+                                                <?php foreach ($news as $item) : ?>
                                                     <div class="col-lg-6 mb-4">
                                                         <div class="card border card-animate h-100">
                                                             <div class="card-body">
@@ -131,21 +141,21 @@
                                                                     <div class="flex-shrink-0">
                                                                         <div class="avatar-sm">
                                                                             <span class="avatar-title bg-soft-primary text-primary rounded-circle fs-18">
-                                                                                <i class="ri-announcement-line"></i>
+                                                                                <i class="ri-item-line"></i>
                                                                             </span>
                                                                         </div>
                                                                     </div>
                                                                     <div class="flex-grow-1 ms-3">
-                                                                        <h5 class="fs-16 mb-1"><?= $announcement['title'] ?? 'Announcement Title' ?></h5>
-                                                                        <?php if (isset($announcement['published_date'])) : ?>
+                                                                        <h5 class="fs-16 mb-1"><?= $item['title'] ?? 'Announcement Title' ?></h5>
+                                                                        <?php if (isset($item['published_date'])) : ?>
                                                                             <p class="text-muted mb-0">
                                                                                 <i class="ri-calendar-event-line me-1 align-bottom"></i>
-                                                                                <?= date('M d, Y', strtotime($announcement['published_date'])) ?>
+                                                                                <?= date('M d, Y', strtotime($item['published_date'])) ?>
                                                                             </p>
                                                                         <?php endif; ?>
                                                                     </div>
                                                                 </div>
-                                                                <p class="text-muted mb-3"><?= $announcement['short_description'] ?? substr($announcement['description'] ?? 'Announcement Description', 0, 150) . '...' ?></p>
+                                                                <p class="text-muted mb-3"><?= $item['short_description'] ?? substr($item['description'] ?? 'Announcement Description', 0, 150) . '...' ?></p>
                                                                 <div>
                                                                     <a href="javascript:void(0);" class="link-primary">Read More <i class="ri-arrow-right-line align-bottom ms-1"></i></a>
                                                                 </div>
@@ -161,8 +171,8 @@
                                                         <i class="ri-megaphone-line"></i>
                                                     </div>
                                                 </div>
-                                                <h5>No announcements available</h5>
-                                                <p class="text-muted">Check back later for news and announcements about our programs.</p>
+                                                <h5>No news available</h5>
+                                                <p class="text-muted">Check back later for news and news about our programs.</p>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -172,25 +182,9 @@
                     </div>
                 </div>
 
-                <!-- Contact Support Section -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card bg-primary border-0 rounded-4 overflow-hidden shadow-lg">
-                            <div class="card-body position-relative p-4">
-                                <div class="bg-overlay bg-overlay-pattern opacity-20"></div>
-                                <div class="row align-items-center">
-                                    <div class="col-lg-8">
-                                        <h4 class="text-white mb-3">Need more help?</h4>
-                                        <p class="text-white-75 mb-lg-0">If you can't find the answer to your question, our support team is ready to help.</p>
-                                    </div>
-                                    <div class="col-lg-4 text-lg-end">
-                                        <a href="javascript:void(0);" class="btn btn-light shadow-lg">Contact Support <i class="ri-arrow-right-line align-bottom ms-1"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <?= $this->include('landing/common/contact-widget') ?>
+
+                
             </div>
         </section>
         <!-- end Help & News section -->

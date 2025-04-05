@@ -2,7 +2,7 @@
 
 <head>
 
-    <?php echo view('partials/minimal-title-meta', array('title'=>'Two Step Verification')); ?>
+    <?php echo view('partials/title-meta', array('title'=>'Two Step Verification')); ?>
 
     <?= $this->include('partials/head-css') ?>
 
@@ -20,16 +20,15 @@
                     <div class="col-lg-12">
                         <div class="card overflow-hidden">
                             <div class="row justify-content-center g-0">
-                                <div class="col-lg-6">
-                                    <div class="p-lg-5 p-4 auth-one-bg h-100">
+                            <div class="col-lg-6">
+                                    <div class="p-lg-5 p-4 auth-one-bg h-100" style="background-image: url('<?= $webSettings['img_url'] ?>');">
                                         <div class="bg-overlay"></div>
-                                        <div class="position-relative h-100 d-flex flex-column">
-                                            <div class="mb-4">
+                                        <div class="position-relative h-100 d-flex flex-column justify-content-center align-items-center">
+                                            <div class="mb-4 text-center">
                                                 <a href="/" class="d-block">
-                                                    <img src="/assets/images/logo-light.png" alt="" height="18">
+                                                    <img src="<?= $webSettings['logo_url'] ?>" alt="" height="50">
                                                 </a>
                                             </div>
-                                           
                                         </div>
                                     </div>
                                 </div>

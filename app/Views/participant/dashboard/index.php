@@ -1,6 +1,26 @@
+<?php
+
+$greetingText = "";
+
+$hour = date('H'); // Get the current hour in 24-hour format
+
+if (($hour >= 0 && $hour < 5) || ($hour >= 5 && $hour < 12)) {
+    $greetingText = "Good Morning";
+} elseif ($hour >= 12 && $hour < 17) {
+    $greetingText = "Good Afternoon";
+} else {
+    $greetingText = "Good Evening";
+}
+
+$full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full_name'] : 'Participant';
+?>
+
 <?= $this->include('partials/main') ?>
 
 <head>
+    <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Dashboard"]) ?>
+
     <!-- jsvectormap css -->
     <link href="/assets/libs/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css" />
 
@@ -34,9 +54,8 @@
                                     <div class="col-12">
                                         <div class="d-flex align-items-lg-center flex-lg-row flex-column">
                                             <div class="flex-grow-1">
-                                                <h4 class="fs-16 mb-1">Good Morning, Anna!</h4>
-                                                <p class="text-muted mb-0">Here's what's happening with your store
-                                                    today.</p>
+                                                <h3><?= $greetingText ?>, <?= $full_name ?>!</h3>
+
                                             </div>
                                         </div><!-- end card header -->
                                     </div>
@@ -44,12 +63,14 @@
                                 </div>
                                 <!--end row-->
 
-                            
+
                             </div> <!-- end .h-100-->
 
                         </div> <!-- end col -->
 
                     </div>
+
+                    <?= $this->include('landing/program-detail/registration-cta') ?>
 
                 </div>
                 <!-- container-fluid -->

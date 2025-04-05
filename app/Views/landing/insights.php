@@ -2,6 +2,9 @@
 
 <head>
 
+    <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Insights"]) ?>
+
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
 

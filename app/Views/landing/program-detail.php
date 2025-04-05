@@ -1,6 +1,9 @@
 <?= $this->include('partials/main') ?>
 
 <head>
+    <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Program Details"]) ?>
+
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
     <?= $this->include('partials/head-css') ?>
@@ -25,18 +28,18 @@
                     <div class="col-lg-8">
                         <!-- Program Overview -->
                         <?= $this->include('landing/program-detail/overview') ?>
-                        
+
                         <!-- Program Timeline -->
                         <?php if (isset($schedules) && !empty($schedules)): ?>
                             <?= $this->include('landing/program-detail/timeline') ?>
                         <?php endif; ?>
-                        
+
                         <!-- Program Testimonials -->
                         <?php if (isset($testimonials) && !empty($testimonials)): ?>
                             <?= $this->include('landing/program-detail/testimonials') ?>
                         <?php endif; ?>
                     </div>
-                    
+
                     <!-- Right Column: Sidebar -->
                     <div class="col-lg-4">
                         <?= $this->include('landing/program-detail/sidebar') ?>
@@ -59,4 +62,5 @@
     <!-- landing init -->
     <script src="/assets/js/pages/landing.init.js"></script>
 </body>
+
 </html>

@@ -61,9 +61,14 @@ $routes->get('help-news', 'landing\HelpNews::index');
 $routes->get('sign-in', 'Auth::index', ['filter' => 'noauth']);
 $routes->get('sign-up', 'Auth::signUp', ['filter' => 'noauth']);
 $routes->post('authorize', 'Auth::authorize', ['filter' => 'noauth']);
+// register
+$routes->post('register', 'Auth::register', ['filter' => 'noauth']);
 $routes->get('sign-out', 'Auth::signOut');
 $routes->get('forgot-password', 'Auth::forgotPassword', ['filter' => 'noauth']);
 $routes->get('reset-password', 'Auth::resetPassword', ['filter' => 'noauth']);
+// set new password
+$routes->post('set-new-password', 'Auth::setNewPassword', ['filter' => 'noauth']);
+$routes->post('send-reset-link', 'Auth::sendResetLink', ['filter' => 'noauth']);
 $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 'noauth']);
 
 // Protected routes for logged in users
@@ -82,9 +87,17 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 });
 
 $routes->get('sitemap.xml', 'Sitemap::index');
+$routes->get('sitemap', 'landing\Sitemap::sitemap'); // HTML sitemap for users
 
 // Add this route to serve cached images
 $routes->get('cached-images/(:any)', 'ImagesController::serve/$1');
+
+// Topbar routes
+$routes->get('topbar/getTopbarData', 'TopbarController::getTopbarData');
+$routes->get('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
+
+// Route for AJAX version (optional, if you implement the client-side AJAX)
+$routes->post('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 
 /*
  * --------------------------------------------------------------------
