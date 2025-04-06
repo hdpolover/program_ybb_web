@@ -92,7 +92,7 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-success text-success rounded-circle">
+                                            <div class="avatar-title bg-primary text-white rounded-circle">
                                                 <i class="ri-calendar-line"></i>
                                             </div>
                                         </div>
@@ -105,37 +105,27 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                             </div>
                         <?php endif; ?>
 
-                        <?php if (!empty($start_date)): ?>
+                        <?php if (!empty($start_date) || !empty($end_date)): ?>
                             <div class="col-md-6 mb-2">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-info text-info rounded-circle">
+                                            <div class="avatar-title bg-primary text-white rounded-circle">
                                                 <i class="ri-calendar-event-line"></i>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-0 fs-13 text-dark">Start Date</h6>
-                                        <small class="text-secondary"><?= esc($formatted_start_date) ?></small>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($end_date)): ?>
-                            <div class="col-md-6 mb-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0 me-2">
-                                        <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-danger text-danger rounded-circle">
-                                                <i class="ri-calendar-check-line"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-0 fs-13 text-dark">End Date</h6>
-                                        <small class="text-secondary"><?= esc($formatted_end_date) ?></small>
+                                        <h6 class="mb-0 fs-13 text-dark">Event Dates</h6>
+                                        <small class="text-secondary">
+                                            <?php if (!empty($formatted_start_date) && !empty($formatted_end_date)): ?>
+                                                <?= esc($formatted_start_date) ?> - <?= esc($formatted_end_date) ?>
+                                            <?php elseif (!empty($formatted_start_date)): ?>
+                                                From <?= esc($formatted_start_date) ?>
+                                            <?php elseif (!empty($formatted_end_date)): ?>
+                                                Until <?= esc($formatted_end_date) ?>
+                                            <?php endif; ?>
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -146,7 +136,7 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-2">
                                         <div class="avatar-xs">
-                                            <div class="avatar-title bg-soft-warning text-warning rounded-circle">
+                                            <div class="avatar-title bg-primary text-white rounded-circle">
                                                 <i class="ri-timer-line"></i>
                                             </div>
                                         </div>

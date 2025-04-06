@@ -1,3 +1,5 @@
+<?php $errorData = get_error_data(); ?>
+
 <!doctype html>
 <html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable">
 
@@ -8,7 +10,7 @@
     $meta_description = lang('Errors.sorryCannotFind');
     $tags = 'error, 404, page not found';
     $slug = 'error-404';
-    $img_url = $webSettings['logo_url']; 
+    $img_url = $errorData['webSettings']['logo_url']; 
     ?>
     
     <?= view('partials/title-meta', ['meta_title' => $meta_title]) ?>
@@ -42,13 +44,7 @@
                                     <lord-icon class="avatar-xl" src="https://cdn.lordicon.com/etwtznjn.json" trigger="loop" colors="primary:#405189,secondary:#0ab39c"></lord-icon>
                                     <h1 class="text-primary mb-4">Oops !</h1>
                                     <h4 class="text-uppercase">Sorry, Page not Found 😭</h4>
-                                    <p class="text-muted mb-4">
-                                        <?php if (ENVIRONMENT !== 'production') : ?>
-                                            <?= nl2br(esc($message)) ?>
-                                        <?php else : ?>
-                                            <?= lang('Errors.sorryCannotFind') ?>
-                                        <?php endif ?>
-                                    </p>
+                                    
                                     <a href="/" class="btn btn-success"><i class="mdi mdi-home me-1"></i>Back to home</a>
                                 </div>
                             </div>

@@ -3,6 +3,7 @@
 namespace Config;
 
 use CodeIgniter\Config\BaseService;
+use App\Libraries\CustomExceptions;
 use App\Services\WebSettings;
 
 /**
@@ -35,6 +36,22 @@ class Services extends BaseService
         }
 
         return new WebSettings();
+    }
+
+    /**
+     * Override the exceptions service with our custom one
+     *
+     * @param bool $getShared
+     *
+     * @return CustomExceptions
+     */
+    public static function exceptions(bool $getShared = true)
+    {
+        if ($getShared) {
+            return static::getSharedInstance('exceptions');
+        }
+
+        return new CustomExceptions(config('Exceptions'), Services::request(), Services::response());
     }
 
     // public static function example($getShared = true)
