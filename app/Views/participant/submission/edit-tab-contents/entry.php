@@ -2,14 +2,14 @@
     <div>
 
         <div class="mb-3">
-            <label class="form-label" for="entry-competition-category">Competition Category</label>
+            <label class="form-label" for="entry-competition-category">Participation Category</label>
             <select class="form-select" id="entry-competition-category" required>
-            <option value="">Select competition category</option>
+            <option value="">Select participation category</option>
             <?php foreach ($competitionCategories as $category): ?>
-                <option value="<?= $category['id'] ?>" data-description="<?= htmlspecialchars($category['desc'] ?? '') ?>"><?= $category['category'] ?></option>
+                <option value="<?= $category['id'] ?>" data-description="<?= htmlspecialchars($category['desc'] ?? '') ?>" <?= (isset($currentParticipant['competition_category_id']) && $currentParticipant['competition_category_id'] == $category['id']) ? 'selected' : '' ?>><?= $category['category'] ?></option>
             <?php endforeach; ?>
             </select>
-            <div class="invalid-feedback">Please select a competition category</div>
+            <div class="invalid-feedback">Please select a participation category</div>
             <div id="category-description" class="form-text mt-2 fst-italic d-none"></div>
         </div>
 
@@ -37,7 +37,7 @@
             <select class="form-select" id="entry-subtheme" required>
             <option value="">Select subtheme</option>
             <?php foreach ($subthemes as $subtheme): ?>
-            <option value="<?= $subtheme['id'] ?>" data-description="<?= htmlspecialchars($subtheme['desc'] ?? '') ?>"><?= $subtheme['name'] ?></option>
+            <option value="<?= $subtheme['id'] ?>" data-description="<?= htmlspecialchars($subtheme['desc'] ?? '') ?>" <?= (isset($currentParticipant['subtheme_id']) && $currentParticipant['subtheme_id'] == $subtheme['id']) ? 'selected' : '' ?>><?= $subtheme['name'] ?></option>
             <?php endforeach; ?>
             </select>
             <div class="invalid-feedback">Please select a subtheme</div>
@@ -86,7 +86,19 @@
                     <textarea class="form-control essay-textarea" id="entry-essay-<?= $index ?>"
                         name="essays[<?= $essay['id'] ?>]" rows="4"
                         placeholder="Your answer" required
-                        data-max-words="<?= $essay['max_word_count'] ?>"></textarea>
+                        data-max-words="<?= $essay['max_word_count'] ?>"><?php 
+                        // Look for this essay in the participant's submitted essays
+                        $essayContent = '';
+                        if (isset($submittedEssays) && !empty($submittedEssays)) {
+                            foreach ($submittedEssays as $submittedEssay) {
+                                if ($submittedEssay['program_essay_id'] == $essay['id']) {
+                                    $essayContent = $submittedEssay['answer'];
+                                    break;
+                                }
+                            }
+                        }
+                        echo $essayContent;
+                        ?></textarea>
                     <small class="word-count-info text-muted">
                         <span class="current-word-count">0</span>/<span class="max-word-count"><?= $essay['max_word_count'] ?></span> words
                     </small>
@@ -96,7 +108,15 @@
         <?php endif; ?>
     </div>
     <div class="d-flex align-items-start gap-3 mt-4">
-        <button type="button" class="btn btn-success btn-label right ms-auto nexttab" data-nexttab="steparrow-misc-tab"><i class="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>Next Step</button>
+        <button type="button" class="btn btn-success btn-label right ms-auto nexttab" id="save-entry-btn">
+            <span class="d-flex align-items-center">
+                <span>Save and Continue</span>
+                <i class="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
+                <span class="loading-spinner d-none ms-2">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                </span>
+            </span>
+        </button>
     </div>
 </div>
 <!-- end tab pane -->
@@ -135,7 +155,7 @@
                 // If pasting would exceed the word limit, prevent it
                 if (wordCount > maxWordCount) {
                     e.preventDefault();
-                    alert('Pasting this text would exceed the maximum word count of ' + maxWordCount + ' words.');
+                    YBBAlerts.error('Pasting this text would exceed the maximum word count of ' + maxWordCount + ' words.');
                 }
             });
 
@@ -179,6 +199,62 @@
                     }
                 }
             }
+        });
+
+        // Add save button functionality
+        const saveButton = document.getElementById('save-entry-btn');
+
+        saveButton.addEventListener('click', function() {
+            // Show loading state
+            const spinner = this.querySelector('.loading-spinner');
+            spinner.classList.remove('d-none');
+            this.disabled = true;
+
+            // Collect essay data
+            let essays = {};
+            document.querySelectorAll('.essay-textarea').forEach(function(textarea) {
+                const essayId = textarea.name.match(/\[(\d+)\]/)[1];
+                essays[essayId] = textarea.value;
+            });
+
+            // Collect form data
+            const formData = {
+                competition_category: document.getElementById('entry-competition-category').value,
+                subtheme: document.getElementById('entry-subtheme').value,
+                essays: essays
+            };
+
+            // Send API request
+            fetch('/submission/updateEntry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message with callback to navigate to next tab
+                        YBBAlerts.success('Data Saved', 'Your entry information has been saved successfully.', function() {
+                            document.getElementById('steparrow-misc-tab').click();
+                        });
+                    } else {
+                        // Show error with details from the server
+                        const errorMessage = data.message || 'There was a problem saving your entry information.';
+                        YBBAlerts.error('Error Saving Data', errorMessage);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving data:', error);
+                    YBBAlerts.error('Error Saving Data', 'An unexpected error occurred while saving your data. Please try again later.');
+                })
+                .finally(() => {
+                    // Hide loading state
+                    spinner.classList.add('d-none');
+                    this.disabled = false;
+                });
         });
     });
 </script>

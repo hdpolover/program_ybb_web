@@ -80,6 +80,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // submission
     $routes->get('submission', 'dashboard\Submission::index');
     $routes->get('submission/edit', 'dashboard\Submission::edit');
+    // New submission form handling endpoints
+    $routes->post('submission/updatePersonal/(:num)', 'dashboard\Submission::updatePersonal/$1');
+    $routes->post('submission/updateProfessional', 'dashboard\Submission::updateProfessional');
+    $routes->post('submission/updateEntry', 'dashboard\Submission::updateEntry');
+    $routes->post('submission/updateMisc', 'dashboard\Submission::updateMisc');
+    $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');
 
     // payment
     $routes->get('payments', 'dashboard\Payments::index');
@@ -89,7 +95,16 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // documents
     $routes->get('documents/program', 'dashboard\Documents::index');
+    $routes->get('documents/program/details/(:num)', 'dashboard\Documents::details/$1');
     $routes->get('documents/certificates', 'dashboard\Documents::certificates');
+
+    // ambassadors
+    $routes->group('ambassadors', function ($routes) {
+        $routes->get('sign-in', 'Auth::ambassadorSignIn', ['filter' => 'noauth']);
+        $routes->get('referrals', 'dashboard\Ambassadors::referrals');
+        $routes->get('resources', 'dashboard\Ambassadors::resources');
+        $routes->post('generate-link', 'dashboard\Ambassadors::generateReferralLink');
+    });
 });
 
 $routes->get('sitemap.xml', 'Sitemap::index');

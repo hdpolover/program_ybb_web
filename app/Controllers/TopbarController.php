@@ -37,12 +37,27 @@ class TopbarController extends BaseController
     {
         // Store the program ID in the session
         session()->set('current_program_id', $programId);
+        
+        // Clear cached participant data to force refresh
+        session()->remove('current_participant');
 
         // If the request is AJAX, return JSON response
         if ($this->request->isAJAX()) {
+            // Process topbar data to get updated information
+            $updatedData = $this->processTopbarData();
+            
+            // Ensure current participant is updated in session
+            if ($updatedData['currentParticipant'] !== null) {
+                session()->set('current_participant', $updatedData['currentParticipant']);
+                session()->set('current_participant_id', $updatedData['currentParticipant']['id'] ?? null);
+            }
+            
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Program changed successfully'
+                'message' => 'Program changed successfully',
+                'currentProgram' => $updatedData['currentProgram'],
+                'currentProgramId' => $updatedData['currentProgramId'],
+                'currentParticipant' => $updatedData['currentParticipant']
             ]);
         }
 

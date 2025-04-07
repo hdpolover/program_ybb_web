@@ -6,6 +6,9 @@
 
     <?= $this->include('partials/head-css') ?>
 
+    <!-- Sweet Alert css-->
+    <link href="/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+
     <!-- QuillJS CSS -->
     <link href="<?= base_url('assets/libs/quill/quill.core.css') ?>" rel="stylesheet" type="text/css" />
     <link href="<?= base_url('assets/libs/quill/quill.snow.css') ?>" rel="stylesheet" type="text/css" />
@@ -133,6 +136,12 @@
                 placeholder: 'Describe your relevant professional experiences...'
             });
 
+            // Set existing content if available
+            if (typeof <?= json_encode($currentParticipant['experiences'] ?? '') ?> === 'string' && <?= json_encode($currentParticipant['experiences'] ?? '') ?>.length > 0) {
+                experiencesQuill.root.innerHTML = <?= json_encode($currentParticipant['experiences'] ?? '') ?>;
+                document.getElementById('professional-experiences').value = experiencesQuill.root.innerHTML;
+            }
+
             // Achievements editor
             var achievementsQuill = new Quill('#professional-achievements-editor', {
                 theme: 'snow',
@@ -161,6 +170,12 @@
                 placeholder: 'List your key achievements and recognitions...'
             });
 
+            // Set existing content if available
+            if (typeof <?= json_encode($currentParticipant['achievements'] ?? '') ?> === 'string' && <?= json_encode($currentParticipant['achievements'] ?? '') ?>.length > 0) {
+                achievementsQuill.root.innerHTML = <?= json_encode($currentParticipant['achievements'] ?? '') ?>;
+                document.getElementById('professional-achievements').value = achievementsQuill.root.innerHTML;
+            }
+
             // Store content in hidden inputs when form is submitted
             document.querySelector('form').addEventListener('submit', function() {
                 document.getElementById('professional-experiences').value = experiencesQuill.root.innerHTML;
@@ -179,6 +194,13 @@
 
     <!-- input flag init -->
     <script src="/assets/js/custom/submission-flag-input.init.js"></script>
+
+    <!-- Sweet Alerts js -->
+    <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+
+
+    <!-- Sweet alert init js-->
+    <script src="/assets/js/pages/sweetalerts.init.js"></script>
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>

@@ -471,4 +471,83 @@ class Auth extends BaseController
             return redirect()->to('sign-in')->with('error', 'Failed to verify email. Please try again.');
         }
     }
+
+    /**
+     * Ambassador sign in page
+     */
+    public function ambassadorSignIn()
+    {
+
+        $data = [
+            'title' => 'Ambassador Sign In',
+        ];
+
+        return $this->render('auth/sign-in-amb', $data);
+    }
+
+    /**
+     * Authorize ambassador login
+     */
+    public function authorizeAmbassador()
+    {
+        $email = trim($this->request->getPost('email'));
+        $referralCode = trim($this->request->getPost('referral_code'));
+
+        if (!$email || !$referralCode) {
+            return redirect()->back()->with('error', 'Please provide both email, referral code');
+        }
+
+        try {
+            // Prepare the data for ambassador authentication
+            $authData = [
+                'email' => $email,
+                'ref_code' => $referralCode,
+            ];
+
+            // Add web_url if available
+            if (isset($this->currentUrl)) {
+                $authData['web_url'] = $this->currentUrl;
+            }
+
+            // Log request for debugging
+            log_message('debug', 'Ambassador auth request data: ' . json_encode($authData));
+
+            // Use the same endpoint with different type
+            $response = $this->makePostRequest('/auth/sign-in', $authData, [], false, false);
+
+            log_message('debug', 'API Ambassador Authentication Response: ' . json_encode($response));
+
+            if (!$response) {
+                return redirect()->back()->with('error', 'Authentication failed. Please check your credentials.');
+            }
+
+            if (isset($response['token']) && $response['token']) {
+                $session = session();
+
+                // Store token
+                $session->set('jwt_token', $response['token']);
+
+                // Store user data
+                if (isset($response['user'])) {
+                    $session->set('user', $response['user']);
+                    $session->set('isAmbassador', true);
+                }
+
+                $session->set('isLoggedIn', true);
+                log_message('info', 'Ambassador logged in successfully: ' . $response['user']['id']);
+
+                return redirect()->to('/ambassador/dashboard');
+            } else {
+                // Handle specific error messages from the API
+                $errorMessage = isset($response['message'])
+                    ? $response['message']
+                    : 'Invalid credentials or server error';
+
+                return redirect()->back()->with('error', $errorMessage);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Ambassador authentication error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Authentication failed. Please try again later.');
+        }
+    }
 }

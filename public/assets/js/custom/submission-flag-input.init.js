@@ -141,4 +141,65 @@ File: flag input Js File
             });
         };
     });
+    
+    // Helper functions to get nationality and phone numbers
+    window.YBBFlagInput = {
+        getNationality: function() {
+            // Get nationality from flag-input in elements with data-option-flag-img-name attribute
+            const nationalityInput = document.querySelector('[data-option-flag-img-name] .flag-input');
+            return nationalityInput ? nationalityInput.value : '';
+        },
+        
+        getPhoneNumber: function(inputId) {
+            // Get phone number by input ID
+            return this.getFullPhoneInput(inputId).full;
+        },
+        
+        getFullPhoneInput: function(inputId) {
+            // Get phone data by input ID
+            const inputElement = document.getElementById(inputId);
+            if (!inputElement) return { code: '', number: '', full: '' };
+            
+            const container = inputElement.closest('[data-input-flag]');
+            if (!container) return { code: '', number: '', full: '' };
+            
+            const codeElement = container.querySelector('.country-codeno');
+            // Keep the full country code including '+'
+            const code = codeElement ? codeElement.textContent.trim() : '';
+            const number = inputElement.value.trim();
+            
+            console.log(`YBBFlagInput: Phone data for ${inputId}:`, { code, number, full: code + number });
+            
+            return {
+                code: code,
+                number: number,
+                full: code + number
+            };
+        },
+        
+        // Get all phone inputs on the page
+        getAllPhoneInputs: function() {
+            const result = {};
+            const phoneContainers = document.querySelectorAll('[data-input-flag]');
+            
+            phoneContainers.forEach(container => {
+                const input = container.querySelector('.flag-input');
+                if (input && input.id) {
+                    const codeElement = container.querySelector('.country-codeno');
+                    // Keep the full country code including '+'
+                    const code = codeElement ? codeElement.textContent.trim() : '';
+                    const number = input.value.trim();
+                    
+                    result[input.id] = {
+                        code: code,
+                        number: number,
+                        full: code + number
+                    };
+                }
+            });
+            
+            console.log("YBBFlagInput: All phone inputs:", result);
+            return result;
+        }
+    };
 })();

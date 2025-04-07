@@ -102,13 +102,6 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>
-    
-    <!-- Loading Manager js (handles loading overlays) -->
-    <script src="/assets/js/loading-manager.js"></script>
-    
-    <?php if(isset($footer_scripts)): ?>
-        <?= $footer_scripts ?>
-    <?php endif; ?>
 </body>
 
 </html>

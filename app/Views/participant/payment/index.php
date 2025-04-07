@@ -262,7 +262,7 @@
                                                                         </a>
                                                                     <?php endif; ?>
 
-                                                                    <div class="dropdown">
+                                                                    <!-- <div class="dropdown">
                                                                         <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="actionDropdown<?= $programPayment['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
                                                                             <i class="ri-more-2-fill align-middle"></i>
                                                                         </button>
@@ -274,7 +274,7 @@
                                                                                     <i class="ri-history-line align-middle me-1"></i> Payment History
                                                                                 </a></li>
                                                                         </ul>
-                                                                    </div>
+                                                                    </div> -->
                                                                 </div>
                                                             </td>
 

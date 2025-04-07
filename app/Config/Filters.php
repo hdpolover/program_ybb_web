@@ -10,6 +10,7 @@ use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\SecureHeaders;
 
 use App\Filters\Auth;
+use App\Filters\Cors;
 use App\Filters\Maintenance;
 use App\Filters\NoAuth;
 
@@ -28,6 +29,7 @@ class Filters extends BaseConfig
         'auth'          => Auth::class,
         'noauth'        => NoAuth::class,
         'maintenance'   => Maintenance::class,
+        'cors'          => Cors::class,
     ];
 
     /**
@@ -40,6 +42,7 @@ class Filters extends BaseConfig
             // 'csrf',
             // 'invalidchars',
             'maintenance',
+            'cors',
         ],
         'after' => [
             'toolbar',

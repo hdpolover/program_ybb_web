@@ -16,3 +16,25 @@
     </div>
 </div>
 <!-- end tab pane -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const submitBtn = document.querySelector('#steparrow-preview button[type="submit"]');
+
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                YBBAlerts.warning('Confirm Submission', 'Are you sure you want to submit your application?', function() {
+                    // Show loading state
+                    const spinner = submitBtn.querySelector('.loading-spinner');
+                    spinner.classList.remove('d-none');
+                    submitBtn.disabled = true;
+
+                    // Submit the form
+                    document.querySelector('form').submit();
+                });
+            });
+        }
+    });
+</script>

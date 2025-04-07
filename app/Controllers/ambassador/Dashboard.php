@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\dashboard;
+namespace App\Controllers\ambassador;
 use App\Controllers\BaseController;
 
 class Dashboard extends BaseController
@@ -8,9 +8,12 @@ class Dashboard extends BaseController
     public function index()
     {
         $data = [
-            'title' => 'Dashboard'
+            'title' => 'Dashboard',
         ];
 
-        return $this->render('participant/dashboard/index', $data);
+        // 
+
+        return $this->render('ambassador/dashboard', $data);
     }
+
 }

@@ -40,31 +40,64 @@
                                             <table class="table table-striped table-nowrap align-middle mb-0">
                                                 <thead class="table-light">
                                                     <tr>
+                                                        <th scope="col">#</th>
                                                         <th scope="col">Document Name</th>
-                                                        <th scope="col">Category</th>
-                                                        <th scope="col">Date Added</th>
-                                                        <th scope="col">File Size</th>
+                                                        <th scope="col">Type</th>
                                                         <th scope="col">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <?php if(isset($documents) && !empty($documents)): ?>
-                                                        <?php foreach($documents as $document): ?>
+                                                    <?php 
+                                                    $hasVisibleDocs = false;
+                                                    $counter = 1;
+                                                    if(isset($documents) && !empty($documents)): 
+                                                        foreach($documents as $document): 
+                                                            // Only show documents with visibility = 1
+                                                            if($document['visibility'] == 1):
+                                                                $hasVisibleDocs = true;
+                                                    ?>
                                                         <tr>
-                                                            <td><?= $document->name ?? 'Program Document' ?></td>
-                                                            <td><?= $document->category ?? 'General' ?></td>
-                                                            <td><?= isset($document->created_at) ? date('M d, Y', strtotime($document->created_at)) : date('M d, Y') ?></td>
-                                                            <td><?= $document->file_size ?? '1.2 MB' ?></td>
+                                                            <td><?= $counter++ ?></td>
+                                                            <td><?= $document['name'] ?? 'Program Document' ?></td>
                                                             <td>
-                                                                <a href="<?= $document->file_url ?? 'javascript:void(0);' ?>" class="btn btn-sm btn-primary">
-                                                                    <i class="ri-download-2-line align-middle me-1"></i> Download
-                                                                </a>
+                                                                <?php if($document['is_upload']): ?>
+                                                                    <span class="badge bg-info">Upload Required</span>
+                                                                <?php elseif($document['is_generated']): ?>
+                                                                    <span class="badge bg-primary">Can Generate</span>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-secondary">Reference</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td>
+                                                                <div class="btn-group">
+                                                                    <?php if(!empty($document['file_url'])): ?>
+                                                                        <a href="<?= $document['file_url'] ?>" class="btn btn-sm btn-primary" download>
+                                                                            <i class="ri-download-2-line align-middle"></i>
+                                                                        </a>
+                                                                    <?php elseif(!empty($document['drive_url'])): ?>
+                                                                        <a href="<?= $document['drive_url'] ?>" class="btn btn-sm btn-info" target="_blank">
+                                                                            <i class="ri-external-link-line align-middle"></i>
+                                                                        </a>
+                                                                    <?php else: ?>
+                                                                        <button class="btn btn-sm btn-secondary" disabled>
+                                                                            <i class="ri-close-circle-line align-middle"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <a href="<?= base_url('documents/program/details/' . ($document['id'] ?? '')) ?>" class="btn btn-sm btn-info" title="View Details">
+                                                                        <i class="ri-eye-line align-middle"></i>
+                                                                    </a>
+                                                                </div>
                                                             </td>
                                                         </tr>
-                                                        <?php endforeach; ?>
-                                                    <?php else: ?>
+                                                    <?php 
+                                                            endif;
+                                                        endforeach;
+                                                    endif; 
+                                                    
+                                                    if(!$hasVisibleDocs):
+                                                    ?>
                                                         <tr>
-                                                            <td colspan="5" class="text-center">
+                                                            <td colspan="4" class="text-center">
                                                                 <div class="py-4">
                                                                     <div class="avatar-sm mx-auto mb-3">
                                                                         <div class="avatar-title bg-light text-secondary rounded-circle fs-24">
@@ -81,6 +114,7 @@
                                             </table>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
