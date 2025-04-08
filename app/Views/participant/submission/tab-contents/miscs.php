@@ -7,13 +7,13 @@
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Knowledge Source</h6>
-                                <p class="text-muted"><?= !empty($currentParticipant['knowledge_source']) ? $currentParticipant['knowledge_source'] : '-' ?></p>
+                                <p class="text-muted"><?= !empty($participant['knowledge_source']) ? $participant['knowledge_source'] : '-' ?></p>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Source Account Name</h6>
-                                <p class="text-muted"><?= !empty($currentParticipant['source_account_name']) ? $currentParticipant['source_account_name'] : '-' ?></p>
+                                <p class="text-muted"><?= !empty($participant['source_account_name']) ? $participant['source_account_name'] : '-' ?></p>
                             </div>
                         </div>
                     </div>
@@ -21,13 +21,13 @@
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Twibbon Link</h6>
-                                <p class="text-muted"><?= !empty($currentParticipant['twibbon_link']) ? $currentParticipant['twibbon_link'] : '-' ?></p>
+                                <p class="text-muted"><?= !empty($participant['twibbon_link']) ? $participant['twibbon_link'] : '-' ?></p>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Requirement Link</h6>
-                                <p class="text-muted"><?= !empty($currentParticipant['requirement_link']) ? $currentParticipant['requirement_link'] : '-' ?></p>
+                                <p class="text-muted"><?= !empty($participant['requirement_link']) ? $participant['requirement_link'] : '-' ?></p>
                             </div>
                         </div>
                     </div>

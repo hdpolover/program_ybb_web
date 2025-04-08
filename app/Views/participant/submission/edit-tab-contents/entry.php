@@ -1,67 +1,57 @@
 <div class="tab-pane fade" id="steparrow-entry" role="tabpanel" aria-labelledby="steparrow-entry-tab">
     <div>
-
         <div class="mb-3">
             <label class="form-label" for="entry-competition-category">Participation Category</label>
             <select class="form-select" id="entry-competition-category" required>
-            <option value="">Select participation category</option>
-            <?php foreach ($competitionCategories as $category): ?>
-                <option value="<?= $category['id'] ?>" data-description="<?= htmlspecialchars($category['desc'] ?? '') ?>" <?= (isset($currentParticipant['competition_category_id']) && $currentParticipant['competition_category_id'] == $category['id']) ? 'selected' : '' ?>><?= $category['category'] ?></option>
-            <?php endforeach; ?>
+                <option value="">Select participation category</option> <?php foreach ($competitionCategories as $category): ?>
+                    <option value="<?= $category['id'] ?>"
+                        data-description="<?= htmlspecialchars($category['desc'] ?? '') ?>"
+                        <?= (isset($participantCompetitionCategory) && $participantCompetitionCategory['competition_category_id'] == $category['id']) ? 'selected' : '' ?>>
+                        <?= $category['category'] ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
             <div class="invalid-feedback">Please select a participation category</div>
-            <div id="category-description" class="form-text mt-2 fst-italic d-none"></div>
-        </div>
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-            const categorySelect = document.getElementById('entry-competition-category');
-            const descriptionDiv = document.getElementById('category-description');
-            
-            categorySelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const description = selectedOption.getAttribute('data-description');
-                
-                if (description && description.trim() !== '') {
-                descriptionDiv.textContent = description;
-                descriptionDiv.classList.remove('d-none');
-                } else {
-                descriptionDiv.classList.add('d-none');
+            <div id="category-description" class="form-text mt-2 fst-italic <?= (isset($participantCompetitionCategory) && !empty($participantCompetitionCategory['competition_category_id']) && isset($category['desc']) && !empty($category['desc'])) ? '' : 'd-none' ?>">
+                <?php
+                if (isset($participantCompetitionCategory) && !empty($participantCompetitionCategory['competition_category_id'])) {
+                    foreach ($competitionCategories as $category) {
+                        if ($category['id'] == $participantCompetitionCategory['competition_category_id'] && isset($category['desc'])) {
+                            echo htmlspecialchars($category['desc']);
+                            break;
+                        }
+                    }
                 }
-            });
-            });
-        </script>
+                ?>
+            </div>
+        </div>
 
         <div class="mb-3">
             <label class="form-label" for="entry-subtheme">Program Subthemes</label>
             <select class="form-select" id="entry-subtheme" required>
-            <option value="">Select subtheme</option>
-            <?php foreach ($subthemes as $subtheme): ?>
-            <option value="<?= $subtheme['id'] ?>" data-description="<?= htmlspecialchars($subtheme['desc'] ?? '') ?>" <?= (isset($currentParticipant['subtheme_id']) && $currentParticipant['subtheme_id'] == $subtheme['id']) ? 'selected' : '' ?>><?= $subtheme['name'] ?></option>
-            <?php endforeach; ?>
+                <option value="">Select subtheme</option>
+                <?php foreach ($programSubthemes as $subtheme): ?>
+                    <option value="<?= $subtheme['id'] ?>"
+                        data-description="<?= htmlspecialchars($subtheme['desc'] ?? '') ?>"
+                        <?= (isset($participantSubtheme) && $participantSubtheme['program_subtheme_id'] == $subtheme['id']) ? 'selected' : '' ?>>
+                        <?= $subtheme['name'] ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
             <div class="invalid-feedback">Please select a subtheme</div>
-            <div id="subtheme-description" class="form-text mt-2 fst-italic d-none"></div>
+            <div id="subtheme-description" class="form-text mt-2 fst-italic <?= (isset($participantSubtheme) && !empty($participantSubtheme['program_subtheme_id']) && isset($subtheme['desc']) && !empty($subtheme['desc'])) ? '' : 'd-none' ?>">
+                <?php
+                if (isset($participantSubtheme) && !empty($participantSubtheme['program_subtheme_id'])) {
+                    foreach ($programSubthemes as $subtheme) {
+                        if ($subtheme['id'] == $participantSubtheme['program_subtheme_id'] && isset($subtheme['desc'])) {
+                            echo htmlspecialchars($subtheme['desc']);
+                            break;
+                        }
+                    }
+                }
+                ?>
+            </div>
         </div>
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-            const subthemeSelect = document.getElementById('entry-subtheme');
-            const descriptionDiv = document.getElementById('subtheme-description');
-            
-            subthemeSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const description = selectedOption.getAttribute('data-description');
-            
-            if (description && description.trim() !== '') {
-            descriptionDiv.textContent = description;
-            descriptionDiv.classList.remove('d-none');
-            } else {
-            descriptionDiv.classList.add('d-none');
-            }
-            });
-            });
-        </script>
 
         <div class="hstack gap-2 mb-3">
             <div class="flex-grow-1">
@@ -79,18 +69,19 @@
             </div>
         <?php endif; ?>
 
-        <?php if (isset($essays) && !empty($essays)): ?>
-            <?php foreach ($essays as $index => $essay): ?>
+        <?php if (isset($programEssays) && !empty($programEssays)): ?>
+            <?php foreach ($programEssays as $index => $essay): ?>
                 <div class="mb-3">
                     <label class="form-label" for="entry-essay-<?= $index ?>"><?= $essay['questions'] . ' (max ' . $essay['max_word_count'] . ' words)' ?></label>
                     <textarea class="form-control essay-textarea" id="entry-essay-<?= $index ?>"
-                        name="essays[<?= $essay['id'] ?>]" rows="4"
+                        name="programEssays[<?= $essay['id'] ?>]" rows="4"
                         placeholder="Your answer" required
-                        data-max-words="<?= $essay['max_word_count'] ?>"><?php 
+                        data-max-words="<?= $essay['max_word_count'] ?>">
+                        <?php
                         // Look for this essay in the participant's submitted essays
                         $essayContent = '';
-                        if (isset($submittedEssays) && !empty($submittedEssays)) {
-                            foreach ($submittedEssays as $submittedEssay) {
+                        if (isset($participantEssays) && !empty($participantEssays)) {
+                            foreach ($participantEssays as $submittedEssay) {
                                 if ($submittedEssay['program_essay_id'] == $essay['id']) {
                                     $essayContent = $submittedEssay['answer'];
                                     break;
@@ -123,6 +114,36 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const categorySelect = document.getElementById('entry-competition-category');
+        const descriptionDiv = document.getElementById('category-description');
+
+        categorySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const description = selectedOption.getAttribute('data-description');
+
+            if (description && description.trim() !== '') {
+                descriptionDiv.textContent = description;
+                descriptionDiv.classList.remove('d-none');
+            } else {
+                descriptionDiv.classList.add('d-none');
+            }
+        });
+
+        const subthemeSelect = document.getElementById('entry-subtheme');
+        const subthemeDescriptionDiv = document.getElementById('subtheme-description');
+
+        subthemeSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const description = selectedOption.getAttribute('data-description');
+
+            if (description && description.trim() !== '') {
+                subthemeDescriptionDiv.textContent = description;
+                subthemeDescriptionDiv.classList.remove('d-none');
+            } else {
+                subthemeDescriptionDiv.classList.add('d-none');
+            }
+        });
+
         const essayTextareas = document.querySelectorAll('.essay-textarea');
 
         essayTextareas.forEach(function(textarea) {
@@ -211,21 +232,27 @@
             this.disabled = true;
 
             // Collect essay data
-            let essays = {};
+            let programEssays = [];
             document.querySelectorAll('.essay-textarea').forEach(function(textarea) {
                 const essayId = textarea.name.match(/\[(\d+)\]/)[1];
-                essays[essayId] = textarea.value;
+                programEssays.push({
+                    id: essayId,
+                    answer: textarea.value
+                });
             });
 
             // Collect form data
             const formData = {
-                competition_category: document.getElementById('entry-competition-category').value,
-                subtheme: document.getElementById('entry-subtheme').value,
-                essays: essays
+                programEssays: programEssays,
+                competition_category_id: document.getElementById('entry-competition-category').value,
+                program_subtheme_id: document.getElementById('entry-subtheme').value
             };
 
+            // Get participant ID from session
+            const participant_id = <?= $currentParticipant['id'] ?>;
+
             // Send API request
-            fetch('/submission/updateEntry', {
+            fetch(`/submission/entry/${participant_id}/update`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

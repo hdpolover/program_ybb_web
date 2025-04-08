@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Payment History Widget
  * Displays a timeline of payment actions/history
@@ -27,7 +28,9 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="historyFilterDropdown">
                     <li><button class="dropdown-item filter-history active" data-filter="all">All Activities</button></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li><button class="dropdown-item filter-history" data-filter="created">Created</button></li>
                     <li><button class="dropdown-item filter-history" data-filter="pending">Pending</button></li>
                     <li><button class="dropdown-item filter-history" data-filter="paid">Completed</button></li>
@@ -38,194 +41,183 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
         </div>
         <div class="card-body">
             <div class="acitivity-timeline py-2">
-                <?php 
+                <?php
                 $sortedPayments = $payments;
                 // Sort by created_at in descending order to show newest first
                 usort($sortedPayments, function ($a, $b) {
                     return strtotime($b['created_at'] ?? 0) - strtotime($a['created_at'] ?? 0);
                 });
-                
-                foreach ($sortedPayments as $index => $history): 
+
+                foreach ($sortedPayments as $index => $history):
                     $statusInfo = getPaymentStatusInfo($history['status'] ?? 0);
                     $historyId = isset($history['id']) ? $history['id'] : rand(1000, 9999);
                     $status_class = strtolower($statusInfo['statusText']);
                 ?>
 
-                <!-- Payment History Item -->
-                <div class="acitivity-item d-flex mb-4 payment-history-item <?= $status_class ?>-item">
-                    <!-- Timeline Connector Line -->
-                    <?php if ($index < count($sortedPayments) - 1): ?>
-                        <div class="timeline-line" style="position: absolute; height: 100%; border-left: 1px dashed #ccc; left: 20px; top: 40px;"></div>
-                    <?php endif; ?>
-                    
-                    <div class="flex-shrink-0">
-                        <div class="avatar-sm acitivity-avatar">
-                            <div class="avatar-title rounded-circle bg-<?= $statusInfo['iconClass'] ?>-subtle text-<?= $statusInfo['iconClass'] ?> border border-<?= $statusInfo['iconClass'] ?>">
-                                <i class="<?= $statusInfo['icon'] ?> fs-20"></i>
+                    <!-- Payment History Item -->
+                    <div class="acitivity-item d-flex mb-4 payment-history-item <?= $status_class ?>-item">
+                        <!-- Timeline Connector Line -->
+                        <?php if ($index < count($sortedPayments) - 1): ?>
+                            <div class="timeline-line" style="position: absolute; height: 100%; border-left: 1px dashed #ccc; left: 20px; top: 40px;"></div>
+                        <?php endif; ?>
+
+                        <div class="flex-shrink-0">
+                            <div class="avatar-sm acitivity-avatar">
+                                <div class="avatar-title rounded-circle bg-<?= $statusInfo['iconClass'] ?>-subtle text-<?= $statusInfo['iconClass'] ?> border border-<?= $statusInfo['iconClass'] ?>">
+                                    <i class="<?= $statusInfo['icon'] ?> fs-20"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="mb-1 fs-16">
-                            <?= $statusInfo['actionText'] ?>
-                            <span class="badge bg-<?= $statusInfo['statusBadge'] ?>-subtle text-<?= $statusInfo['statusBadge'] ?> ms-1">
-                                <?= $statusInfo['statusText'] ?>
-                            </span>
-                        </h6>
-                        
-                        <div class="d-flex align-items-center mb-2">
-                            <?php if (!empty($history['payment_method_id']) && isset($paymentMethods)): ?>
-                                <span class="badge bg-light text-dark me-2">
-                                    <i class="ri-bank-card-line me-1"></i>
-                                    <?= esc(getPaymentMethodName($history['payment_method_id'], $paymentMethods)) ?>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1 fs-16">
+                                <?= $statusInfo['actionText'] ?>
+                                <span class="badge bg-<?= $statusInfo['statusBadge'] ?>-subtle text-<?= $statusInfo['statusBadge'] ?> ms-1">
+                                    <?= $statusInfo['statusText'] ?>
                                 </span>
-                            <?php endif; ?>
-                            
-                            <?php if (isset($history['amount'])): ?>
+                            </h6>
+
+                            <div class="d-flex align-items-center mb-2">
+                                <?php if (!empty($history['payment_method_id']) && isset($paymentMethods)): ?>
+                                    <span class="badge bg-light text-dark me-2">
+                                        <i class="ri-bank-card-line me-1"></i>
+                                        <?= esc(getPaymentMethodName($history['payment_method_id'], $paymentMethods)) ?>
+                                    </span>
+                                <?php endif; ?>
+
                                 <span class="badge bg-light text-dark me-2">
                                     <i class="ri-money-dollar-circle-line me-1"></i>
-                                    <?= formatCurrency($history['amount'], $history['currency'] ?? 'USD') ?>
+                                    <?= (isset($history['usd_amount'])) ? formatCurrency($history['usd_amount'], 'USD') : formatCurrency($programPayment['usd_amount'], 'USD') ?>
                                 </span>
-                            <?php endif; ?>
-                            
-                            <span class="text-muted small">
-                                <i class="ri-time-line me-1"></i>
-                                <?= isset($history['created_at']) && !empty($history['created_at']) 
-                                    ? date('M d, Y | h:i A', strtotime($history['created_at'])) 
-                                    : date('M d, Y | h:i A') ?>
-                            </span>
-                        </div>
-                        
-                        <?php if (!empty($history['notes'])): ?>
-                            <div class="alert alert-info-subtle p-2 mb-2">
-                                <i class="ri-information-line me-1"></i> <?= $history['notes'] ?>
+
+                                <span class="text-muted small">
+                                    <i class="ri-time-line me-1"></i>
+                                    <?= isset($history['created_at']) && !empty($history['created_at'])
+                                        ? date('M d, Y | h:i A', strtotime($history['created_at']))
+                                        : date('M d, Y | h:i A') ?>
+                                </span>
                             </div>
-                        <?php endif; ?>
-                        
-                        <!-- View Details Button -->
-                        <button class="btn btn-sm btn-outline-secondary mt-1" type="button" data-bs-toggle="collapse" 
-                                data-bs-target="#paymentDetails<?= $historyId ?>" 
-                                aria-expanded="false" aria-controls="paymentDetails<?= $historyId ?>">
-                            <i class="ri-information-line align-middle"></i> View Details
-                        </button>
-                        
-                        <!-- Download Receipt Button (if payment is successful) -->
-                        <?php if (($history['status'] ?? 0) == 2): ?>
-                            <a href="<?= site_url('participant/programPayment/receipt/' . (isset($history['id']) ? $history['id'] : '')); ?>" 
-                               class="btn btn-sm btn-outline-success mt-1 ms-1">
-                                <i class="ri-file-download-line align-middle"></i> Receipt
-                            </a>
-                        <?php endif; ?>
-                        
-                        <!-- Collapsible Payment Details -->
-                        <div class="collapse mt-3" id="paymentDetails<?= $historyId ?>">
-                            <div class="card border">
-                                <div class="card-header bg-light">
-                                    <h6 class="card-title mb-0">Transaction Details</h6>
+
+                            <?php if (!empty($history['notes'])): ?>
+                                <div class="alert alert-info-subtle p-2 mb-2">
+                                    <i class="ri-information-line me-1"></i> <?= $history['notes'] ?>
                                 </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="border rounded p-3">
-                                                <h6 class="fs-14 mb-2">Transaction Information</h6>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-borderless mb-0">
-                                                        <tbody>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Transaction ID:</small></th>
-                                                                <td class="text-muted"><?= isset($history['transaction_id']) ? $history['transaction_id'] : ($historyId . '-' . substr(md5(time()), 0, 8)) ?></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Program Payment ID:</small></th>
-                                                                <td class="text-muted"><?= isset($history['program_payment_id']) ? $history['program_payment_id'] : '-' ?></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Payment Method:</small></th>
-                                                                <td class="text-muted"><?= getPaymentMethodName($history['payment_method_id'] ?? null, $paymentMethods ?? []) ?></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Date:</small></th>
-                                                                <td class="text-muted"><?= isset($history['created_at']) ? date('F d, Y h:i A', strtotime($history['created_at'])) : 'N/A' ?></td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="border rounded p-3">
-                                                <h6 class="fs-14 mb-2">Payment Information</h6>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-borderless mb-0">
-                                                        <tbody>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Account Name:</small></th>
-                                                                <td class="text-muted"><?= isset($history['account_name']) ? $history['account_name'] : 'Registration Fee (Early Bid)' ?></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Amount:</small></th>
-                                                                <td class="text-muted fw-medium">
-                                                                    <?= isset($history['amount']) ? formatCurrency($history['amount'], $history['currency'] ?? 'USD') : '-' ?>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Currency:</small></th>
-                                                                <td class="text-muted"><?= isset($history['currency']) && $history['currency'] ? strtoupper($history['currency']) : 'USD' ?></td>
-                                                            </tr>
-                                                            <tr>
-                                                                <th scope="row" class="ps-0"><small>Source:</small></th>
-                                                                <td class="text-muted"><?= isset($history['source_name']) ? $history['source_name'] : '-' ?></td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <?php if(isset($history['proof_url']) && $history['proof_url']): ?>
-                                        <div class="col-12">
-                                            <div class="border rounded p-3">
-                                                <h6 class="fs-14 mb-3">Payment Proof</h6>
-                                                <div class="text-center">
-                                                    <img src="<?= $history['proof_url'] ?>" class="img-fluid rounded" style="max-height: 250px;" alt="Payment Proof">
-                                                    <div class="mt-3">
-                                                        <a href="<?= $history['proof_url'] ?>" target="_blank" class="btn btn-sm btn-primary">
-                                                            <i class="ri-eye-line align-middle me-1"></i> View Full Image
-                                                        </a>
-                                                        <a href="<?= $history['proof_url'] ?>" download class="btn btn-sm btn-info ms-1">
-                                                            <i class="ri-download-line align-middle me-1"></i> Download
-                                                        </a>
+                            <?php endif; ?>
+
+                            <!-- View Details Button -->
+                            <button class="btn btn-sm btn-outline-secondary mt-1" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#paymentDetails<?= $historyId ?>"
+                                aria-expanded="false" aria-controls="paymentDetails<?= $historyId ?>">
+                                <i class="ri-information-line align-middle"></i> View Details
+                            </button>
+
+                            <!-- Download Receipt Button (if payment is successful) -->
+                            <?php if (($history['status'] ?? 0) == 2): ?>
+                                <a href="<?= site_url('payments/' . (isset($history['id']) ? $history['id'] : '') . '/receipt'); ?>"
+                                    class="btn btn-sm btn-outline-success mt-1 ms-1">
+                                    <i class="ri-file-download-line align-middle"></i> Receipt
+                                </a>
+                            <?php endif; ?>
+
+                            <!-- Collapsible Payment Details -->
+                            <div class="collapse mt-3" id="paymentDetails<?= $historyId ?>">
+                                <div class="card border">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0">Transaction Details</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-12">
+                                                <div class="border rounded p-3">
+                                                    <h6 class="fs-14 mb-2">Transaction Information</h6>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-borderless mb-0">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <th scope="row" class="ps-0"><small>Transaction Code:</small></th>
+                                                                    <td class="text-muted"><?= isset($history['transaction_code']) ? $history['transaction_code'] : ($historyId) ?></td>
+                                                                </tr>
+
+                                                                <tr>
+                                                                    <th scope="row" class="ps-0"><small>Payment Method:</small></th>
+                                                                    <td class="text-muted"><?= getPaymentMethodName($history['payment_method_id'] ?? null, $paymentMethods ?? []) ?></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th scope="row" class="ps-0"><small>Date:</small></th>
+                                                                    <td class="text-muted"><?= isset($history['created_at']) ? date('F d, Y h:i A', strtotime($history['created_at'])) : 'N/A' ?></td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if(isset($history['status']) && $history['status'] == 4 && isset($history['rejection_reason'])): ?>
-                                        <div class="col-12">
-                                            <div class="alert alert-danger mb-0">
-                                                <h6 class="alert-heading fs-14 mb-1">Rejection Reason:</h6>
-                                                <p class="mb-0"><?= $history['rejection_reason'] ?></p>
+                                        <div class="row g-3 mt-2">
+                                            <div class="col-md-12">
+                                                <div class="border rounded p-3">
+                                                    <h6 class="fs-14 mb-2">Payment Information</h6>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-borderless mb-0">
+                                                            <tbody>
+                                                                <?php if (isset($history['account_name'])): ?>
+                                                                    <tr>
+                                                                        <th scope="row" class="ps-0"><small>Account Name:</small></th>
+                                                                        <td class="text-muted"><?= $history['account_name']  ?></td>
+                                                                    </tr>
+                                                                <?php endif; ?>
+                                                                <tr>
+                                                                    <th scope="row" class="ps-0"><small>Amount:</small></th>
+                                                                    <td class="text-muted fw-medium">
+                                                                        <?= isset($history['usd_amount']) ? formatCurrency($history['usd_amount'], 'USD') : formatCurrency($programPayment['usd_amount'], 'USD') ?>
+                                                                    </td>
+                                                                </tr>
+
+                                                                <tr>
+                                                                    <th scope="row" class="ps-0"><small>Source:</small></th>
+                                                                    <td class="text-muted"><?= isset($history['source_name']) ? $history['source_name'] : '-' ?></td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
                                             </div>
+
+                                            <?php if (isset($history['proof_url']) && $history['proof_url']): ?>
+                                                <div class="col-12">
+                                                    <div class="border rounded p-3">
+                                                        <h6 class="fs-14 mb-3">Payment Proof</h6>
+                                                        <div class="text-center">
+                                                            <img src="<?= $history['proof_url'] ?>" class="img-fluid rounded" style="max-height: 250px;" alt="Payment Proof">
+                                                            <div class="mt-3">
+                                                                <a href="<?= $history['proof_url'] ?>" target="_blank" class="btn btn-sm btn-primary">
+                                                                    <i class="ri-eye-line align-middle me-1"></i> View Full Image
+                                                                </a>
+                                                                <a href="<?= $history['proof_url'] ?>" download class="btn btn-sm btn-info ms-1">
+                                                                    <i class="ri-download-line align-middle me-1"></i> Download
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if (isset($history['status']) && $history['status'] == 4 && isset($history['rejection_reason'])): ?>
+                                                <div class="col-12">
+                                                    <div class="alert alert-danger mb-0">
+                                                        <h6 class="alert-heading fs-14 mb-1">Rejection Reason:</h6>
+                                                        <p class="mb-0"><?= $history['rejection_reason'] ?></p>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                        <?php endif; ?>
                                     </div>
-                                </div>
-                                <div class="card-footer bg-light">
-                                    <div class="text-end">
-                                        <button type="button" class="btn btn-sm btn-soft-secondary" 
-                                                data-bs-toggle="collapse" data-bs-target="#paymentDetails<?= $historyId ?>">
-                                            <i class="ri-close-line align-middle me-1"></i> Close
-                                        </button>
-                                    </div>
+
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 <?php endforeach; ?>
             </div>
-            
+
             <!-- Empty State for Filtered Results -->
             <div id="empty-filter-state" class="text-center py-5 d-none">
                 <div class="avatar-md mx-auto mb-3">
@@ -241,57 +233,57 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
             </div>
         </div>
     </div>
-    
+
     <!-- Add JavaScript for filtering -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const filterButtons = document.querySelectorAll('.filter-history');
-        const historyItems = document.querySelectorAll('.payment-history-item');
-        const emptyState = document.getElementById('empty-filter-state');
-        const resetFilter = document.getElementById('reset-filter');
-        
-        filterButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const filter = this.dataset.filter;
-                let visibleCount = 0;
-                
-                // Remove active class from all buttons
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                historyItems.forEach(item => {
-                    if (filter === 'all' || item.classList.contains(filter + '-item')) {
-                        item.style.display = 'flex';
-                        visibleCount++;
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterButtons = document.querySelectorAll('.filter-history');
+            const historyItems = document.querySelectorAll('.payment-history-item');
+            const emptyState = document.getElementById('empty-filter-state');
+            const resetFilter = document.getElementById('reset-filter');
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    let visibleCount = 0;
+
+                    // Remove active class from all buttons
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    historyItems.forEach(item => {
+                        if (filter === 'all' || item.classList.contains(filter + '-item')) {
+                            item.style.display = 'flex';
+                            visibleCount++;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    // Show/hide empty state
+                    if (visibleCount === 0) {
+                        emptyState.classList.remove('d-none');
                     } else {
-                        item.style.display = 'none';
+                        emptyState.classList.add('d-none');
                     }
                 });
-                
-                // Show/hide empty state
-                if (visibleCount === 0) {
-                    emptyState.classList.remove('d-none');
-                } else {
+            });
+
+            // Reset filter button
+            if (resetFilter) {
+                resetFilter.addEventListener('click', function() {
+                    historyItems.forEach(item => item.style.display = 'flex');
                     emptyState.classList.add('d-none');
-                }
-            });
-        });
-        
-        // Reset filter button
-        if (resetFilter) {
-            resetFilter.addEventListener('click', function() {
-                historyItems.forEach(item => item.style.display = 'flex');
-                emptyState.classList.add('d-none');
-                filterButtons.forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.dataset.filter === 'all') {
-                        btn.classList.add('active');
-                    }
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.dataset.filter === 'all') {
+                            btn.classList.add('active');
+                        }
+                    });
                 });
-            });
-        }
-    });
+            }
+        });
     </script>
 <?php else: ?>
     <!-- Empty State when no payment history -->
@@ -304,9 +296,9 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
             </div>
             <h5>No Payment History Found</h5>
             <p class="text-muted mb-4">There is no payment history available for this payment yet.</p>
-            <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '')); ?>" class="btn btn-success">
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#makePaymentModal">
                 <i class="ri-bank-card-line align-middle me-1"></i> Make First Payment
-            </a>
+            </button>
         </div>
     </div>
 <?php endif; ?>

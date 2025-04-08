@@ -103,53 +103,57 @@
 
 
 <script>
-    document.getElementById('validate-ambassador-code').addEventListener('click', function() {
-        const code = document.getElementById('ambassador-code').value.trim();
-        const feedbackEl = document.getElementById('ambassador-code-feedback');
-
-        if (code === '') {
-            feedbackEl.innerHTML = 'Code is empty. This field is optional.';
-            feedbackEl.className = 'form-text mt-1 text-muted';
-            return;
-        }
-
-        // Show loading state
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';
-        this.disabled = true;
-
-        // AJAX request to check code validity
-        fetch('/submission/validateAmbassadorCode', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    code: code
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.valid) {
-                    feedbackEl.innerHTML = 'Valid ambassador code!';
-                    feedbackEl.className = 'form-text mt-1 text-success';
-                } else {
-                    feedbackEl.innerHTML = 'Invalid ambassador code. Please check and try again.';
-                    feedbackEl.className = 'form-text mt-1 text-danger';
-                }
-            })
-            .catch(error => {
-                feedbackEl.innerHTML = 'Error validating code. Please try again later.';
-                feedbackEl.className = 'form-text mt-1 text-danger';
-            })
-            .finally(() => {
-                // Reset button state
-                this.innerHTML = '<i class="ri-check-line me-1"></i>Validate';
-                this.disabled = false;
-            });
-    });
-    
     document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('validate-ambassador-code').addEventListener('click', function() {
+            const code = document.getElementById('ambassador-code').value.trim();
+            const feedbackEl = document.getElementById('ambassador-code-feedback');
+
+            if (code === '') {
+                feedbackEl.innerHTML = 'Code is empty. This field is optional.';
+                feedbackEl.className = 'form-text mt-1 text-muted';
+                return;
+            }
+
+            // Show loading state
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';
+            this.disabled = true;
+
+            // get program id
+            const program_id = <?= $currentProgram['id'] ?>;
+
+            // AJAX request to check code validity
+            fetch('/submission/validateAmbassadorCode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        program_id: program_id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_valid) {
+                        feedbackEl.innerHTML = 'Valid ambassador code!';
+                        feedbackEl.className = 'form-text mt-1 text-success';
+                    } else {
+                        feedbackEl.innerHTML = 'Invalid ambassador code. Please check and try again.';
+                        feedbackEl.className = 'form-text mt-1 text-danger';
+                    }
+                })
+                .catch(error => {
+                    feedbackEl.innerHTML = 'Error validating code. Please try again later.';
+                    feedbackEl.className = 'form-text mt-1 text-danger';
+                })
+                .finally(() => {
+                    // Reset button state
+                    this.innerHTML = '<i class="ri-check-line me-1"></i>Validate';
+                    this.disabled = false;
+                });
+        });
+
         const saveButton = document.getElementById('save-misc-btn');
 
         saveButton.addEventListener('click', function() {
@@ -160,16 +164,21 @@
 
             // Collect form data
             const formData = {
-                instagram_account: document.getElementById('instagram-account').value,
-                knowledge_source: document.getElementById('knowledge-source').value,
-                source_account_name: document.getElementById('source-account-name').value,
-                twibbon_link: document.getElementById('twibbon-link').value,
-                requirement_link: document.getElementById('requirement-link').value,
-                ambassador_code: document.getElementById('ambassador-code').value
+                participant: {
+                    instagram_account: document.getElementById('instagram-account').value,
+                    knowledge_source: document.getElementById('knowledge-source').value,
+                    source_account_name: document.getElementById('source-account-name').value,
+                    twibbon_link: document.getElementById('twibbon-link').value,
+                    requirement_link: document.getElementById('requirement-link').value,
+                },
+                ambassador_id: document.getElementById('ambassador-code').value
             };
 
+            // Get participant ID from session
+            const participant_id = <?= $participant['id'] ?>;
+
             // Send API request
-            fetch('/submission/updateMisc', {
+            fetch(`/submission/miscs/${participant_id}/update`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

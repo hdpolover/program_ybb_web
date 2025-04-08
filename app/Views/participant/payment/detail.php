@@ -61,7 +61,7 @@
                                         <div class="col-lg-4">
                                             <!-- Payment Actions Widget -->
                                             <?php include_once(__DIR__ . '/widgets/payment_actions.php'); ?>
-                                            
+
                                             <!-- Related Payments Widget -->
                                             <?php include_once(__DIR__ . '/widgets/related_payments.php'); ?>
                                         </div>
@@ -76,6 +76,11 @@
             </div>
             <!-- End Page-content -->
 
+            <!-- Include Payment Modal Widget -->
+            <?php echo view('participant/payment/widgets/payment_modal', [
+                'paymentMethods' => $paymentMethods ?? null
+            ]); ?>
+
             <?= $this->include('partials/footer') ?>
         </div>
         <!-- end main content-->
@@ -86,7 +91,7 @@
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>
-    
+
     <!-- Payment Details Page js -->
     <script src="/assets/js/pages/payment-details.js"></script>
 </body>

@@ -128,7 +128,7 @@ class Payments extends BaseController
     {
         $programPayments = $this->makeGetRequest('/program-payments/program/' . session()->get('current_program_id'), [], false);
         $participantPayments = $this->makeGetRequest('/payments/participant/' . session()->get('current_participant_id'), [], false);
-
+        $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);
 
         // Safety check - if not participant payments, skip loop
         if (empty($participantPayments)) {
@@ -145,6 +145,7 @@ class Payments extends BaseController
             'title' => 'Payments',
             'programPayments' => $programPayments,
             'participantPayments' => $participantPayments,
+            'paymentMethods' => $paymentMethods,
         ];
 
         return $this->render('participant/payment/index', $data);

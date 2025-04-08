@@ -6,12 +6,12 @@
                     <label class="form-label" for="professional-education">Education Level</label>
                     <select class="form-select" id="professional-education" required>
                         <option value="">Select education level</option>
-                        <option value="high-school" <?= (isset($currentParticipant['education_level']) && $currentParticipant['education_level'] == 'high-school') ? 'selected' : '' ?>>High School</option>
-                        <option value="diploma" <?= (isset($currentParticipant['education_level']) && $currentParticipant['education_level'] == 'diploma') ? 'selected' : '' ?>>Diploma</option>
-                        <option value="bachelors" <?= (isset($currentParticipant['education_level']) && $currentParticipant['education_level'] == 'bachelors') ? 'selected' : '' ?>>Bachelor's Degree</option>
-                        <option value="masters" <?= (isset($currentParticipant['education_level']) && $currentParticipant['education_level'] == 'masters') ? 'selected' : '' ?>>Master's Degree</option>
-                        <option value="doctorate" <?= (isset($currentParticipant['education_level']) && $currentParticipant['education_level'] == 'doctorate') ? 'selected' : '' ?>>Doctorate</option>
-                        <option value="other" <?= (isset($currentParticipant['education_level']) && $currentParticipant['education_level'] == 'other') ? 'selected' : '' ?>>Other</option>
+                        <option value="high-school" <?= (isset($participant['education_level']) && $participant['education_level'] == 'high-school') ? 'selected' : '' ?>>High School</option>
+                        <option value="diploma" <?= (isset($participant['education_level']) && $participant['education_level'] == 'diploma') ? 'selected' : '' ?>>Diploma</option>
+                        <option value="bachelors" <?= (isset($participant['education_level']) && $participant['education_level'] == 'bachelors') ? 'selected' : '' ?>>Bachelor's Degree</option>
+                        <option value="masters" <?= (isset($participant['education_level']) && $participant['education_level'] == 'masters') ? 'selected' : '' ?>>Master's Degree</option>
+                        <option value="doctorate" <?= (isset($participant['education_level']) && $participant['education_level'] == 'doctorate') ? 'selected' : '' ?>>Doctorate</option>
+                        <option value="other" <?= (isset($participant['education_level']) && $participant['education_level'] == 'other') ? 'selected' : '' ?>>Other</option>
                     </select>
                     <div class="invalid-feedback">Please select your education level</div>
                 </div>
@@ -19,28 +19,28 @@
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="professional-institution">Institution</label>
-                    <input type="text" class="form-control" id="professional-institution" placeholder="Enter your institution name" value="<?= $currentParticipant['institution'] ?? '' ?>" required>
+                    <input type="text" class="form-control" id="professional-institution" placeholder="Enter your institution name" value="<?= $participant['institution'] ?? '' ?>" required>
                     <div class="invalid-feedback">Please enter your institution name</div>
                 </div>
             </div>
         </div>
         <div class="mb-3">
             <label class="form-label" for="professional-major">Major/Field of Study</label>
-            <input type="text" class="form-control" id="professional-major" placeholder="Enter your major or field of study" value="<?= $currentParticipant['major'] ?? '' ?>" required>
+            <input type="text" class="form-control" id="professional-major" placeholder="Enter your major or field of study" value="<?= $participant['major'] ?? '' ?>" required>
             <div class="invalid-feedback">Please enter your major</div>
         </div>
         <div class="row">
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="professional-occupation">Occupation</label>
-                    <input type="text" class="form-control" id="professional-occupation" placeholder="Enter your occupation" value="<?= $currentParticipant['occupation'] ?? '' ?>" required>
+                    <input type="text" class="form-control" id="professional-occupation" placeholder="Enter your occupation" value="<?= $participant['occupation'] ?? '' ?>" required>
                     <div class="invalid-feedback">Please enter your occupation</div>
                 </div>
             </div>
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="professional-organization">Organization</label>
-                    <input type="text" class="form-control" id="professional-organization" placeholder="Enter organization name" value="<?= $currentParticipant['organizations'] ?? '' ?>" required>
+                    <input type="text" class="form-control" id="professional-organization" placeholder="Enter organization name" value="<?= $participant['organizations'] ?? '' ?>" required>
                     <div class="invalid-feedback">Please enter your organization</div>
                 </div>
             </div>
@@ -59,7 +59,7 @@
         </div>
         <div class="mb-3">
             <label for="professional-resume-link" class="form-label">CV/Resume Link (Optional)</label>
-            <input type="url" class="form-control" id="professional-resume-link" placeholder="https://example.com/my-resume" value="<?= $currentParticipant['resume_url'] ?? '' ?>">
+            <input type="url" class="form-control" id="professional-resume-link" placeholder="https://example.com/my-resume" value="<?= $participant['resume_url'] ?? '' ?>">
             <div class="form-text">Please enter a public URL to your CV/Resume that is accessible to anyone. Make sure privacy settings allow public access (Google Drive, Dropbox, OneDrive, etc.).</div>
         </div>
     </div>
@@ -79,28 +79,121 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Professional Experiences editor
+        var experiencesQuill = new Quill('#professional-experiences-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{
+                        'header': [1, 2, 3, 4, 5, 6, false]
+                    }],
+                    [{
+                        'color': []
+                    }, {
+                        'background': []
+                    }],
+                    [{
+                        'list': 'ordered'
+                    }, {
+                        'list': 'bullet'
+                    }],
+                    [{
+                        'align': []
+                    }],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Describe your relevant professional experiences...'
+        });
+
+        // Set existing content if available
+        if (typeof <?= json_encode($participant['experiences'] ?? '') ?> === 'string' && <?= json_encode($participant['experiences'] ?? '') ?>.length > 0) {
+            experiencesQuill.root.innerHTML = <?= json_encode($participant['experiences'] ?? '') ?>;
+            document.getElementById('professional-experiences').value = experiencesQuill.root.innerHTML;
+        }
+
+        // Achievements editor
+        var achievementsQuill = new Quill('#professional-achievements-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{
+                        'header': [1, 2, 3, 4, 5, 6, false]
+                    }],
+                    [{
+                        'color': []
+                    }, {
+                        'background': []
+                    }],
+                    [{
+                        'list': 'ordered'
+                    }, {
+                        'list': 'bullet'
+                    }],
+                    [{
+                        'align': []
+                    }],
+                    ['clean']
+                ]
+            },
+            placeholder: 'List your key achievements and recognitions...'
+        });
+
+        // Set existing content if available
+        if (typeof <?= json_encode($participant['achievements'] ?? '') ?> === 'string' && <?= json_encode($participant['achievements'] ?? '') ?>.length > 0) {
+            achievementsQuill.root.innerHTML = <?= json_encode($participant['achievements'] ?? '') ?>;
+            document.getElementById('professional-achievements').value = achievementsQuill.root.innerHTML;
+        }
+
+        // Store content in hidden inputs when form is submitted
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('professional-experiences').value = experiencesQuill.root.innerHTML;
+            document.getElementById('professional-achievements').value = achievementsQuill.root.innerHTML;
+        });
+
+        // Also update the hidden inputs when moving to next steps
+        document.querySelectorAll('.nexttab').forEach(function(button) {
+            button.addEventListener('click', function() {
+                document.getElementById('professional-experiences').value = experiencesQuill.root.innerHTML;
+                document.getElementById('professional-achievements').value = achievementsQuill.root.innerHTML;
+            });
+        });
+
         const saveButton = document.getElementById('save-professional-btn');
 
         saveButton.addEventListener('click', function() {
             // Show loading state
             const spinner = this.querySelector('.loading-spinner');
             spinner.classList.remove('d-none');
-            this.disabled = true;
+            this.disabled = true; // Get content from Quill editors and update hidden inputs
+            const experiencesEditor = document.querySelector('#professional-experiences-editor .ql-editor');
+            const achievementsEditor = document.querySelector('#professional-achievements-editor .ql-editor');
+
+            // Update hidden inputs with Quill content
+            document.getElementById('professional-experiences').value = experiencesEditor.innerHTML;
+            document.getElementById('professional-achievements').value = achievementsEditor.innerHTML;
 
             // Collect form data
             const formData = {
-                education: document.getElementById('professional-education').value,
-                institution: document.getElementById('professional-institution').value,
-                major: document.getElementById('professional-major').value,
-                occupation: document.getElementById('professional-occupation').value,
-                organization: document.getElementById('professional-organization').value,
-                experiences: document.getElementById('professional-experiences').value,
-                achievements: document.getElementById('professional-achievements').value,
-                resume_link: document.getElementById('professional-resume-link').value
+                participant: {
+                    education_level: document.getElementById('professional-education').value,
+                    institution: document.getElementById('professional-institution').value,
+                    major: document.getElementById('professional-major').value,
+                    occupation: document.getElementById('professional-occupation').value,
+                    organizations: document.getElementById('professional-organization').value,
+                    experiences: document.getElementById('professional-experiences').value,
+                    achievements: document.getElementById('professional-achievements').value,
+                    resume_url: document.getElementById('professional-resume-link').value
+                }
             };
 
-            // Send API request
-            fetch('/submission/updateProfessional', {
+            // Get participant ID from session
+            const participant_id = <?= $participant['id'] ?>;
+
+            // Send the data to the server
+            fetch(`/submission/professional/${participant_id}/update`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

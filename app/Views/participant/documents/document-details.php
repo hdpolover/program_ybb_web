@@ -42,7 +42,6 @@
                                         <div class="col-lg-8">
                                             <!-- Document Details Section -->
                                             <div class="mb-4">
-                                                <h5 class="text-primary mb-3">Document Information</h5>
                                                 
                                                 <?php if (!empty($document['desc'])): ?>
                                                     <div class="mb-4">

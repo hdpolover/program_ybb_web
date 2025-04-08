@@ -149,6 +149,20 @@ File: flag input Js File
             const nationalityInput = document.querySelector('[data-option-flag-img-name] .flag-input');
             return nationalityInput ? nationalityInput.value : '';
         },
+
+        getNationalityCode: function() {
+            // Get country code from flag-input in elements with data-option-flag-img-name attribute
+            const nationalityInput = document.querySelector('[data-option-flag-img-name] .flag-input');
+            const countryCodeElement = document.querySelector('[data-option-flag-img-name] .countrylist-codeno');
+            return countryCodeElement ? countryCodeElement.textContent.trim() : '';
+        },
+
+        getNationalityFlag: function() {
+            // Get country flag name asset from flag-input in elements with data-option-flag-img-name attribute
+            const nationalityInput = document.querySelector('[data-option-flag-img-name] .flag-input');
+            const countryFlagElement = document.querySelector('[data-option-flag-img-name] .options-flagimg');
+            return countryFlagElement ? countryFlagElement.src : '';
+        },
         
         getPhoneNumber: function(inputId) {
             // Get phone number by input ID

@@ -81,10 +81,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('submission', 'dashboard\Submission::index');
     $routes->get('submission/edit', 'dashboard\Submission::edit');
     // New submission form handling endpoints
-    $routes->post('submission/updatePersonal/(:num)', 'dashboard\Submission::updatePersonal/$1');
-    $routes->post('submission/updateProfessional', 'dashboard\Submission::updateProfessional');
-    $routes->post('submission/updateEntry', 'dashboard\Submission::updateEntry');
-    $routes->post('submission/updateMisc', 'dashboard\Submission::updateMisc');
+    $routes->post('submission/personal/(:num)/update', 'dashboard\Submission::updatePersonal/$1');
+    $routes->post('submission/professional/(:num)/update', 'dashboard\Submission::updateProfessional/$1');
+    $routes->post('submission/entry/(:num)/update', 'dashboard\Submission::updateEntry/$1');
+    $routes->post('submission/miscs/(:num)/update', 'dashboard\Submission::updateMisc/$1');
     $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');
 
     // payment

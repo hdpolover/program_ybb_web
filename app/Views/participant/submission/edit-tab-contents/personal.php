@@ -5,7 +5,7 @@
                 <!-- Use a div with background image to ensure the default image always appears -->
                 <div id="profile-image-container"
                     class="rounded-circle avatar-xxl img-thumbnail"
-                    style="width: 120px; height: 120px; background-image: url('<?= !empty($currentParticipant['picture_url']) ? $currentParticipant['picture_url'] : 'https://storage.ybbfoundation.com/general-files/default.jpg' ?>'); background-size: cover; background-position: center;">
+                    style="width: 120px; height: 120px; background-image: url('<?= !empty($participant['picture_url']) ? $participant['picture_url'] : 'https://storage.ybbfoundation.com/general-files/default.jpg' ?>'); background-size: cover; background-position: center;">
                 </div>
                 <div class="avatar-xs p-0 rounded-circle profile-photo-edit">
                     <input id="profile-img-file-input" type="file" class="profile-img-file-input" accept="image/*">
@@ -22,7 +22,7 @@
             <div class="col-lg-12">
                 <div class="mb-3">
                     <label class="form-label" for="personal-fullname">Full Name</label>
-                    <input type="text" class="form-control" id="personal-fullname" placeholder="Enter your full name" value="<?= $currentParticipant['full_name'] ?? '' ?>" required>
+                    <input type="text" class="form-control" id="personal-fullname" placeholder="Enter your full name" value="<?= $participant['full_name'] ?? '' ?>" required>
                     <div class="invalid-feedback">Please enter your full name</div>
                 </div>
             </div>
@@ -31,7 +31,7 @@
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="personal-birthdate">Birth Date</label>
-                    <input type="date" class="form-control" id="personal-birthdate" value="<?= isset($currentParticipant['birthdate']) ? date('Y-m-d', strtotime($currentParticipant['birthdate'])) : '' ?>" required>
+                    <input type="date" class="form-control" id="personal-birthdate" value="<?= isset($participant['birthdate']) ? date('Y-m-d', strtotime($participant['birthdate'])) : '' ?>" required>
                     <div class="invalid-feedback">Please enter your birth date</div>
                 </div>
             </div>
@@ -40,22 +40,21 @@
                     <label class="form-label" for="personal-gender">Gender</label>
                     <select class="form-select" id="personal-gender" required>
                         <option value="">Select gender</option>
-                        <option value="male" <?= (isset($currentParticipant['gender']) && $currentParticipant['gender'] == 'male') ? 'selected' : '' ?>>Male</option>
-                        <option value="female" <?= (isset($currentParticipant['gender']) && $currentParticipant['gender'] == 'female') ? 'selected' : '' ?>>Female</option>
-                        <option value="other" <?= (isset($currentParticipant['gender']) && $currentParticipant['gender'] == 'other') ? 'selected' : '' ?>>Other</option>
-                        <option value="prefer-not" <?= (isset($currentParticipant['gender']) && $currentParticipant['gender'] == 'prefer-not') ? 'selected' : '' ?>>Prefer not to say</option>
+                        <option value="male" <?= (isset($participant['gender']) && $participant['gender'] == 'male') ? 'selected' : '' ?>>Male</option>
+                        <option value="female" <?= (isset($participant['gender']) && $participant['gender'] == 'female') ? 'selected' : '' ?>>Female</option>
+                        <option value="other" <?= (isset($participant['gender']) && $participant['gender'] == 'other') ? 'selected' : '' ?>>Other</option>
+                        <option value="prefer-not" <?= (isset($participant['gender']) && $participant['gender'] == 'prefer-not') ? 'selected' : '' ?>>Prefer not to say</option>
                     </select>
                     <div class="invalid-feedback">Please select your gender</div>
                 </div>
             </div>
         </div>
-
         <div class="row">
             <div class="col-lg-12">
                 <div class="mb-3">
                     <label class="form-label" for="personal-nationality">Nationality</label>
                     <div data-input-flag data-option-flag-img-name>
-                        <input type="text" class="form-control rounded-end flag-input" readonly placeholder="Select nationality" data-bs-toggle="dropdown" aria-expanded="false" value="<?= $currentParticipant['nationality'] ?? '' ?>" />
+                        <input type="text" class="form-control rounded-end flag-input" readonly placeholder="Select nationality" data-bs-toggle="dropdown" aria-expanded="false" value="<?= $participant['nationality'] ?? '' ?>" />
                         <div class="dropdown-menu w-100">
                             <div class="p-2 px-3 pt-1 searchlist-input">
                                 <input type="text" class="form-control form-control-sm border search-countryList" placeholder="Search country..." />
@@ -68,16 +67,14 @@
         </div>
         <div class="row">
             <div class="col-lg-6">
-                <div class="mb-3">
-                    <label class="form-label" for="personal-origin-address">Origin Address</label>
-                    <textarea class="form-control" id="personal-origin-address" rows="3" placeholder="Enter your origin address" required><?= $currentParticipant['origin_address'] ?? '' ?></textarea>
+                <div class="mb-3"> <label class="form-label" for="personal-origin-address">Origin Address</label>
+                    <textarea class="form-control" id="personal-origin-address" rows="3" placeholder="Enter your origin address" required><?php echo htmlspecialchars($participant['origin_address'] ?? ''); ?></textarea>
                     <div class="invalid-feedback">Please enter your origin address</div>
                 </div>
             </div>
             <div class="col-lg-6">
-                <div class="mb-3">
-                    <label class="form-label" for="personal-current-address">Current Address</label>
-                    <textarea class="form-control" id="personal-current-address" rows="3" placeholder="Enter your current address" required><?= $currentParticipant['current_address'] ?? '' ?></textarea>
+                <div class="mb-3"> <label class="form-label" for="personal-current-address">Current Address</label>
+                    <textarea class="form-control" id="personal-current-address" rows="3" placeholder="Enter your current address" required><?php echo htmlspecialchars($participant['current_address'] ?? ''); ?></textarea>
                     <div class="invalid-feedback">Please enter your current address</div>
                 </div>
             </div>
@@ -87,8 +84,8 @@
                 <div class="mb-3">
                     <label class="form-label" for="personal-phone">Personal Phone Number</label>
                     <div class="input-group" data-input-flag>
-                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="/assets/images/flags/us.svg" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno">+ 1</span></button>
-                        <input type="text" class="form-control rounded-end flag-input" id="personal-phone" value="<?= $currentParticipant['phone_number'] ?? '' ?>" placeholder="Enter phone number" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');" required />
+                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="<?= base_url('/assets/images/flags/' . ($participant['phone_flag'] ?? 'us') . '.svg') ?>" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno">+ <?= $participant['phone_code'] ?? '1' ?></span></button>
+                        <input type="text" class="form-control rounded-end flag-input" id="personal-phone" value="<?= $participant['phone_number'] ?? '' ?>" placeholder="Enter phone number" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');" required />
                         <div class="dropdown-menu w-100">
                             <div class="p-2 px-3 pt-1 searchlist-input">
                                 <input type="text" class="form-control form-control-sm border search-countryList" placeholder="Search country name or code..." />
@@ -105,8 +102,8 @@
                 <div class="mb-3">
                     <label class="form-label" for="emergency-phone">Emergency Contact Phone Number</label>
                     <div class="input-group" data-input-flag>
-                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="/assets/images/flags/us.svg" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno">+ 1</span></button>
-                        <input type="text" class="form-control rounded-end flag-input" id="emergency-phone" value="<?= $currentParticipant['emergency_account'] ?? '' ?>" placeholder="Enter phone number" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');" required />
+                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="<?= base_url('/assets/images/flags/' . ($participant['emergency_phone_flag'] ?? 'us') . '.svg') ?>" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno"><?= $participant['emergency_country_code'] ?? '1' ?></span></button>
+                        <input type="text" class="form-control rounded-end flag-input" id="emergency-phone" value="<?= $participant['emergency_account'] ?? '' ?>" placeholder="Enter phone number" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');" required />
                         <div class="dropdown-menu w-100">
                             <div class="p-2 px-3 pt-1 searchlist-input">
                                 <input type="text" class="form-control form-control-sm border search-countryList" placeholder="Search country name or code..." />
@@ -122,13 +119,13 @@
                     <label class="form-label" for="emergency-relationship">Relationship</label>
                     <select class="form-select" id="emergency-relationship" required>
                         <option value="">Select relationship</option>
-                        <option value="parent" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'parent') ? 'selected' : '' ?>>Parent</option>
-                        <option value="spouse" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'spouse') ? 'selected' : '' ?>>Spouse</option>
-                        <option value="sibling" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'sibling') ? 'selected' : '' ?>>Sibling</option>
-                        <option value="relative" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'relative') ? 'selected' : '' ?>>Other Relative</option>
-                        <option value="friend" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'friend') ? 'selected' : '' ?>>Friend</option>
-                        <option value="guardian" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'guardian') ? 'selected' : '' ?>>Legal Guardian</option>
-                        <option value="other" <?= (isset($currentParticipant['contact_relation']) && $currentParticipant['contact_relation'] == 'other') ? 'selected' : '' ?>>Other</option>
+                        <option value="parent" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'parent') ? 'selected' : '' ?>>Parent</option>
+                        <option value="spouse" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'spouse') ? 'selected' : '' ?>>Spouse</option>
+                        <option value="sibling" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'sibling') ? 'selected' : '' ?>>Sibling</option>
+                        <option value="relative" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'relative') ? 'selected' : '' ?>>Other Relative</option>
+                        <option value="friend" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'friend') ? 'selected' : '' ?>>Friend</option>
+                        <option value="guardian" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'guardian') ? 'selected' : '' ?>>Legal Guardian</option>
+                        <option value="other" <?= (isset($participant['contact_relation']) && $participant['contact_relation'] == 'other') ? 'selected' : '' ?>>Other</option>
                     </select>
                     <div class="invalid-feedback">Please select relationship</div>
                 </div>
@@ -140,13 +137,13 @@
                     <label class="form-label" for="personal-tshirt">T-Shirt Size</label>
                     <select class="form-select" id="personal-tshirt" required>
                         <option value="">Select T-Shirt size</option>
-                        <option value="xs" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 'xs') ? 'selected' : '' ?>>XS</option>
-                        <option value="s" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 's') ? 'selected' : '' ?>>S</option>
-                        <option value="m" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 'm') ? 'selected' : '' ?>>M</option>
-                        <option value="l" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 'l') ? 'selected' : '' ?>>L</option>
-                        <option value="xl" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 'xl') ? 'selected' : '' ?>>XL</option>
-                        <option value="xxl" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 'xxl') ? 'selected' : '' ?>>XXL</option>
-                        <option value="xxxl" <?= (isset($currentParticipant['tshirt_size']) && $currentParticipant['tshirt_size'] == 'xxxl') ? 'selected' : '' ?>>XXXL</option>
+                        <option value="xs" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xs') ? 'selected' : '' ?>>XS</option>
+                        <option value="s" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 's') ? 'selected' : '' ?>>S</option>
+                        <option value="m" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'm') ? 'selected' : '' ?>>M</option>
+                        <option value="l" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'l') ? 'selected' : '' ?>>L</option>
+                        <option value="xl" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xl') ? 'selected' : '' ?>>XL</option>
+                        <option value="xxl" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xxl') ? 'selected' : '' ?>>XXL</option>
+                        <option value="xxxl" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xxxl') ? 'selected' : '' ?>>XXXL</option>
                     </select>
                     <div class="invalid-feedback">Please select your T-Shirt size</div>
                 </div>
@@ -154,7 +151,7 @@
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="personal-disease">Disease History</label>
-                    <textarea class="form-control" id="personal-disease" rows="3" placeholder="Enter your disease history or write 'None' if not applicable" required><?= $currentParticipant['diseases_history'] ?? '' ?></textarea>
+                    <textarea class="form-control" id="personal-disease" rows="3" placeholder="Enter your disease history or write 'None' if not applicable" required><?php echo htmlspecialchars($participant['disease_history'] ?? ''); ?></textarea>
                     <div class="invalid-feedback">Please provide disease history information</div>
                 </div>
             </div>
@@ -268,12 +265,16 @@
                     full_name: document.getElementById('personal-fullname').value,
                     birthdate: document.getElementById('personal-birthdate').value,
                     gender: document.getElementById('personal-gender').value,
-                    nationality: window.YBBFlagInput.getNationality(),
+                    nationality: getNationalityData('personal-nationality').name,
+                    nationality_code: getNationalityData('personal-nationality').code,
+                    nationality_flag: getNationalityData('personal-nationality').flag,
                     origin_address: document.getElementById('personal-origin-address').value,
                     current_address: document.getElementById('personal-current-address').value,
                     country_code: getPhoneInputData('personal-phone').code,
                     phone_number: getPhoneInputData('personal-phone').number,
+                    phone_flag: getPhoneInputData('personal-phone').flag,
                     emergency_country_code: getPhoneInputData('emergency-phone').code,
+                    emergency_phone_flag: getPhoneInputData('emergency-phone').flag,
                     emergency_account: getPhoneInputData('emergency-phone').number,
                     contact_relation: document.getElementById('emergency-relationship').value,
                     tshirt_size: document.getElementById('personal-tshirt').value,
@@ -283,34 +284,102 @@
                 }
             };
 
+            function getNationalityData(inputId) {
+                const inputElement = document.getElementById(inputId);
+                if (!inputElement) return {
+                    code: '',
+                    name: '',
+                    flag: '',
+                };
+
+                const container = inputElement.closest('[data-input-flag]');
+                if (!container) return {
+                    code: '',
+                    name: '',
+                    flag: ''
+                };
+
+                // Get the name (always present)
+                const name = inputElement.value.trim();
+
+                // Safely extract code - might not be present on initial load
+                let code = '';
+                const codeElement = container.querySelector('.country-codeno');
+                if (codeElement) {
+                    code = codeElement.textContent.trim().replace(/[^\d]/g, ''); // Remove non-digits
+                }
+
+                // Safely extract flag - might not be present on initial load
+                let flag = '';
+                const flagImg = container.querySelector('.country-flagimg');
+                if (flagImg && flagImg.src) {
+                    flag = flagImg.src.split('/').pop().split('.')[0]; // Get the flag image name
+                }
+
+                // Fall back to hidden inputs if available
+                if (!flag) {
+                    const flagInput = document.getElementById('nationality-flag');
+                    if (flagInput) flag = flagInput.value;
+                }
+
+                console.log(`Nationality data for ${inputId}:`, {
+                    code,
+                    name,
+                    flag,
+                });
+
+                return {
+                    code: code,
+                    name: name,
+                    flag: flag
+                };
+            }
+
             // Function to get phone input data by input ID
             function getPhoneInputData(inputId) {
                 const inputElement = document.getElementById(inputId);
-                if (!inputElement) return { code: '', number: '', full: '' };
-                
+                if (!inputElement) return {
+                    code: '',
+                    number: '',
+                    full: '',
+                    flag: ''
+                };
+
                 const container = inputElement.closest('[data-input-flag]');
-                if (!container) return { code: '', number: '', full: '' };
-                
+                if (!container) return {
+                    code: '',
+                    number: '',
+                    full: '',
+                    flag: ''
+                };
+
                 const codeElement = container.querySelector('.country-codeno');
                 // Get the full country code including the '+'
                 const code = codeElement ? codeElement.textContent.trim() : '';
                 const number = inputElement.value.trim();
-                
-                console.log(`Phone data for ${inputId}:`, { code, number, full: code + number });
-                
+                const flag = container.querySelector('.country-flagimg').src.split('/').pop().split('.')[0]; // Get the flag image name
+
+                console.log(`Phone data for ${inputId}:`, {
+                    code,
+                    number,
+                    full: code + number,
+                    flag,
+                });
+
                 return {
                     code: code,
                     number: number,
-                    full: code + number
+                    full: code + number,
+                    flag: flag
                 };
             }
 
             // Send API request
             // Get participant ID from session
-            const participant_id = <?= $currentParticipant['id'] ?>;
+            const participant_id = <?= $participant['id'] ?>;
 
             // Send the data to the server
-            fetch(`/submission/updatePersonal/${participant_id}`, {
+            fetch(`/submission/personal/${participant_id}/update`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

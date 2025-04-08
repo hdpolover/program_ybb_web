@@ -7,67 +7,50 @@ use App\Controllers\BaseController;
 class Submission extends BaseController
 {
 
-    public function index()
+    function getSubmissionData()
     {
-        // Get current program ID from session
-        $currentProgramId = session()->get('current_program_id');
+        $data = [];
+
+        // get current participant id from session
+        $currentParticipantId = session()->get('current_participant_id');
 
         // Safety check - if no program ID, redirect to home
-        if (empty($currentProgramId)) {
-            return redirect()->to(base_url('dashboard'));
+        if (empty($currentParticipantId)) {
+            return [];
         }
 
-        // CRITICAL FIX: Force refresh of API data for the current program
-        // 1. Get all participants for current user
-        $apiParticipants = $this->makeGetRequest('/participants/user/' . session()->get('user_id'), [], false);
+        // Get submission data for this participant
+        $submissionData = $this->makeGetRequest('/submissions/participants/' . $currentParticipantId);
 
-        // Log the raw API response for debugging
-        log_message('debug', 'Submission::index - API Participants Response: ' . json_encode($apiParticipants));
+        // Log submission data for debugging
+        log_message('debug', 'Submission::getSubmissionData - Submission Data: ' . json_encode($submissionData));
 
-        // Use API data if available, otherwise fallback to session data
-        $participants = !empty($apiParticipants['data']) ? $apiParticipants['data'] : (!empty($apiParticipants) ? $apiParticipants : (session()->get('participants') ?? []));
+        // Extract relevant data
+        $data = [
+            'participant' => $submissionData['participant'] ?? null,
+            'participantEssays' => $submissionData['participant_essays'] ?? null,
+            'participantSubtheme' => $submissionData['participant_subtheme'] ?? null,
+            'participantCompetitionCategory' => $submissionData['participant_competition_category'] ?? null,
+            'programEssays' => $submissionData['program_essays'] ?? null,
+            'programSubthemes' => $submissionData['program_subthemes'] ?? null,
+            'competitionCategories' => $submissionData['competition_categories'] ?? null,
+        ];
 
-        // Update session with refreshed participants
-        session()->set('participants', $participants);
+        return $data;
+    }
 
-        // 2. Find the participant matching the current program ID
-        $currentParticipant = null;
-        foreach ($participants as $participant) {
-            // Ensure we're comparing consistently (string vs int)
-            if ((string)($participant['program_id'] ?? '') === (string)$currentProgramId) {
-                $currentParticipant = $participant;
-                break;
-            }
-        }
-
-        // Log the matched participant
-        log_message('debug', 'Submission::index - Matched Participant: ' . json_encode($currentParticipant));
-
-        // Safety check - if no participant found for this program
-        if (empty($currentParticipant)) {
-            // Display an error message
-            session()->setFlashdata('error', 'No participant data found for the selected program.');
-            return redirect()->to(base_url('dashboard'));
-        }
-
-        // 3. Update session with the current participant data
-        $currentParticipantId = $currentParticipant['id'] ?? null;
-        session()->set('current_participant', $currentParticipant);
-        session()->set('current_participant_id', $currentParticipantId);
-
-        // 4. Get submission data for this participant
-        $submissionData = [];
-        if ($currentParticipantId) {
-            $submissionData = $this->makeGetRequest('/submissions/participants/' . $currentParticipantId);
-
-            // Log submission data for debugging
-            log_message('debug', 'Submission::index - Submission Data: ' . json_encode($submissionData));
-        }
+    public function index()
+    {
+        // Get submission data for this participant
+        $submissionData = $this->getSubmissionData();
 
         // 5. Get current program data
         $programs = session()->get('programs') ?? [];
         $currentProgram = null;
 
+        // Get current program ID from session
+        $currentProgramId = session()->get('current_program_id');
+
         foreach ($programs as $program) {
             if ((string)($program['id'] ?? '') === (string)$currentProgramId) {
                 $currentProgram = $program;
@@ -75,46 +58,35 @@ class Submission extends BaseController
             }
         }
 
-        // Update session with current program
-        if ($currentProgram) {
-            session()->set('current_program', $currentProgram);
-        }
-
-        // Extract submission data components
-        $participant = $submissionData['participant'] ?? $currentParticipant;
-        $participantEssays = $submissionData['participant_essays'] ?? null;
-        $participantSubtheme = $submissionData['participant_subtheme'] ?? null;
-        $programEssays = $submissionData['program_essays'] ?? null;
-        $programSubthemes = $submissionData['program_subthemes'] ?? null;
-
         // Build view data
         $data = [
             'title' => 'Submission',
-            'currentParticipant' => $participant,
             'currentProgram' => $currentProgram,
-            'currentParticipantId' => $currentParticipantId,
-            'submittedEssays' => $participantEssays,
-            'submittedSubtheme' => $participantSubtheme,
-            'programEssays' => $programEssays,
-            'programSubthemes' => $programSubthemes,
         ];
 
+        // Merge submission data into view data
+        $data = array_merge($data, $submissionData);
+
+        // Output data structure as JSON for easier debugging
+        // echo '<pre>';
+        // echo json_encode($data, JSON_PRETTY_PRINT);
+        // echo '</pre>';
+
+        // Uncomment the line below when done debugging
         return $this->render('participant/submission/index', $data);
     }
 
     public function edit()
     {
-        // Get current program ID from session
-        $currentProgramId = session()->get('current_program_id');
+        // Get submission data for this participant
+        $submissionData = $this->getSubmissionData();
 
-        // Safety check - if no program ID, redirect to home
-        if (empty($currentProgramId)) {
-            return redirect()->to(base_url('dashboard'));
-        }
-
-        // Make sure we have the current program details
+        // 5. Get current program data
         $programs = session()->get('programs') ?? [];
         $currentProgram = null;
+
+        // Get current program ID from session
+        $currentProgramId = session()->get('current_program_id');
 
         foreach ($programs as $program) {
             if ((string)($program['id'] ?? '') === (string)$currentProgramId) {
@@ -123,44 +95,21 @@ class Submission extends BaseController
             }
         }
 
-        // Safety check - if no program found
-        if (empty($currentProgram)) {
-            session()->setFlashdata('error', 'Program not found.');
-            return redirect()->to(base_url('dashboard'));
-        }
-
-        // Update session with current program
-        session()->set('current_program', $currentProgram);
-
-        // Get form data for the current program
-        $formData = [];
-        if ($currentProgramId) {
-            $formData = $this->makeGetRequest('/submissions/program/' . $currentProgramId . '/form');
-
-            // Log the form data for debugging
-            log_message('debug', 'Submission::edit - Form Data: ' . json_encode($formData));
-        }
-
-        // Extract form components
-        $programSubthemes = $formData['subthemes'] ?? [];
-        $programEssays = $formData['essays'] ?? [];
-        $competitionCategories = $formData['competition_categories'] ?? [];
-
-        // Get current participant data from session (this should be set in the index method)
-        $currentParticipant = session()->get('current_participant');
-        $currentParticipantId = session()->get('current_participant_id');
-
         // Build view data
         $data = [
-            'title' => 'Edit Submission',
+            'title' => 'Submission',
             'currentProgram' => $currentProgram,
-            'currentParticipant' => $currentParticipant,
-            'currentParticipantId' => $currentParticipantId,
-            'subthemes' => $programSubthemes,
-            'essays' => $programEssays,
-            'competitionCategories' => $competitionCategories,
         ];
 
+        // Merge submission data into view data
+        $data = array_merge($data, $submissionData);
+
+        // Output data structure as JSON for easier debugging
+        // echo '<pre>';
+        // echo json_encode($data, JSON_PRETTY_PRINT);
+        // echo '</pre>';
+
+        // Uncomment the line below when done debugging
         return $this->render('participant/submission/edit', $data);
     }
 
@@ -185,23 +134,16 @@ class Submission extends BaseController
         // Log the received data
         log_message('debug', 'updatePersonal - Request Data: ' . json_encode($requestData));
 
-        // Extract participant data from the nested structure
-        $participantData = $requestData ?? [];
-        if (empty($participantData)) {
+        // Extract required fields from request data
+        if (empty($requestData)) {
             return $this->response->setJSON(['success' => false, 'message' => 'No participant data provided']);
         }
-        
-        // Special debug log for country codes
-        log_message('debug', 'PHONE DEBUG - Country codes: ' . 
-            'Personal: ' . ($participantData['country_code'] ?? 'NULL') . ', ' .
-            'Emergency: ' . ($participantData['emergency_country_code'] ?? 'NULL')
-        );
-        
+
         // Log the extracted participant data for debugging
-        log_message('debug', 'updatePersonal - Extracted Participant Data: ' . json_encode($participantData));
+        log_message('debug', 'updatePersonal - Extracted Participant Data: ' . json_encode($requestData));
 
         // Send data to API endpoint
-        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $participantData);
+        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $requestData);
 
         // Log the API response
         log_message('debug', 'updatePersonal - API Response: ' . json_encode($response));
@@ -209,7 +151,7 @@ class Submission extends BaseController
         if (isset($response['participant']) && $response['participant']) {
             // Update session data
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
-            
+
             if ($updatedParticipant) {
                 session()->set('current_participant', $updatedParticipant);
             }
@@ -247,37 +189,27 @@ class Submission extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Participant ID not found']);
         }
 
-        // Prepare data for API
-        $apiData = [
-            'education_level' => $requestData['education'] ?? null,
-            'institution' => $requestData['institution'] ?? null,
-            'major' => $requestData['major'] ?? null,
-            'occupation' => $requestData['occupation'] ?? null,
-            'organizations' => $requestData['organization'] ?? null,
-            'experiences' => $requestData['experiences'] ?? null,
-            'achievements' => $requestData['achievements'] ?? null,
-            'resume_url' => $requestData['resume_link'] ?? null
-        ];
 
         // Log the prepared data
-        log_message('debug', 'updateProfessional - Prepared Data: ' . json_encode($apiData));
+        log_message('debug', 'updateProfessional - Prepared Data: ' . json_encode($requestData));
 
         // Send data to API endpoint
-        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $apiData);
+        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $requestData);
 
         // Log the API response
         log_message('debug', 'updateProfessional - API Response: ' . json_encode($response));
 
-        if (isset($response['success']) && $response['success']) {
+        if (isset($response['participant']) && $response['participant']) {
             // Update session data
-            $updatedParticipant = $response['participant'] ?? null;
+            $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
+
             if ($updatedParticipant) {
                 session()->set('current_participant', $updatedParticipant);
             }
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Professional information updated successfully'
+                'message' => 'Professional Profile information updated successfully'
             ]);
         }
 
@@ -314,8 +246,9 @@ class Submission extends BaseController
 
         // Prepare data for updating participant
         $participantData = [
-            'competition_category_id' => $requestData['competition_category'] ?? null,
-            'subtheme_id' => $requestData['subtheme'] ?? null,
+            'competition_category_id' => $requestData['competition_category_id'] ?? null,
+            'program_subtheme_id' => $requestData['program_subtheme_id'] ?? null,
+            'essays' => $requestData['essays'] ?? null,
         ];
 
         // Log the participant data
@@ -324,44 +257,24 @@ class Submission extends BaseController
         // Update participant first
         $participantResponse = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $participantData);
 
-        // Check if participant update was successful
-        if (!isset($participantResponse['success']) || !$participantResponse['success']) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => $participantResponse['message'] ?? 'Failed to update entry information'
-            ]);
-        }
+        // Log the API response
+        log_message('debug', 'updateEntry - Participant Update Response: ' . json_encode($participantResponse));
 
-        // Update session data
-        $updatedParticipant = $participantResponse['participant'] ?? null;
-        if ($updatedParticipant) {
-            session()->set('current_participant', $updatedParticipant);
-        }
+        if (isset($participantResponse['essays']) && isset($participantResponse['competition_category_id']) && isset($participantResponse['program_subtheme_id'])) {
+            // Update session data
+            $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
 
-        // Now handle essays if they exist
-        if (isset($requestData['essays']) && is_array($requestData['essays'])) {
-            // Prepare essay submission data
-            $essaysData = [
-                'participant_id' => $participantId,
-                'program_id' => $programId,
-                'essays' => $requestData['essays']
-            ];
+            // log updated participant data
+            log_message('debug', 'updateEntry - Updated Participant Data: ' . json_encode($updatedParticipant));
 
-            // Log the essay data
-            log_message('debug', 'updateEntry - Essays Data: ' . json_encode($essaysData));
-
-            // Submit essays
-            $essaysResponse = $this->makePostRequest('/submissions/essays', $essaysData);
-
-            // Log the essay submission response
-            log_message('debug', 'updateEntry - Essays Response: ' . json_encode($essaysResponse));
-
-            if (!isset($essaysResponse['success']) || !$essaysResponse['success']) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $essaysResponse['message'] ?? 'Failed to submit essays'
-                ]);
+            if ($updatedParticipant) {
+                session()->set('current_participant', $updatedParticipant);
             }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Entry information updated successfully'
+            ]);
         }
 
         // Everything was successful
@@ -410,9 +323,13 @@ class Submission extends BaseController
         // Log the API response
         log_message('debug', 'updateMisc - API Response: ' . json_encode($response));
 
-        if (isset($response['success']) && $response['success']) {
+        if (isset($response['participant'])) {
             // Update session data
-            $updatedParticipant = $response['participant'] ?? null;
+            $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
+
+            // log updated participant data
+            log_message('debug', 'updateEntry - Updated Participant Data: ' . json_encode($updatedParticipant));
+
             if ($updatedParticipant) {
                 session()->set('current_participant', $updatedParticipant);
             }
@@ -422,7 +339,6 @@ class Submission extends BaseController
                 'message' => 'Miscellaneous information updated successfully'
             ]);
         }
-
         // Return error message from API or default error
         return $this->response->setJSON([
             'success' => false,
@@ -443,20 +359,36 @@ class Submission extends BaseController
         // Get JSON data from request
         $requestData = $this->request->getJSON(true);
 
-        if (empty($requestData['code'])) {
+        if (empty($requestData['code']) && empty($requestData['program_id'])) {
             return $this->response->setJSON(['valid' => false]);
         }
 
         // Check ambassador code with API
-        $response = $this->makePostRequest('/ambassadors/validate-code', ['code' => $requestData['code']]);
+        $response = $this->makeGetRequest('/ambassadors/programs/' . $requestData['program_id'] . '/ref-code/' . $requestData['code'], [], false, false);
 
         // Log the API response
         log_message('debug', 'validateAmbassadorCode - API Response: ' . json_encode($response));
 
+        // Check if the response is valid
+        if (isset($response)) {
+            if (isset($response['is_valid']) && $response['is_valid'] === true) {
+                return $this->response->setJSON([
+                    'is_valid' => true,
+                    'ambassador' => $response['ambassador'] ?? null,
+                    'message' => 'Ambassador code is valid'
+                ]);
+            } elseif (isset($response['is_valid']) && $response['is_valid'] === false) {
+                return $this->response->setJSON([
+                    'is_valid' => false,
+                    'message' => $response['message'] ?? 'Ambassador code is invalid'
+                ]);
+            }
+        } 
+
         // Return API response or default
         return $this->response->setJSON([
-            'valid' => $response['valid'] ?? false,
-            'ambassador' => $response['ambassador'] ?? null
+            'is_valid' =>  false,
+            'message' => $response['message'] ?? 'Failed to validate ambassador code'
         ]);
     }
 }

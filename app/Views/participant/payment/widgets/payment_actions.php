@@ -197,8 +197,18 @@ $latestPayment = $paymentStatus['latestPayment'];
                     <button type="button" class="btn btn-soft-primary" onclick="window.location.reload();">
                         <i class="ri-refresh-line align-middle me-1"></i> Refresh Status
                     </button>
-                </div>
-            <?php elseif ($latestPayment['status'] == 3 || $latestPayment['status'] == 'cancelled'): ?>
+                </div>            <?php elseif ($latestPayment['status'] == 3 || $latestPayment['status'] == 'cancelled'): ?>
+                <?php
+                // Check if payment is overdue
+                $isOverdue = false;
+                if (isset($programPayment['end_date'])) {
+                    $today = new DateTime();
+                    $dueDate = new DateTime($programPayment['end_date']);
+                    if ($dueDate < $today) {
+                        $isOverdue = true;
+                    }
+                }
+                ?>
                 <!-- Payment Cancelled UI -->
                 <div class="mb-4 text-center">
                     <div class="avatar-md mx-auto mb-3">
@@ -210,17 +220,28 @@ $latestPayment = $paymentStatus['latestPayment'];
                     <div class="alert alert-danger mb-3">
                         <p class="mb-0">This payment has been cancelled. Contact support for more information.</p>
                     </div>
-                    
-                    <div class="d-grid gap-2">
+                      <div class="d-grid gap-2">
+                        <?php if (!$isOverdue): ?>
                         <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '')); ?>" class="btn btn-success">
                             <i class="ri-bank-card-line align-middle me-1"></i> Try Again
                         </a>
+                        <?php endif; ?>
                         <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-outline-danger">
                             <i class="ri-customer-service-2-line align-middle me-1"></i> Contact Support
                         </a>
                     </div>
-                </div>
-            <?php elseif ($latestPayment['status'] == 4 || $latestPayment['status'] == 'rejected'): ?>
+                </div>            <?php elseif ($latestPayment['status'] == 4 || $latestPayment['status'] == 'rejected'): ?>
+                <?php
+                // Check if payment is overdue
+                $isOverdue = false;
+                if (isset($programPayment['end_date'])) {
+                    $today = new DateTime();
+                    $dueDate = new DateTime($programPayment['end_date']);
+                    if ($dueDate < $today) {
+                        $isOverdue = true;
+                    }
+                }
+                ?>
                 <!-- Payment Rejected UI -->
                 <div class="mb-4 text-center">
                     <div class="avatar-md mx-auto mb-3">
@@ -237,16 +258,20 @@ $latestPayment = $paymentStatus['latestPayment'];
                             <p class="mb-0"><?= $latestPayment['rejection_reason'] ?></p>
                         <?php endif; ?>
                     </div>
-                    
+                      <?php if (!$isOverdue): ?>
                     <div class="d-grid">
                         <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '')); ?>" class="btn btn-success">
                             <i class="ri-bank-card-line align-middle me-1"></i> Try Again
                         </a>
                     </div>
+                    <?php else: ?>
+                    <div class="alert alert-secondary mb-0">
+                        <p class="mb-0">This payment is overdue and can no longer be processed online. Please contact support for assistance.</p>
+                    </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
-        <?php else: ?>
-            <!-- Default Payment Required UI -->
+        <?php else: ?>            <!-- Default Payment Required UI -->
             <div class="mb-4 text-center">
                 <div class="avatar-md mx-auto mb-3">
                     <div class="avatar-title bg-warning-subtle text-warning rounded-circle display-5">
@@ -255,9 +280,39 @@ $latestPayment = $paymentStatus['latestPayment'];
                 </div>
                 <h5 class="fs-16 mb-2">Payment Required</h5>
                 <p class="text-muted mb-4">This payment requires your attention.</p>
+                
+                <?php
+                // Check if payment is overdue
+                $isOverdue = false;
+                if (isset($programPayment['end_date'])) {
+                    $today = new DateTime();
+                    $dueDate = new DateTime($programPayment['end_date']);
+                    if ($dueDate < $today) {
+                        $isOverdue = true;
+                    }
+                }
+                ?>
+                
+                <?php if (!$isOverdue): ?>
                 <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '')); ?>" class="btn btn-success btn-lg w-100">
                     <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
                 </a>
+                <?php else: ?>
+                <div class="alert alert-danger mb-3">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="ri-error-warning-line fs-18"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-2">
+                            <h6 class="alert-heading mb-1">Payment Overdue</h6>
+                            <p class="mb-0 fs-13">This payment is past the due date and can no longer be processed online. Please contact support for assistance.</p>
+                        </div>
+                    </div>
+                </div>
+                <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-danger btn-lg w-100">
+                    <i class="ri-customer-service-2-line align-middle me-1"></i> Contact Support
+                </a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
