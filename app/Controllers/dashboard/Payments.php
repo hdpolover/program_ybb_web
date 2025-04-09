@@ -7,119 +7,122 @@ use App\Controllers\BaseController;
 class Payments extends BaseController
 {
     public function getVisibleProgramPayments($allPayments, $participantPayments)
-{
-    $today = date('Y-m-d H:i:s');
+    {
+        $today = date('Y-m-d H:i:s');
 
-    // Group participant payments by program_payment_id
-    $participantPaymentMap = [];
-    foreach ($participantPayments as $pmt) {
-        $participantPaymentMap[$pmt['program_payment_id']][] = $pmt;
-    }
-
-    $visiblePayments = [];
-
-    // Track completed statuses
-    $completed = [
-        'registration' => false,
-        'program_fee_1' => false,
-        'program_fee_2' => false,
-    ];
-
-    // Helper to check if a payment is completed
-    $isCompleted = function ($paymentId) use ($participantPaymentMap) {
-        if (empty($participantPaymentMap[$paymentId])) return false;
-        foreach ($participantPaymentMap[$paymentId] as $pmt) {
-            if ($pmt['status'] == '2') return true; // 2 = success
-        }
-        return false;
-    };
-
-    // Helper to check if user has paid anything for this payment
-    $hasAnyAttempt = function ($paymentId) use ($participantPaymentMap) {
-        return !empty($participantPaymentMap[$paymentId]);
-    };
-
-    // Separate payments by category
-    $byCategory = [
-        'registration' => [],
-        'program_fee_1' => [],
-        'program_fee_2' => [],
-    ];
-
-    foreach ($allPayments as $payment) {
-        $byCategory[$payment['category']][] = $payment;
-    }
-
-    // Sort each category by start_date (especially important for registration: early/late bid)
-    foreach ($byCategory as &$group) {
-        usort($group, function ($a, $b) {
-            return strtotime($a['start_date']) - strtotime($b['start_date']);
-        });
-    }
-
-    // Handle registration
-    $registrationDone = false;
-    foreach ($byCategory['registration'] as $payment) {
-        $paymentId = $payment['id'];
-        $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
-        $isPaid = $isCompleted($paymentId);
-        $hasTried = $hasAnyAttempt($paymentId);
-
-        if ($isPaid) {
-            $visiblePayments[] = $payment;
-            $registrationDone = true;
-            break; // No need to show other registration payments
+        // Group participant payments by program_payment_id
+        $participantPaymentMap = [];
+        foreach ($participantPayments as $pmt) {
+            $participantPaymentMap[$pmt['program_payment_id']][] = $pmt;
         }
 
-        if ($hasTried || $isWithinDateRange) {
-            $visiblePayments[] = $payment;
+        $visiblePayments = [];
+
+        // Track completed statuses
+        $completed = [
+            'registration' => false,
+            'program_fee_1' => false,
+            'program_fee_2' => false,
+        ];
+
+        // Helper to check if a payment is completed
+        $isCompleted = function ($paymentId) use ($participantPaymentMap) {
+            if (empty($participantPaymentMap[$paymentId])) return false;
+            foreach ($participantPaymentMap[$paymentId] as $pmt) {
+                if ($pmt['status'] == '2') return true; // 2 = success
+            }
+            return false;
+        };
+
+        // Helper to check if user has paid anything for this payment
+        $hasAnyAttempt = function ($paymentId) use ($participantPaymentMap) {
+            return !empty($participantPaymentMap[$paymentId]);
+        };
+
+        // Separate payments by category
+        $byCategory = [
+            'registration' => [],
+            'program_fee_1' => [],
+            'program_fee_2' => [],
+        ];
+
+        foreach ($allPayments as $payment) {
+            $byCategory[$payment['category']][] = $payment;
         }
-    }
 
-    $completed['registration'] = $registrationDone;
+        // Sort each category by start_date (especially important for registration: early/late bid)
+        foreach ($byCategory as &$group) {
+            usort($group, function ($a, $b) {
+                return strtotime($a['start_date']) - strtotime($b['start_date']);
+            });
+        }
 
-    // Handle program_fee_1
-    if ($completed['registration']) {
-        foreach ($byCategory['program_fee_1'] as $payment) {
+        // Handle registration
+        $registrationDone = false;
+        foreach ($byCategory['registration'] as $payment) {
             $paymentId = $payment['id'];
             $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
             $isPaid = $isCompleted($paymentId);
             $hasTried = $hasAnyAttempt($paymentId);
 
             if ($isPaid) {
-                $completed['program_fee_1'] = true;
+                $visiblePayments[] = $payment;
+                $registrationDone = true;
+                break; // No need to show other registration payments
             }
 
-            if ($isWithinDateRange || $hasTried) {
+            if ($hasTried || $isWithinDateRange) {
                 $visiblePayments[] = $payment;
             }
         }
-    }
 
-    // Handle program_fee_2
-    if ($completed['program_fee_1']) {
-        foreach ($byCategory['program_fee_2'] as $payment) {
-            $paymentId = $payment['id'];
-            $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
-            $hasTried = $hasAnyAttempt($paymentId);
+        $completed['registration'] = $registrationDone;
 
-            if ($isWithinDateRange || $hasTried) {
-                $visiblePayments[] = $payment;
+        // Handle program_fee_1
+        if ($completed['registration']) {
+            foreach ($byCategory['program_fee_1'] as $payment) {
+                $paymentId = $payment['id'];
+                $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
+                $isPaid = $isCompleted($paymentId);
+                $hasTried = $hasAnyAttempt($paymentId);
+
+                if ($isPaid) {
+                    $completed['program_fee_1'] = true;
+                }
+
+                if ($isWithinDateRange || $hasTried) {
+                    $visiblePayments[] = $payment;
+                }
             }
         }
+
+        // Handle program_fee_2
+        if ($completed['program_fee_1']) {
+            foreach ($byCategory['program_fee_2'] as $payment) {
+                $paymentId = $payment['id'];
+                $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
+                $hasTried = $hasAnyAttempt($paymentId);
+
+                if ($isPaid) {
+                    $completed['program_fee_2'] = true;
+                }
+
+                if ($isWithinDateRange || $hasTried) {
+                    $visiblePayments[] = $payment;
+                }
+            }
+        }
+
+        // Remove duplicates just in case
+        $visiblePayments = array_unique($visiblePayments, SORT_REGULAR);
+
+        // Sort all by start date for final display
+        usort($visiblePayments, function ($a, $b) {
+            return strtotime($a['start_date']) - strtotime($b['start_date']);
+        });
+
+        return array_values($visiblePayments);
     }
-
-    // Remove duplicates just in case
-    $visiblePayments = array_unique($visiblePayments, SORT_REGULAR);
-
-    // Sort all by start date for final display
-    usort($visiblePayments, function ($a, $b) {
-        return strtotime($a['start_date']) - strtotime($b['start_date']);
-    });
-
-    return array_values($visiblePayments);
-}
-
 
     /**
      * Display the list of program payments required from the participant
@@ -127,15 +130,34 @@ class Payments extends BaseController
     public function index()
     {
         $programPayments = $this->makeGetRequest('/program-payments/program/' . session()->get('current_program_id'), [], false);
-        $participantPayments = $this->makeGetRequest('/payments/participant/' . session()->get('current_participant_id'), [], false);
-        $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);
-
-        // Safety check - if not participant payments, skip loop
+        $participantPayments = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], false);
+        $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);        // Safety check - if not participant payments, skip loop
         if (empty($participantPayments)) {
             $participantPayments = [];
         } else {
-            // Convert participant payments to a more usable format
-            $participantPayments = array_column($participantPayments, null, 'program_payment_id');
+            // Convert participant payments to a more usable format, prioritizing successful payments
+            $organizedPayments = [];
+
+            // First, group all payments by program_payment_id
+            foreach ($participantPayments as $payment) {
+                $organizedPayments[$payment['program_payment_id']][] = $payment;
+            }
+
+            // Then, for each program payment, prioritize successful payments
+            foreach ($organizedPayments as $programPaymentId => $payments) {
+                // Sort by status, with successful payments (status=2) first
+                usort($payments, function ($a, $b) {
+                    // If a is success (2), prioritize it
+                    if ($a['status'] == '2') return -1;
+                    // If b is success (2), prioritize it
+                    if ($b['status'] == '2') return 1;
+                    // Otherwise sort by timestamp (newest first) or another property
+                    return 0;
+                });
+
+                // Use the highest priority payment (success if any exists)
+                $participantPayments[$programPaymentId] = $payments[0];
+            }
         }
 
         // Get visible program payments
@@ -230,7 +252,6 @@ class Payments extends BaseController
         // Simulate successful programPayment for demonstration
         return redirect()->back()->with('success', 'Payment processed successfully');
     }
-
     /**
      * Download programPayment receipt for a completed programPayment attempt
      * 
@@ -238,16 +259,136 @@ class Payments extends BaseController
      */
     public function downloadReceipt($id)
     {
-        // This would generate and return a receipt file
-        // For example:
-        // $paymentModel = new \App\Models\ProgramPaymentModel();
-        // $paymentData = $paymentModel->getPaymentAttemptById($id);
+        try {
+            if (empty($id)) {
+                return redirect()->back()->with('error', 'Invalid payment ID specified.');
+            }
 
-        // $pdf = new \TCPDF();
-        // Generate PDF receipt
-        // return $this->response->download('payment_receipt.pdf', $pdf->Output('', 'S'));
+            // Log payment ID for debugging
+            log_message('info', 'Generating receipt for payment ID: ' . $id);
 
-        // For now, just redirect back
-        return redirect()->back()->with('info', 'Receipt download functionality will be implemented soon');
+            // Get the payment details
+            $payment = $this->makeGetRequest('/payments/' . $id, [], false);
+            if (empty($payment)) {
+                log_message('error', 'Payment not found with ID: ' . $id);
+                return redirect()->back()->with('error', 'Payment not found.');
+            }
+
+            // For debugging only - accept any payment status for now
+            // if (!isset($payment['status']) || $payment['status'] != '2') {
+            //    return redirect()->back()->with('error', 'Payment not completed successfully.');
+            // }
+
+            log_message('info', 'Payment found: ' . json_encode($payment));
+
+            // Get the program payment details
+            $programPaymentId = $payment['program_payment_id'] ?? null;
+            if (empty($programPaymentId)) {
+                log_message('error', 'Program payment ID not found in payment: ' . json_encode($payment));
+                return redirect()->back()->with('error', 'Unable to find associated program payment.');
+            }
+
+            $programPayment = $this->makeGetRequest('/program-payments/' . $programPaymentId, [], false);
+            log_message('info', 'Program payment found: ' . json_encode($programPayment));
+
+            // Get participant details
+            $participantId = session()->get('current_participant_id');
+            $participant = $this->makeGetRequest('/participants/' . $participantId, [], false);
+            log_message('info', 'Participant found: ' . ($participant ? 'yes' : 'no'));
+
+            // Get program details
+            $programId = session()->get('current_program_id');
+            $program = $this->makeGetRequest('/programs/' . $programId, [], false);
+
+            // get payment methods
+            $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . $programId, [], false);
+
+            log_message('info', 'Payment methods found: ' . json_encode($paymentMethods));
+
+            // get payment method by payment method id
+            $paymentMethod = null;
+
+            if (isset($payment['payment_method_id'])) {
+                foreach ($paymentMethods as $method) {
+                    if ($method['id'] == $payment['payment_method_id']) {
+                        $paymentMethod = $method;
+                        break;
+                    }
+                }
+            }
+
+            log_message('info', 'Payment method found: ' . json_encode($paymentMethod));            // Prepare data for the view
+            $data = [
+                'payment' => $payment,
+                'programPayment' => $programPayment,
+                'participant' => $participant,
+                'program' => $program,
+                'paymentMethod' => $paymentMethod,
+                'webSettings' => $this->data['webSettings'] ?? null,
+            ];// Make sure DOMPDF is available
+            if (!class_exists('\Dompdf\Dompdf')) {
+                log_message('error', 'DOMPDF library not found. Please install it using composer.');
+                return redirect()->back()->with('error', 'PDF generation library not found. Please contact support.');
+            }
+            
+            // Make sure QrCodeHelper is loaded
+            helper('QrCodeHelper');
+            // Set higher execution time limit for PDF generation
+            ini_set('max_execution_time', 180); // 3 minutes
+            set_time_limit(180);
+
+            // Generate PDF with optimized settings
+            $dompdf = new \Dompdf\Dompdf();
+            $options = new \Dompdf\Options();
+            $options->set('isRemoteEnabled', false); // Disable loading external images to improve performance
+            $options->set('defaultFont', 'Arial');
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('debugKeepTemp', false);
+            $options->set('debugCss', false);
+            $options->set('debugLayout', false);
+
+            // Optimize memory usage
+            $options->set('chroot', FCPATH);
+            $dompdf->setOptions($options);
+
+            // Replace any external image references with local ones or placeholders
+            $data['use_local_resources'] = true; // Flag for the view to use local resources
+
+            // Load the receipt view into the PDF
+            log_message('info', 'Rendering receipt view');
+            $html = view('participant/payment/receipt', $data);
+            $dompdf->loadHtml($html);
+
+            // Set paper size and orientation (A4 is too large, use something smaller)
+            $dompdf->setPaper('letter', 'portrait');
+
+            // Render the PDF - with memory limit management
+            $currentMemoryLimit = ini_get('memory_limit');
+            // Temporarily increase memory limit if needed
+            if ((int) $currentMemoryLimit < 256) {
+                ini_set('memory_limit', '256M');
+            }
+
+            log_message('info', 'Rendering PDF - starting');
+            $dompdf->render();
+            log_message('info', 'Rendering PDF - completed');
+
+            // Generate a filename
+            $fileName = 'Receipt_' . ($payment['transaction_code'] ?? 'YBB-' . $id) . '.pdf';
+
+            log_message('info', 'Streaming PDF to browser: ' . $fileName);
+
+            // Reset memory limit
+            ini_set('memory_limit', $currentMemoryLimit);
+
+            // Stream the PDF to the browser (force download)
+            return $dompdf->stream($fileName, ['Attachment' => true]);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            log_message('error', 'Error generating receipt: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+
+            return redirect()->back()->with('error', 'Error generating receipt: ' . $e->getMessage());
+        }
     }
 }

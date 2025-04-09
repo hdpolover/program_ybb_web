@@ -46,16 +46,37 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                 // Sort by created_at in descending order to show newest first
                 usort($sortedPayments, function ($a, $b) {
                     return strtotime($b['created_at'] ?? 0) - strtotime($a['created_at'] ?? 0);
-                });
-
-                foreach ($sortedPayments as $index => $history):
+                });                foreach ($sortedPayments as $index => $history):
                     $statusInfo = getPaymentStatusInfo($history['status'] ?? 0);
                     $historyId = isset($history['id']) ? $history['id'] : rand(1000, 9999);
-                    $status_class = strtolower($statusInfo['statusText']);
+                    
+                    // Map status values to filter classes
+                    $status_value = $history['status'] ?? 0;
+                    $status_class = '';
+                    
+                    switch ($status_value) {
+                        case 0:
+                            $status_class = 'created';
+                            break;
+                        case 1:
+                            $status_class = 'pending';
+                            break;
+                        case 2:
+                            $status_class = 'paid';
+                            break;
+                        case 3:
+                            $status_class = 'cancelled';
+                            break;
+                        case 4:
+                            $status_class = 'rejected';
+                            break;
+                        default:
+                            $status_class = 'other';
+                    }
                 ?>
 
                     <!-- Payment History Item -->
-                    <div class="acitivity-item d-flex mb-4 payment-history-item <?= $status_class ?>-item">
+                    <div class="acitivity-item d-flex mb-4 payment-history-item <?= $status_class ?>-item status-<?= $status_value ?>">
                         <!-- Timeline Connector Line -->
                         <?php if ($index < count($sortedPayments) - 1): ?>
                             <div class="timeline-line" style="position: absolute; height: 100%; border-left: 1px dashed #ccc; left: 20px; top: 40px;"></div>
@@ -234,13 +255,13 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
         </div>
     </div>
 
-    <!-- Add JavaScript for filtering -->
-    <script>
+    <!-- Add JavaScript for filtering -->    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const filterButtons = document.querySelectorAll('.filter-history');
             const historyItems = document.querySelectorAll('.payment-history-item');
             const emptyState = document.getElementById('empty-filter-state');
             const resetFilter = document.getElementById('reset-filter');
+            const timelineContainer = document.querySelector('.acitivity-timeline');
 
             filterButtons.forEach(button => {
                 button.addEventListener('click', function() {
@@ -261,11 +282,13 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                         }
                     });
 
-                    // Show/hide empty state
+                    // Show/hide empty state and timeline container
                     if (visibleCount === 0) {
                         emptyState.classList.remove('d-none');
+                        timelineContainer.classList.add('d-none');
                     } else {
                         emptyState.classList.add('d-none');
+                        timelineContainer.classList.remove('d-none');
                     }
                 });
             });
@@ -275,6 +298,7 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                 resetFilter.addEventListener('click', function() {
                     historyItems.forEach(item => item.style.display = 'flex');
                     emptyState.classList.add('d-none');
+                    timelineContainer.classList.remove('d-none');
                     filterButtons.forEach(btn => {
                         btn.classList.remove('active');
                         if (btn.dataset.filter === 'all') {

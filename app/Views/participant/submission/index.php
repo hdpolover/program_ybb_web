@@ -4,6 +4,9 @@
 
     <?php echo view('partials/title-meta', array('title' => 'Submission')); ?>
 
+    <!-- Sweet Alert css-->
+    <link href="/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+
     <!-- swiper css -->
     <link rel="stylesheet" href="/assets/libs/swiper/swiper-bundle.min.css">
 
@@ -100,9 +103,21 @@
                                         </li>
                                     </ul>
                                     <?php if (isset($currentProgram) && $currentProgram['is_active']): ?>
-                                    <div class="flex-shrink-0">
-                                        <a href="<?= base_url() ?>submission/edit" class="btn btn-success"><i class="ri-edit-box-line align-bottom"></i> Edit Submission</a>
-                                    </div>
+                                        <?php if (isset($hasSubmittedForm) && $hasSubmittedForm === true) : ?> <div class="flex-shrink-0">
+                                                <div class="card bg-white border border-success p-2 mb-0">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge bg-success me-2"><i class="ri-checkbox-circle-line"></i> Submitted</span>
+                                                        <button type="button" class="btn btn-sm btn-soft-info" id="showSubmissionInfo">
+                                                            <i class="ri-information-line"></i> Info
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="flex-shrink-0">
+                                                <a href="<?= base_url() ?>submission/edit" class="btn btn-success"><i class="ri-edit-box-line align-bottom"></i> Edit Submission</a>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                                 <!-- Tab panes -->
@@ -128,9 +143,7 @@
     </div>
     <!-- END layout-wrapper -->
 
-    <?= $this->include('partials/vendor-scripts') ?>
-
-    <!-- swiper js -->
+    <?= $this->include('partials/vendor-scripts') ?> <!-- swiper js -->
     <script src="/assets/libs/swiper/swiper-bundle.min.js"></script>
 
     <!-- profile init js -->
@@ -138,6 +151,29 @@
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>
+
+    <!-- Sweet Alerts js -->
+    <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+
+    <!-- Sweet alert init js-->
+    <script src="/assets/js/pages/sweetalerts.init.js"></script>    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('showSubmissionInfo').addEventListener('click', function() {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Submission Information',
+                    html: '<p>Your form has been successfully submitted.</p>' +
+                          '<p>Generally, participants cannot make any more changes to submitted forms. However if you require urgent corrections (especially for name spelling which will be used on certificates), please contact the administrator.</p>',
+                    customClass: {
+                        confirmButton: 'btn btn-primary mb-1',
+                    },
+                    confirmButtonText: 'OK',
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

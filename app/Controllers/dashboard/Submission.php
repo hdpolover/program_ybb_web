@@ -25,6 +25,36 @@ class Submission extends BaseController
         // Log submission data for debugging
         log_message('debug', 'Submission::getSubmissionData - Submission Data: ' . json_encode($submissionData));
 
+        // get referral by
+        $referral = $this->makeGetRequest('/participants/' . $currentParticipantId . '/referrals', [], false, false);
+
+        // check for any successful payments
+        $participantPayments = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
+
+        // loop through payments and check if any are successful
+        $hasSuccessfulPayment = false;
+
+        if (isset($participantPayments) && is_array($participantPayments)) {
+            foreach ($participantPayments as $payment) {
+                if (isset($payment['status']) && $payment['status'] === '2') {
+                    $hasSuccessfulPayment = true;
+                    break;
+                }
+            }
+        }
+
+        // get participant statuses
+        $participantStatuses = $this->makeGetRequest('/participants/' . $currentParticipantId . '/status', [], false, false);
+
+        $hasSubmittedForm = false;
+
+        // check if participant form_status from $participantStatuses equals to 2. $participantStatuse is one object. not an array
+        if (isset($participantStatuses)) {
+            if (isset($participantStatuses['form_status']) && $participantStatuses['form_status'] === '2') {
+                $hasSubmittedForm = true;
+            }
+        }
+
         // Extract relevant data
         $data = [
             'participant' => $submissionData['participant'] ?? null,
@@ -34,6 +64,9 @@ class Submission extends BaseController
             'programEssays' => $submissionData['program_essays'] ?? null,
             'programSubthemes' => $submissionData['program_subthemes'] ?? null,
             'competitionCategories' => $submissionData['competition_categories'] ?? null,
+            'hasSuccessfulPayment' => $hasSuccessfulPayment,
+            'hasSubmittedForm' => $hasSubmittedForm,
+            'referral' => $referral,
         ];
 
         return $data;
@@ -189,7 +222,6 @@ class Submission extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Participant ID not found']);
         }
 
-
         // Log the prepared data
         log_message('debug', 'updateProfessional - Prepared Data: ' . json_encode($requestData));
 
@@ -297,6 +329,9 @@ class Submission extends BaseController
         // Get JSON data from request
         $requestData = $this->request->getJSON(true);
 
+        // Get JSON data from request
+        $requestData = $this->request->getJSON(true);
+
         // Get participant ID from session
         $participantId = session()->get('current_participant_id');
 
@@ -304,31 +339,18 @@ class Submission extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Participant ID not found']);
         }
 
-        // Prepare data for API
-        $apiData = [
-            'instagram_account' => $requestData['instagram_account'] ?? null,
-            'knowledge_source' => $requestData['knowledge_source'] ?? null,
-            'source_account_name' => $requestData['source_account_name'] ?? null,
-            'twibbon_link' => $requestData['twibbon_link'] ?? null,
-            'requirement_link' => $requestData['requirement_link'] ?? null,
-            'ambassador_code' => $requestData['ambassador_code'] ?? null,
-        ];
-
         // Log the prepared data
-        log_message('debug', 'updateMisc - Prepared Data: ' . json_encode($apiData));
+        log_message('debug', 'updateProfessional - Prepared Data: ' . json_encode($requestData));
 
         // Send data to API endpoint
-        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $apiData);
+        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $requestData);
 
         // Log the API response
-        log_message('debug', 'updateMisc - API Response: ' . json_encode($response));
+        log_message('debug', 'updateProfessional - API Response: ' . json_encode($response));
 
-        if (isset($response['participant'])) {
+        if (isset($response['participant']) && isset($response['ambassador_id'])) {
             // Update session data
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
-
-            // log updated participant data
-            log_message('debug', 'updateEntry - Updated Participant Data: ' . json_encode($updatedParticipant));
 
             if ($updatedParticipant) {
                 session()->set('current_participant', $updatedParticipant);
@@ -336,9 +358,10 @@ class Submission extends BaseController
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Miscellaneous information updated successfully'
+                'message' => 'Miscellaneous information updated successfully',
             ]);
         }
+
         // Return error message from API or default error
         return $this->response->setJSON([
             'success' => false,
@@ -383,7 +406,7 @@ class Submission extends BaseController
                     'message' => $response['message'] ?? 'Ambassador code is invalid'
                 ]);
             }
-        } 
+        }
 
         // Return API response or default
         return $this->response->setJSON([

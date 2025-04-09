@@ -1,17 +1,6 @@
 <?php
-
-$greetingText = "";
-
-$hour = date('H'); // Get the current hour in 24-hour format
-
-if (($hour >= 0 && $hour < 5) || ($hour >= 5 && $hour < 12)) {
-    $greetingText = "Good Morning";
-} elseif ($hour >= 12 && $hour < 17) {
-    $greetingText = "Good Afternoon";
-} else {
-    $greetingText = "Good Evening";
-}
-
+// Set a default greeting that will be replaced by JavaScript
+$greetingText = "Hello";
 $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full_name'] : 'Participant';
 ?>
 
@@ -67,11 +56,12 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                             </div> <!-- end .h-100-->
 
                         </div> <!-- end col -->
-
                     </div>
 
-                    <?= $this->include('landing/program-detail/registration-cta') ?>
-
+                    <!-- Include Payment Modal Widget -->
+                    <?php echo view('landing/program-detail/registration-cta', [
+                        'program' => $currentProgram ?? null,
+                    ]); ?>
                 </div>
                 <!-- container-fluid -->
             </div>
@@ -98,15 +88,36 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
     <script src="/assets/libs/swiper/swiper-bundle.min.js"></script>
 
     <!-- Dashboard init -->
-    <script src="/assets/js/pages/dashboard-ecommerce.init.js"></script>
-
-    <!-- App js -->
+    <script src="/assets/js/pages/dashboard-ecommerce.init.js"></script>    <!-- App js -->
     <script src="/assets/js/app.js"></script>
-    
+
     <!-- Loading Manager js (handles loading overlays) -->
     <script src="/assets/js/loading-manager.js"></script>
-    
-    <?php if(isset($footer_scripts)): ?>
+
+    <script>
+        // Set greeting based on user's local time
+        document.addEventListener('DOMContentLoaded', function() {
+            const hour = new Date().getHours();
+            let greetingText = "";
+            
+            if (hour >= 0 && hour < 12) {
+                greetingText = "Good Morning";
+            } else if (hour >= 12 && hour < 17) {
+                greetingText = "Good Afternoon";
+            } else {
+                greetingText = "Good Evening";
+            }
+            
+            // Find and update the greeting element
+            const greetingElement = document.querySelector('.col-12 h3');
+            if (greetingElement) {
+                const fullName = greetingElement.textContent.split(',')[1] || '';
+                greetingElement.textContent = `${greetingText},${fullName}`;
+            }
+        });
+    </script>
+
+    <?php if (isset($footer_scripts)): ?>
         <?= $footer_scripts ?>
     <?php endif; ?>
 </body>

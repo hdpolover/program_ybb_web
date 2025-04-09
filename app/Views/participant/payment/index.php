@@ -44,9 +44,19 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                             <h4 class="mb-0">
                                                                 <?php
                                                                 $completePayments = 0;
-                                                                if (isset($participantPayments) && !empty($participantPayments)) {
-                                                                    foreach ($participantPayments as $payment) {
-                                                                        if ($payment['status'] == 2) {
+                                                                // Count successful program payments instead of participant payments
+                                                                if (!empty($programPayments)) {
+                                                                    foreach ($programPayments as $programPayment) {
+                                                                        $isPaid = false;
+                                                                        if (isset($participantPayments) && !empty($participantPayments)) {
+                                                                            foreach ($participantPayments as $payment) {
+                                                                                if ($payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
+                                                                                    $isPaid = true;
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        if ($isPaid) {
                                                                             $completePayments++;
                                                                         }
                                                                     }
@@ -295,11 +305,10 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                     <?php elseif ($programPayment['status'] == 'pending'): ?>
                                                                         <button type="button" class="btn btn-sm btn-warning" disabled title="Payment Processing">
                                                                             <i class="ri-time-line align-middle me-1"></i> Processing
-                                                                        </button>
-                                                                    <?php elseif ($programPayment['status'] == 'paid' || $programPayment['status'] == 'complete'): ?>
-                                                                        <a href="<?= site_url('participant/programPayment/receipt/' . $programPayment['id']); ?>" class="btn btn-sm btn-info" title="Download Receipt">
+                                                                        </button> <?php elseif ($programPayment['status'] == 'paid' || $programPayment['status'] == 'complete'): ?>
+                                                                        <a href="<?= site_url('payments/receipt/' . $payment['id']); ?>" class="btn btn-sm btn-info" title="Download Receipt">
                                                                             <i class="ri-download-2-line align-middle me-1"></i> Receipt
-                                                                        </a> <?php elseif (($programPayment['status'] == 'cancelled' || $programPayment['status'] == 'rejected') && $dueStatus != 'Overdue'): ?> <button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                                                        </a> <?php elseif (($programPayment['status'] == 'cancelled' || $programPayment['status'] == 'rejected') && $dueStatus != 'Overdue'): ?><button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                                                             data-payment-id="<?= $programPayment['id']; ?>"
                                                                             data-payment-index="<?= $key; ?>"
                                                                             title="Try Payment Again">
@@ -349,13 +358,38 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>
-    
+    <!-- Add SweetAlert2 library for better user notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         // Store program payments in a JavaScript variable for access in client-side code
         const programPayments = <?= json_encode($programPayments ?? []); ?>;
         const paymentMethods = <?= json_encode($paymentMethods ?? []); ?>;
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Add click handler for receipt download buttons
+            const receiptButtons = document.querySelectorAll('a[href^="<?= site_url('payments/receipt/') ?>"]');
+            receiptButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Get the original href
+                    const downloadUrl = this.getAttribute('href');
+
+                    // Show loading notification
+                    Swal.fire({
+                        title: 'Generating Receipt',
+                        html: 'Please wait while we generate your receipt...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Continue with download - we don't prevent default here to allow normal link behavior
+                    // The page will navigate away to start the download
+                });
+            });
+
             // Payment modal data
             const makePaymentModal = document.getElementById('makePaymentModal');
             if (makePaymentModal) {

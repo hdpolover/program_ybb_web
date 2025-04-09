@@ -66,66 +66,20 @@
                     <!-- Manual Payment Methods - only shown for manual payment type -->
                     <div id="manualPaymentOptions" style="display: none;">
                         <div class="mb-4">
-                            <label for="paymentMethod" class="form-label fw-medium">Payment Method</label>
-                            <select class="form-select" id="paymentMethod" name="paymentMethod">
+                            <label for="paymentMethod" class="form-label fw-medium">Payment Method</label>                            <select class="form-select" id="paymentMethod" name="paymentMethod">
                                 <option value="">Select Payment Method</option>
                                 <?php if (isset($paymentMethods) && !empty($paymentMethods)): ?>
                                     <?php foreach ($paymentMethods as $method): ?>
                                         <?php if (isset($method['type']) && $method['type'] == 'manual'): ?>
-                                            <option value="<?= $method['id'] ?>"><?= esc($method['name']) ?></option>
+                                            <option value="<?= $method['id'] ?>" 
+                                                    data-description="<?= isset($method['description']) ? esc($method['description']) : '' ?>">
+                                                <?= esc($method['name']) ?>
+                                            </option>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
-                        </div>
-
-                        <!-- Credit Card Fields -->
-                        <div id="creditCardFields" class="payment-method-fields" style="display: none;">
-                            <div class="mb-3">
-                                <label for="cardNumber" class="form-label">Card Number</label>
-                                <input type="text" class="form-control" id="cardNumber" name="cardNumber" placeholder="XXXX XXXX XXXX XXXX">
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="cardExpiry" class="form-label">Expiry Date</label>
-                                        <input type="text" class="form-control" id="cardExpiry" name="cardExpiry" placeholder="MM/YY">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="cardCvv" class="form-label">CVV</label>
-                                        <input type="text" class="form-control" id="cardCvv" name="cardCvv" placeholder="XXX">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="cardName" class="form-label">Cardholder Name</label>
-                                <input type="text" class="form-control" id="cardName" name="cardName" placeholder="Name on card">
-                            </div>
-                        </div>
-
-                        <!-- Bank Transfer Fields -->
-                        <div id="bankTransferFields" class="payment-method-fields" style="display: none;">
-                            <div class="alert alert-info">
-                                <p class="mb-0">Please use the following details::</p>
-                            </div>
-                            <div class="mb-3">
-                                <label for="transferDate" class="form-label">Transfer Date</label>
-                                <input type="date" class="form-control" id="transferDate" name="transferDate">
-                            </div>
-                            <div class="mb-3">
-                                <label for="transferReference" class="form-label">Your Transfer Reference</label>
-                                <input type="text" class="form-control" id="transferReference" name="transferReference" placeholder="Reference number from your bank">
-                            </div>
-                            <div class="mb-3">
-                                <label for="paymentProof" class="form-label">Payment Proof</label>
-                                <input type="file" class="form-control" id="paymentProof" name="paymentProof" accept="image/*">
-                                <div class="form-text">Upload a screenshot or photo of your payment receipt</div>
-                            </div>
-                        </div>
-
-                        <!-- Manual Payment Fields -->
+                        </div>                        <!-- Manual Payment Fields -->
                         <div id="manualPaymentFields" class="payment-method-fields" style="display: none;">
                             <div class="mb-3">
                                 <div class="alert alert-info">
@@ -134,25 +88,25 @@
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="manualMethod" class="form-label">Payment Method Used</label>
-                                <input type="text" class="form-control" id="manualMethod" name="manualMethod" placeholder="e.g., Cash, Check, Money Order">
+                                <label for="account_name" class="form-label">Account Name</label>
+                                <input type="text" class="form-control" id="account_name" name="account_name" placeholder="Name on your bank account/payment source">
                             </div>
                             <div class="mb-3">
-                                <label for="manualDate" class="form-label">Payment Date</label>
-                                <input type="date" class="form-control" id="manualDate" name="manualDate">
+                                <label for="source_name" class="form-label">Source Name</label>
+                                <input type="text" class="form-control" id="source_name" name="source_name" placeholder="Bank name or payment source">
                             </div>
                             <div class="mb-3">
-                                <label for="manualReference" class="form-label">Reference Number (if any)</label>
-                                <input type="text" class="form-control" id="manualReference" name="manualReference" placeholder="Reference number or receipt number">
+                                <label for="payment_date" class="form-label">Payment Date</label>
+                                <input type="date" class="form-control" id="payment_date" name="payment_date" required>
                             </div>
                             <div class="mb-3">
                                 <label for="manualProof" class="form-label">Payment Proof (Required)</label>
-                                <input type="file" class="form-control" id="manualProof" name="manualProof" accept="image/*" required>
+                                <input type="file" class="form-control" id="manualProof" name="proof_url" accept="image/*" required>
                                 <div class="form-text">Upload a photo of your receipt or payment proof</div>
                             </div>
                             <div class="mb-3">
-                                <label for="manualNotes" class="form-label">Additional Notes</label>
-                                <textarea class="form-control" id="manualNotes" name="manualNotes" rows="3" placeholder="Any additional information about your payment"></textarea>
+                                <label for="notes" class="form-label">Additional Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional information about your payment"></textarea>
                             </div>
                         </div>
 
@@ -303,24 +257,25 @@
                 } else if (value === 'bank_transfer' || (value >= 3 && value <= 4)) {
                     document.getElementById('bankTransferFields').style.display = 'block';
                 } else if (value === 'paypal' || value == 5) {
-                    document.getElementById('paypalFields').style.display = 'block';
-                } else if (value === 'manual' || value >= 6) {
-                    document.getElementById('manualPaymentFields').style.display = 'block';
-
-                    document.getElementById('manualInstructions').style.display = 'block';
+                    document.getElementById('paypalFields').style.display = 'block';                } else if (value === 'manual' || value >= 6) {
+                    document.getElementById('manualPaymentFields').style.display = 'block';                    document.getElementById('manualInstructions').style.display = 'block';
 
                     // set manual instructions
-                    const instructions = document.getElementById('manualInstructions');
-
-                    // get selected paymetn method
+                    const instructions = document.getElementById('manualInstructions');                    // get selected payment method
                     const selectedOption = paymentMethodSelect.options[paymentMethodSelect.selectedIndex];
                     const selectedMethod = selectedOption.textContent || selectedOption.innerText;
+                    const paymentDescription = selectedOption.getAttribute('data-description');
 
+                    // Populate instructions with description from payment method
+                    if (paymentDescription) {
+                        // Display HTML content properly
+                        instructions.innerHTML = paymentDescription;
+                    } else {
+                        instructions.textContent = 'Please complete the payment using ' + selectedMethod + ' and upload proof of your payment.';
+                    }
                 }
             });
-        }
-
-        // Function to filter payment methods based on selected type
+        }        // Function to filter payment methods based on selected type
         function filterPaymentMethodsByType(type) {
             const paymentMethodSelect = document.getElementById('paymentMethod');
             if (!paymentMethodSelect) return;
@@ -328,12 +283,12 @@
             // Hide or show the payment method section based on type
             const paymentMethodSection = document.getElementById('paymentMethodSection');
 
-            // For automatic payment, just show the section (continue button will be shown)
+            // For gateway payment, just show the section (continue button will be shown)
             // For manual payment, show detailed form fields
-            if (type === 'automatic') {
+            if (type === 'gateway') {
                 paymentMethodSection.style.display = 'block';
 
-                // Show only automatic payment methods
+                // Show only gateway payment methods
                 Array.from(paymentMethodSelect.options).forEach(option => {
                     const optionType = option.getAttribute('data-type') || '';
                     if (option.value === '') {
@@ -341,7 +296,7 @@
                         option.style.display = '';
                     } else {
                         // Show only options that match the selected type
-                        option.style.display = (optionType === 'automatic') ? '' : 'none';
+                        option.style.display = (optionType === 'gateway') ? '' : 'none';
                     }
                 });
             } else if (type === 'manual') {
@@ -365,6 +320,6 @@
         }
 
         // Initialize the payment type on page load
-        filterPaymentMethodsByType('automatic');
+        filterPaymentMethodsByType('gateway');
     });
 </script>
