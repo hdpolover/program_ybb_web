@@ -117,13 +117,13 @@ $statusClass = isset($statusInfo['iconClass']) ? $statusInfo['iconClass'] : 'pri
                                     </p>
                                 </div>
                             </div>
-                        </div>
-
-
-                    </div>
+                        </div>                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 </div>
+
+<!-- Include the receipt handler script -->
+<script src="/assets/js/pages/receipt-handler.js"></script>

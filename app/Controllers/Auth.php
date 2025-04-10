@@ -177,7 +177,7 @@ class Auth extends BaseController
 
             // Check for successful response
             if (isset($response['message']) && $response['message']) {
-                return redirect()->to('forgot-password')->with('success', 'Reset link sent to your email. Please check your inbox.');
+                return redirect()->to('sign-in')->with('success', 'Reset link sent to your email. Please check your inbox.');
             } else {
                 return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
             }

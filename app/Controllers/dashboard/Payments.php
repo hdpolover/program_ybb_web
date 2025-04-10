@@ -223,23 +223,157 @@ class Payments extends BaseController
 
         return $this->render('participant/payment/detail', $data);
     }
-
     /**
      * Process a new programPayment attempt for a specific program programPayment
      */
     public function makePayment()
     {
-        // Validate input
-        $validation = \Config\Services::validation();
-        $validation->setRules([
-            'paymentId' => 'required|numeric',
-            'paymentMethod' => 'required',
-            'amount' => 'required|numeric'
-        ]);
+        // get post data
+        $inputs = $this->request->getPost();
 
-        if (!$validation->withRequest($this->request)->run()) {
-            return redirect()->back()->with('errors', $validation->getErrors());
+        // get participant id from session
+        $participantId = session()->get('current_participant_id');
+
+        if (empty($participantId)) {
+            return redirect()->to(base_url('payments'))->with('error', 'Participant ID not found in session.');
         }
+
+        $paymentType = $inputs['paymentType'];
+
+        if ($paymentType == 'manual') {
+            $programPaymentId = $inputs['program_payment_id'];
+            $paymentMethodId = $inputs['payment_method_id'];
+            $sourceName = $inputs['source_name'] ?? '';
+            $accountName = $inputs['account_name'] ?? '';
+            $notes = $inputs['notes'] ?? '';
+            $paymentDate = $inputs['payment_date'] ?? '';
+
+            // Get the file with the correct field name matching the API            
+            $proof = $this->request->getFile('proof_url');
+
+            // Check if we have a valid file
+            $hasValidFile = $proof && $proof->isValid() && !$proof->hasMoved();
+
+            if ($hasValidFile) {
+                // This is a file upload, so we need to use a different approach
+                // Manually build the POST payload and directly send it with cURL
+
+                // Prepare the endpoint URL
+                $url = $this->apiBaseUrl . '/payments/create';
+
+                // Set up cURL
+                $curl = curl_init();
+
+                // Build the multipart/form-data payload
+                $payload = [
+                    'participant_id' => $participantId,
+                    'program_payment_id' => $programPaymentId,
+                    'payment_method_id' => $paymentMethodId,
+                    'source_name' => $sourceName,
+                    'account_name' => $accountName,
+                    'notes' => $notes,
+                    'payment_date' => $paymentDate,
+                    'proof' => curl_file_create(
+                        $proof->getTempName(),
+                        $proof->getMimeType(),
+                        $proof->getName()
+                    )
+                ];
+
+                log_message('debug', 'Making direct cURL payment request with file upload');
+
+                // Set cURL options
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => $url,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $payload,
+                    CURLOPT_HTTPHEADER => [
+                        'Accept: application/json'
+                    ]
+                ]);
+
+                // Execute the cURL request
+                $response = curl_exec($curl);
+                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                $error = curl_error($curl);
+
+                // Close the cURL session
+                curl_close($curl);
+
+                // Log the response
+                log_message('debug', 'Payment cURL Response: ' . $response);
+                if ($error) {
+                    log_message('error', 'cURL Error: ' . $error);
+                }
+
+                // Process the response
+                $responseData = json_decode($response, true);
+
+                if ($httpCode >= 200 && $httpCode < 300 && $responseData) {
+                    log_message('debug', 'Payment request successful');
+                    session()->setFlashdata('swal', json_encode([
+                        'title' => 'Success!',
+                        'text' => 'Your payment has been submitted successfully and is now awaiting approval.',
+                        'icon' => 'success'
+                    ]));
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId));
+                } else {
+                    log_message('error', 'Payment request failed: ' . ($error ?: 'API Error'));
+                    session()->setFlashdata('swal', json_encode([
+                        'title' => 'Error!',
+                        'text' => 'There was a problem submitting your payment. Please try again.',
+                        'icon' => 'error'
+                    ]));
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId));
+                }
+            } else {
+                // No file upload, use the regular makePostRequest method
+                $formData = [
+                    'participant_id' => $participantId,
+                    'program_payment_id' => $programPaymentId,
+                    'payment_method_id' => $paymentMethodId,
+                    'source_name' => $sourceName,
+                    'account_name' => $accountName,
+                    'notes' => $notes,
+                    'payment_date' => $paymentDate,
+                ];
+
+                log_message('debug', 'Making payment request with data (no file): ' . json_encode($formData));
+
+                $response = $this->makePostRequest(
+                    '/payments/create',
+                    $formData,
+                    [], // No additional headers
+                    false, // Use JWT if needed
+                    true, // Send as JSON
+                    false, // Not multipart
+                    [] // No file data
+                );
+
+                if ($response) {
+                    log_message('debug', 'Payment request successful: ' . json_encode($response));
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('success', 'Payment request submitted successfully.');
+                } else {
+                    log_message('error', 'Payment request failed');
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('error', 'Error submitting payment request.');
+                }
+            }
+        }
+
+        // Validate input
+        // $validation = \Config\Services::validation();
+        // $validation->setRules([
+        //     'paymentId' => 'required|numeric',
+        //     'paymentMethod' => 'required',
+        //     'amount' => 'required|numeric'
+        // ]);
+
+        // if (!$validation->withRequest($this->request)->run()) {
+        //     return redirect()->back()->with('errors', $validation->getErrors());
+        // }
 
         // Process the programPayment (in a real implementation, this would connect to a programPayment gateway)
         // $paymentModel = new \App\Models\ProgramPaymentModel();
@@ -250,8 +384,9 @@ class Payments extends BaseController
         // );
 
         // Simulate successful programPayment for demonstration
-        return redirect()->back()->with('success', 'Payment processed successfully');
+        //return redirect()->back()->with('success', 'Payment processed successfully');
     }
+
     /**
      * Download programPayment receipt for a completed programPayment attempt
      * 
@@ -273,11 +408,6 @@ class Payments extends BaseController
                 log_message('error', 'Payment not found with ID: ' . $id);
                 return redirect()->back()->with('error', 'Payment not found.');
             }
-
-            // For debugging only - accept any payment status for now
-            // if (!isset($payment['status']) || $payment['status'] != '2') {
-            //    return redirect()->back()->with('error', 'Payment not completed successfully.');
-            // }
 
             log_message('info', 'Payment found: ' . json_encode($payment));
 
@@ -325,22 +455,32 @@ class Payments extends BaseController
                 'program' => $program,
                 'paymentMethod' => $paymentMethod,
                 'webSettings' => $this->data['webSettings'] ?? null,
-            ];// Make sure DOMPDF is available
+            ];
+            
+            // Format the data to match the template's expected structure
+            if (isset($programPayment)) {
+                $data['programPayment'] = [
+                    'name' => $programPayment['name'] ?? 'Program Payment',
+                    'type' => $programPayment['category'] ?? 'Payment'
+                ];
+            }
+
+            log_message('info', 'Data prepared for PDF generation: ' . json_encode($data));
+
+            // Make sure DOMPDF is available
             if (!class_exists('\Dompdf\Dompdf')) {
                 log_message('error', 'DOMPDF library not found. Please install it using composer.');
                 return redirect()->back()->with('error', 'PDF generation library not found. Please contact support.');
             }
-            
+
             // Make sure QrCodeHelper is loaded
             helper('QrCodeHelper');
             // Set higher execution time limit for PDF generation
             ini_set('max_execution_time', 180); // 3 minutes
-            set_time_limit(180);
-
-            // Generate PDF with optimized settings
+            set_time_limit(180);            // Generate PDF with optimized settings
             $dompdf = new \Dompdf\Dompdf();
             $options = new \Dompdf\Options();
-            $options->set('isRemoteEnabled', false); // Disable loading external images to improve performance
+            $options->set('isRemoteEnabled', true); // Enable loading external images
             $options->set('defaultFont', 'Arial');
             $options->set('isHtml5ParserEnabled', true);
             $options->set('debugKeepTemp', false);
@@ -356,7 +496,7 @@ class Payments extends BaseController
 
             // Load the receipt view into the PDF
             log_message('info', 'Rendering receipt view');
-            $html = view('participant/payment/receipt', $data);
+            $html = view('participant/payment/new-receipt', $data);
             $dompdf->loadHtml($html);
 
             // Set paper size and orientation (A4 is too large, use something smaller)
@@ -374,15 +514,23 @@ class Payments extends BaseController
             log_message('info', 'Rendering PDF - completed');
 
             // Generate a filename
-            $fileName = 'Receipt_' . ($payment['transaction_code'] ?? 'YBB-' . $id) . '.pdf';
-
-            log_message('info', 'Streaming PDF to browser: ' . $fileName);
+            $fileName = 'Receipt_' . ($payment['transaction_code'] ?? 'YBB-' . $id) . '.pdf';            log_message('info', 'Streaming PDF to browser: ' . $fileName);
 
             // Reset memory limit
             ini_set('memory_limit', $currentMemoryLimit);
-
-            // Stream the PDF to the browser (force download)
-            return $dompdf->stream($fileName, ['Attachment' => true]);
+            
+            // Get the PDF content
+            $pdfContent = $dompdf->output();
+            
+            // Set the appropriate headers
+            $response = service('response');
+            $response->setHeader('Content-Type', 'application/pdf');
+            $response->setHeader('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+            $response->setHeader('Cache-Control', 'no-store');
+            $response->setHeader('Content-Length', strlen($pdfContent));
+            
+            // Output the PDF content directly
+            return $response->setBody($pdfContent);
         } catch (\Exception $e) {
             // Log the error for debugging
             log_message('error', 'Error generating receipt: ' . $e->getMessage());

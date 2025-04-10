@@ -56,9 +56,17 @@
                             <!-- List of Programs -->
                             <div class="dropdown-programs-container" style="max-height: 350px; overflow-y: auto; padding: 8px 0;">
                                 <?php if (isset($sorted_programs) && is_array($sorted_programs) && count($sorted_programs) > 0): ?>
-                                    <?php foreach ($sorted_programs as $program): ?>
+                                    <?php foreach ($sorted_programs as $program): ?>                                        <?php 
+                                            // Check if participant is registered for this program
+                                            $isRegistered = false;
+                                            if (isset($participant_programs) && is_array($participant_programs)) {
+                                                $isRegistered = in_array($program['id'] ?? null, $participant_programs);
+                                            }
+                                        ?>
                                         <a class="dropdown-item d-flex align-items-center <?= (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId) ? 'active' : '' ?>"
                                             href="<?= site_url('topbar/setProgram/' . $program['id']) ?>"
+                                            data-program-id="<?= $program['id'] ?? '' ?>"
+                                            data-registered="<?= $isRegistered ? '1' : '0' ?>"
                                             style="padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
                                             <div class="d-flex align-items-center flex-grow-1">
                                                 <div style="max-width: 85%;">
@@ -70,9 +78,12 @@
                                                         <?php else: ?>
                                                             <span class="badge bg-danger-subtle text-danger fs-11 me-2">Inactive</span>
                                                         <?php endif; ?>
+                                                          <?php if (!$isRegistered): ?>
+                                                            <span class="badge bg-warning-subtle text-warning fs-11 me-2">Not Registered</span>
+                                                        <?php endif; ?>
                                                         
                                                         <?php if (isset($program['start_date']) && !empty($program['start_date'])): ?>
-                                                            <span class="text-muted fs-11 me-2">
+                                                            <span class="badge bg-light-subtle text-dark fs-11 me-2 py-1 px-2 border">
                                                                 <i class="ri-calendar-line align-bottom"></i> 
                                                                 <?= date('M d, Y', strtotime($program['start_date'])) ?>
                                                                 <?php if (isset($program['end_date']) && !empty($program['end_date'])): ?>
@@ -83,9 +94,8 @@
                                                     </div>
                                                     
                                                 </div>
-                                            </div>
-                                            <?php if (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId): ?>
-                                                <i class="ri-checkbox-circle-fill text-success ms-2 fs-17"></i>
+                                            </div>                                            <?php if (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId): ?>
+                                                <i class="ri-checkbox-circle-fill text-white ms-2 fs-17"></i>
                                             <?php endif; ?>
                                         </a>
                                     <?php endforeach; ?>
@@ -97,7 +107,7 @@
                     </div>
 
                     <div class="dropdown ms-sm-3 header-item topbar-user">
-                        <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-user-id="<?= session()->get('user')['id'] ?? '' ?>">
                             <span class="d-flex align-items-center">
                                 <?php if (isset($profileImage) && !empty($profileImage)): ?>
                                     <img class="rounded-circle header-profile-user" src="<?= esc($profileImage) ?>" alt="Header Avatar">

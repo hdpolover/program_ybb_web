@@ -94,6 +94,36 @@
 
     <!-- Payment Details Page js -->
     <script src="/assets/js/pages/payment-details.js"></script>
+
+    <!-- Add SweetAlert2 library for better user notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- SweetAlert2 Flash Message Handler -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if there are any flash messages set in session
+            <?php if(session()->has('swal')): ?>
+                // Parse the JSON flash data
+                const swalData = JSON.parse('<?= session()->getFlashdata('swal') ?>');
+                
+                // Display SweetAlert2 notification
+                Swal.fire({
+                    title: swalData.title || '',
+                    text: swalData.text || '',
+                    icon: swalData.icon || 'info',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: false,
+                    position: 'center',
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+            <?php endif; ?>
+        });
+    </script>
 </body>
 
 </html>

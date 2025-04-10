@@ -98,7 +98,7 @@ abstract class BaseController extends Controller
         $baseDomain = getBaseDomain();
 
         if ($baseDomain === "://localhost:8081") {
-            $this->currentUrl = "https://koreayouthsummit.com";
+            $this->currentUrl = "https://worldyouthfest.com";
         } else {
             $this->currentUrl = $baseDomain;
         }
@@ -118,14 +118,14 @@ abstract class BaseController extends Controller
             log_message('warning', 'BaseController - No web settings found');
         } else {
             $this->data['webSettings'] = $webSettingData;
-            
+
             // Store maintenance mode status in session for filter to access
             if (isset($webSettingData['is_maintenance_mode'])) {
                 // Store in session
                 session()->set('is_maintenance_mode', $webSettingData['is_maintenance_mode']);
                 log_message('debug', 'BaseController - Saved is_maintenance_mode to session: ' . $webSettingData['is_maintenance_mode']);
             }
-            
+
             // Initialize the WebSettings service as a backup approach
             try {
                 $webSettingsService = \Config\Services::webSettings(true);
@@ -133,11 +133,11 @@ abstract class BaseController extends Controller
             } catch (\Exception $e) {
                 log_message('error', 'BaseController - Failed to initialize WebSettings service: ' . $e->getMessage());
             }
-            
+
             // Direct maintenance mode check
             if (
-                isset($webSettingData['is_maintenance_mode']) && 
-                ($webSettingData['is_maintenance_mode'] === 1 || $webSettingData['is_maintenance_mode'] === '1') && 
+                isset($webSettingData['is_maintenance_mode']) &&
+                ($webSettingData['is_maintenance_mode'] === 1 || $webSettingData['is_maintenance_mode'] === '1') &&
                 uri_string() !== 'maintenance'
             ) {
                 log_message('info', 'BaseController - Redirecting to maintenance page');
@@ -181,10 +181,10 @@ abstract class BaseController extends Controller
     {
         // Create an instance of TopbarController
         $topbarController = new \App\Controllers\TopbarController();
-        
+
         // Get the topbar data
         $topbarData = $topbarController->processTopbarData();
-        
+
         // Merge topbar data with the existing data array
         $this->data = array_merge($this->data, $topbarData);
     }
@@ -196,7 +196,7 @@ abstract class BaseController extends Controller
     {
         // Prepare topbar data before rendering
         $this->prepareTopbarData();
-        
+
         // Merge global data with view-specific data
         $data = array_merge($this->data, $data);
         return view($view, $data);
@@ -236,7 +236,7 @@ abstract class BaseController extends Controller
                 }
                 // Log the entire response for debugging
                 log_message('debug', 'Response: ' . json_encode($bodyDecoded));
-                
+
                 return $bodyDecoded; // Return the whole response if 'data' key is not present
             }
         } catch (\Exception $e) {
@@ -245,7 +245,6 @@ abstract class BaseController extends Controller
             return null;
         }
     }
-
     /**
      * Make a POST request to an API endpoint with optional JWT authentication
      * 
@@ -254,23 +253,69 @@ abstract class BaseController extends Controller
      * @param array $headers Additional headers
      * @param bool $useJwt Whether to use JWT authorization
      * @param bool $asJson Whether to send data as JSON or form data
+     * @param bool $isMultipart Whether to send as multipart/form-data (for file uploads)
+     * @param array $multipartData Array of multipart data for file uploads in format [['name' => 'field_name', 'contents' => file_contents, 'filename' => 'filename.ext']]
      * @return mixed Response data or null on error
      */
-    function makePostRequest($endpoint, $data, $headers = [], $useJwt = false, $asJson = false)
+    function makePostRequest($endpoint, $data, $headers = [], $useJwt = false, $asJson = false, $isMultipart = false, $multipartData = [])
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
             $options = [];
 
-            // Handle data format based on $asJson parameter
-            if ($asJson) {
+            // Handle data format based on parameters
+            if ($isMultipart) {
+                // Use multipart/form-data format (for file uploads)
+                $options['multipart'] = [];
+
+                // Add regular form fields to multipart data
+                if (is_array($data)) {
+                    foreach ($data as $name => $contents) {
+                        // Convert any arrays to JSON strings to prevent "Array to string conversion" errors
+                        if (is_array($contents)) {
+                            $contents = json_encode($contents);
+                        }
+                        $options['multipart'][] = [
+                            'name' => $name,
+                            'contents' => $contents
+                        ];
+                    }
+                }
+
+                // Add provided multipart data (files)
+                if (!empty($multipartData)) {
+                    foreach ($multipartData as $part) {
+                        // Ensure each part has the required fields and is properly formatted
+                        if (isset($part['name']) && isset($part['contents']) && isset($part['filename'])) {
+                            $options['multipart'][] = $part;
+                        } else {
+                            log_message('warning', 'Skipping invalid multipart data: ' . json_encode($part));
+                        }
+                    }
+                }
+
+                // For multipart requests, we need to let the client set the Content-Type
+                // Create headers without Content-Type to let Guzzle set it properly for multipart data
+                $multipartHeaders = [
+                    'Accept' => 'application/json'
+                ];
+
+                // Do NOT include the default headers which contain Content-Type: application/json
+                // This is critical for multipart requests
+                $options['headers'] = array_merge($multipartHeaders, $headers);
+
+                // Explicitly remove Content-Type if it exists to let Guzzle handle it
+                if (isset($options['headers']['Content-Type'])) {
+                    unset($options['headers']['Content-Type']);
+                }
+            } else if ($asJson) {
                 // Use JSON format
                 $options['body'] = is_array($data) ? json_encode($data) : $data;
                 $options['headers'] = array_merge($this->defaultHeaders, $headers);
             } else {
-                // Use form data format
+                // Use regular form data format
                 $options['form_params'] = $data;
-                
+
                 // Only include Content-Type: application/json if explicitly requested
                 $formHeaders = [
                     'Accept' => 'application/json'
@@ -285,7 +330,7 @@ abstract class BaseController extends Controller
                     $options['headers']['Authorization'] = 'Bearer ' . $token;
                 }
             }
-            
+
             // Log the URL and request data for debugging
             log_message('debug', "POST Request URL: " . $url);
             log_message('debug', "POST Request Data: " . json_encode($data));
@@ -294,14 +339,14 @@ abstract class BaseController extends Controller
 
             // Set up additional options
             $options['http_errors'] = false; // Don't throw exceptions for error responses
-            
+
             // Make the request
             $response = $this->client->request('POST', $url, $options);
-            
+
             // Get response body
             $responseBody = $response->getBody();
             $bodyDecoded = json_decode($responseBody, true);
-            
+
             // Log response body for debugging
             log_message('debug', "POST Response Body: " . json_encode($bodyDecoded));
 
@@ -312,7 +357,11 @@ abstract class BaseController extends Controller
                 return $bodyDecoded; // Return the whole response if 'data' key is not present
             }
         } catch (\Exception $e) {
-            log_message('error', 'POST Request Error: ' . $e->getMessage());
+            // Handle Array to string conversion errors more gracefully
+            $errorMessage = $e->getMessage();
+
+            log_message('error', 'POST Request Error: ' . $errorMessage);
+
             return null;
         }
     }
@@ -416,7 +465,7 @@ abstract class BaseController extends Controller
         if (session()->get('isLoggedIn') && !session()->has('jwt_token')) {
             session()->remove('isLoggedIn');
             session()->remove('user');
-            
+
             // In a production app, you might want to redirect to login here
             // but for a library function, we'll just return null
             log_message('error', 'JWT token missing for logged in user');

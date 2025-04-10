@@ -348,7 +348,7 @@ class Submission extends BaseController
         // Log the API response
         log_message('debug', 'updateProfessional - API Response: ' . json_encode($response));
 
-        if (isset($response['participant']) && isset($response['ambassador_id'])) {
+        if (isset($response['participant'])) {
             // Update session data
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
 
@@ -412,6 +412,41 @@ class Submission extends BaseController
         return $this->response->setJSON([
             'is_valid' =>  false,
             'message' => $response['message'] ?? 'Failed to validate ambassador code'
+        ]);
+    }
+
+    // submit form
+    public function submitForm()
+    {
+        // Check if request is AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        // Get participant ID from session
+        $participantId = session()->get('current_participant_id');
+
+        if (empty($participantId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Participant ID not found']);
+        }
+
+        // Send data to API endpoint
+        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/submit', []);
+
+        // Log the API response
+        log_message('debug', 'submitForm - API Response: ' . json_encode($response));
+
+        if (isset($response['participant_id'])) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Form submitted successfully'
+            ]);
+        }
+
+        // Return error message from API or default error
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => $response['message'] ?? 'Failed to submit form'
         ]);
     }
 }

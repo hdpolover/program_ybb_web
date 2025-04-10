@@ -2,7 +2,7 @@
 
 /**
  * Payment Modal Widget
- * Reusable modal for making payments with various payment methods
+ * Reusable modal for making payments with various payment methods                           <div class="mb-3">
  */
 ?>
 
@@ -15,11 +15,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form action="<?= site_url('participant/programPayment/make'); ?>" method="post" id="paymentForm" enctype="multipart/form-data">
+                <form action="<?= site_url('payments/make'); ?>" method="post" id="paymentForm" enctype="multipart/form-data" novalidate>
                     <?= csrf_field() ?>
-                    <input type="hidden" name="paymentId" id="payment_id" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['id'] : '' ?>">
+                    <input type="hidden" name="program_payment_id" id="program_payment_id" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['id'] : '' ?>">
                     <input type="hidden" name="amount" id="payment_amount" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['usd_amount'] : '' ?>">
                     <input type="hidden" name="paymentType" id="payment_type" value="gateway">
+                    <input type="hidden" name="payment_method_id" id="payment_method_id" value="">
                     <?php if (isset($selectedProgramPayment)): ?>
                         <input type="hidden" name="paymentName" value="<?= esc($selectedProgramPayment['name']) ?>">
                         <?php if (isset($selectedProgramPayment['category'])): ?>
@@ -66,20 +67,20 @@
                     <!-- Manual Payment Methods - only shown for manual payment type -->
                     <div id="manualPaymentOptions" style="display: none;">
                         <div class="mb-4">
-                            <label for="paymentMethod" class="form-label fw-medium">Payment Method</label>                            <select class="form-select" id="paymentMethod" name="paymentMethod">
+                            <label for="paymentMethod" class="form-label fw-medium">Payment Method</label> <select class="form-select" id="paymentMethod" name="paymentMethod">
                                 <option value="">Select Payment Method</option>
                                 <?php if (isset($paymentMethods) && !empty($paymentMethods)): ?>
                                     <?php foreach ($paymentMethods as $method): ?>
                                         <?php if (isset($method['type']) && $method['type'] == 'manual'): ?>
-                                            <option value="<?= $method['id'] ?>" 
-                                                    data-description="<?= isset($method['description']) ? esc($method['description']) : '' ?>">
+                                            <option value="<?= $method['id'] ?>"
+                                                data-description="<?= isset($method['description']) ? esc($method['description']) : '' ?>">
                                                 <?= esc($method['name']) ?>
                                             </option>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
-                        </div>                        <!-- Manual Payment Fields -->
+                        </div> <!-- Manual Payment Fields -->
                         <div id="manualPaymentFields" class="payment-method-fields" style="display: none;">
                             <div class="mb-3">
                                 <div class="alert alert-info">
@@ -89,15 +90,18 @@
                             </div>
                             <div class="mb-3">
                                 <label for="account_name" class="form-label">Account Name</label>
-                                <input type="text" class="form-control" id="account_name" name="account_name" placeholder="Name on your bank account/payment source">
+                                <input type="text" class="form-control" id="account_name" name="account_name" placeholder="Name on your bank account/payment source" required>
+                                <div class="invalid-feedback">Please enter the account name</div>
                             </div>
                             <div class="mb-3">
                                 <label for="source_name" class="form-label">Source Name</label>
-                                <input type="text" class="form-control" id="source_name" name="source_name" placeholder="Bank name or payment source">
+                                <input type="text" class="form-control" id="source_name" name="source_name" placeholder="Bank name or payment source" required>
+                                <div class="invalid-feedback">Please enter the source name</div>
                             </div>
                             <div class="mb-3">
                                 <label for="payment_date" class="form-label">Payment Date</label>
-                                <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                                <input type="date" class="form-control" id="payment_date" name="payment_date" required max="<?= date('Y-m-d') ?>">
+                                <div class="invalid-feedback">Please select a valid payment date (today or earlier)</div>
                             </div>
                             <div class="mb-3">
                                 <label for="manualProof" class="form-label">Payment Proof (Required)</label>
@@ -109,24 +113,14 @@
                                 <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional information about your payment"></textarea>
                             </div>
                         </div>
-
-                        <!-- PayPal Fields -->
-                        <div id="paypalFields" class="payment-method-fields" style="display: none;">
-                            <div class="alert alert-info">
-                                <p class="mb-0">You will be redirected to PayPal to complete your payment after clicking the "Complete Payment" button.</p>
-                            </div>
-                            <div class="mb-3">
-                                <label for="paypalEmail" class="form-label">PayPal Email (Optional)</label>
-                                <input type="email" class="form-control" id="paypalEmail" name="paypalEmail" placeholder="your-email@example.com">
-                            </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="hstack gap-2 justify-content-end">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Complete Payment</button>
                         </div>
+                    </div>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <div class="hstack gap-2 justify-content-end">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="paymentForm" class="btn btn-success">Complete Payment</button>
-                </div>
             </div>
         </div>
     </div>
@@ -134,25 +128,103 @@
 
 <!-- Payment Modal Script -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() { // Payment modal data
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const paymentForm = document.getElementById('paymentForm');
+        if (paymentForm) {
+            paymentForm.addEventListener('submit', function(event) {
+                const paymentType = document.getElementById('payment_type').value;
+
+                // Only validate manual payment fields if payment type is manual
+                if (paymentType === 'manual') {
+                    if (!this.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.classList.add('was-validated');
+                        return;
+                    }
+
+                    // Add validation classes to show error messages
+                    this.classList.add('was-validated');
+                }                // If form is valid, show loading indicator
+                if (this.checkValidity()) {
+                    event.preventDefault();
+                    
+                    // Close the modal first
+                    let paymentModal = bootstrap.Modal.getInstance(document.getElementById('makePaymentModal'));
+                    paymentModal.hide();
+                    
+                    // Show loading indicator
+                    Swal.fire({
+                        title: 'Processing Payment',
+                        html: 'Please wait while we process your payment...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form after showing loading indicator
+                    setTimeout(() => {
+                        this.submit();
+                    }, 500);
+                }
+            });
+        }
+
+        // Payment modal data
         const makePaymentModal = document.getElementById('makePaymentModal');
         if (makePaymentModal) {
             makePaymentModal.addEventListener('show.bs.modal', function(event) {
-                // Check if we have a button that triggered this modal
-                // If not, assume we're using pre-populated data from selectedProgramPayment
+                // Check if we have a button that triggered this modal                // If not, assume we're using pre-populated data from selectedProgramPayment
                 if (event.relatedTarget) {
                     const button = event.relatedTarget;
                     const paymentId = button.getAttribute('data-payment-id');
-                    const paymentAmount = button.getAttribute('data-payment-amount');
-                    const paymentDescription = button.getAttribute('data-payment-description');
+                    const paymentData = button.getAttribute('data-payment-object');
+                    let selectedPayment = null;
 
-                    // Only set these values if they're empty (not already set by server-side data)
-                    if (!document.getElementById('payment_id').value) {
-                        document.getElementById('payment_id').value = paymentId;
+                    // Try parsing the full payment object if available
+                    if (paymentData) {
+                        try {
+                            selectedPayment = JSON.parse(paymentData);
+                        } catch (e) {
+                            console.error('Error parsing payment object:', e);
+                        }
                     }
 
-                    if (!document.getElementById('payment_amount').value) {
-                        document.getElementById('payment_amount').value = paymentAmount;
+                    // Fallback to programPayments array if available
+                    if (!selectedPayment && typeof programPayments !== 'undefined') {
+                        const paymentIndex = button.getAttribute('data-payment-index');
+                        if (paymentIndex) {
+                            selectedPayment = programPayments[paymentIndex] || null;
+                        }
+                    }
+
+                    if (selectedPayment) {
+                        // Set data from the payment object
+                        document.getElementById('program_payment_id').value = selectedPayment.id;
+                        document.getElementById('payment_amount').value = selectedPayment.usd_amount;
+
+                        if (document.getElementById('payment_description')) {
+                            document.getElementById('payment_description').textContent = selectedPayment.name || 'Program Payment';
+                        }
+
+                        if (document.getElementById('payment_amount_display')) {
+                            document.getElementById('payment_amount_display').textContent = '$' + parseFloat(selectedPayment.usd_amount).toFixed(2);
+                        }
+                    } else {
+                        // Final fallback to individual attributes
+                        document.getElementById('program_payment_id').value = paymentId;
+                        document.getElementById('payment_amount').value = button.getAttribute('data-payment-amount');
+
+                        if (document.getElementById('payment_description')) {
+                            document.getElementById('payment_description').textContent = button.getAttribute('data-payment-description') || 'Program Payment';
+                        }
+
+                        if (document.getElementById('payment_amount_display')) {
+                            const amount = button.getAttribute('data-payment-amount') || '0.00';
+                            document.getElementById('payment_amount_display').textContent = '$' + parseFloat(amount).toFixed(2);
+                        }
                     }
 
                     // Only update the description if it's empty
@@ -238,9 +310,7 @@
                     field.style.display = 'none';
                 });
             });
-        }
-
-        // Payment method fields toggle
+        } // Payment method fields toggle
         const paymentMethodSelect = document.getElementById('paymentMethod');
         if (paymentMethodSelect) {
             paymentMethodSelect.addEventListener('change', function() {
@@ -249,33 +319,28 @@
                     field.style.display = 'none';
                 });
 
-                // Show selected payment method fields
-                const value = this.value;
+                // Set payment_method_id hidden field value
+                document.getElementById('payment_method_id').value = this.value;
 
-                if (value === 'credit_card' || value === 'debit_card' || (value >= 1 && value <= 2)) {
-                    document.getElementById('creditCardFields').style.display = 'block';
-                } else if (value === 'bank_transfer' || (value >= 3 && value <= 4)) {
-                    document.getElementById('bankTransferFields').style.display = 'block';
-                } else if (value === 'paypal' || value == 5) {
-                    document.getElementById('paypalFields').style.display = 'block';                } else if (value === 'manual' || value >= 6) {
-                    document.getElementById('manualPaymentFields').style.display = 'block';                    document.getElementById('manualInstructions').style.display = 'block';
+                document.getElementById('manualPaymentFields').style.display = 'block';
+                document.getElementById('manualInstructions').style.display = 'block';
 
-                    // set manual instructions
-                    const instructions = document.getElementById('manualInstructions');                    // get selected payment method
-                    const selectedOption = paymentMethodSelect.options[paymentMethodSelect.selectedIndex];
-                    const selectedMethod = selectedOption.textContent || selectedOption.innerText;
-                    const paymentDescription = selectedOption.getAttribute('data-description');
+                // set manual instructions
+                const instructions = document.getElementById('manualInstructions'); // get selected payment method
+                const selectedOption = paymentMethodSelect.options[paymentMethodSelect.selectedIndex];
+                const selectedMethod = selectedOption.textContent || selectedOption.innerText;
+                const paymentDescription = selectedOption.getAttribute('data-description');
 
-                    // Populate instructions with description from payment method
-                    if (paymentDescription) {
-                        // Display HTML content properly
-                        instructions.innerHTML = paymentDescription;
-                    } else {
-                        instructions.textContent = 'Please complete the payment using ' + selectedMethod + ' and upload proof of your payment.';
-                    }
+                // Populate instructions with description from payment method
+                if (paymentDescription) {
+                    // Display HTML content properly
+                    instructions.innerHTML = paymentDescription;
+                } else {
+                    instructions.textContent = 'Please complete the payment using ' + selectedMethod + ' and upload proof of your payment.';
                 }
+
             });
-        }        // Function to filter payment methods based on selected type
+        } // Function to filter payment methods based on selected type
         function filterPaymentMethodsByType(type) {
             const paymentMethodSelect = document.getElementById('paymentMethod');
             if (!paymentMethodSelect) return;

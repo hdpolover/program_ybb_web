@@ -86,13 +86,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('submission/entry/(:num)/update', 'dashboard\Submission::updateEntry/$1');
     $routes->post('submission/miscs/(:num)/update', 'dashboard\Submission::updateMisc/$1');
     $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');
-
-    // payment
+    $routes->post('submission/submit', 'dashboard\Submission::submitForm');    // payment
     $routes->get('payments', 'dashboard\Payments::index');
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
     $routes->post('payments/make', 'dashboard\Payments::makePayment');
-    $routes->get('payments/receipt/(:num)', 'dashboard\Payments::downloadReceipt/$1');
-
+    
     // documents
     $routes->get('documents/program', 'dashboard\Documents::index');
     $routes->get('documents/program/details/(:num)', 'dashboard\Documents::details/$1');
@@ -116,9 +114,14 @@ $routes->get('cached-images/(:any)', 'ImagesController::serve/$1');
 // Topbar routes
 $routes->get('topbar/getTopbarData', 'TopbarController::getTopbarData');
 $routes->get('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
-
-// Route for AJAX version (optional, if you implement the client-side AJAX)
 $routes->post('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
+$routes->post('topbar/(:num)/create', 'TopbarController::registerForProgram/$1');
+
+// Public receipt download route (no authentication required)
+$routes->get('payments/receipt/(:num)', 'dashboard\Payments::downloadReceipt/$1');
+
+// API route for getting current user data
+$routes->get('api/user/current', 'TopbarController::getCurrentUser');
 
 /*
  * --------------------------------------------------------------------

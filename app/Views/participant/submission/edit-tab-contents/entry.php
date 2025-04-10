@@ -73,23 +73,22 @@
             <?php foreach ($programEssays as $index => $essay): ?>
                 <div class="mb-3">
                     <label class="form-label" for="entry-essay-<?= $index ?>"><?= $essay['questions'] . ' (max ' . $essay['max_word_count'] . ' words)' ?></label>
+                    <?php
+                    // Look for this essay in the participant's submitted essays
+                    $essayContent = '';
+                    if (isset($participantEssays) && !empty($participantEssays)) {
+                        foreach ($participantEssays as $submittedEssay) {
+                            if ($submittedEssay['program_essay_id'] == $essay['id']) {
+                                $essayContent = $submittedEssay['answer'];
+                                break;
+                            }
+                        }
+                    }
+                    ?>
                     <textarea class="form-control essay-textarea" id="entry-essay-<?= $index ?>"
                         name="programEssays[<?= $essay['id'] ?>]" rows="4"
                         placeholder="Your answer" required
-                        data-max-words="<?= $essay['max_word_count'] ?>">
-                        <?php
-                        // Look for this essay in the participant's submitted essays
-                        $essayContent = '';
-                        if (isset($participantEssays) && !empty($participantEssays)) {
-                            foreach ($participantEssays as $submittedEssay) {
-                                if ($submittedEssay['program_essay_id'] == $essay['id']) {
-                                    $essayContent = $submittedEssay['answer'];
-                                    break;
-                                }
-                            }
-                        }
-                        echo $essayContent;
-                        ?></textarea>
+                        data-max-words="<?= $essay['max_word_count'] ?>"><?= trim($essayContent) ?></textarea>
                     <small class="word-count-info text-muted">
                         <span class="current-word-count">0</span>/<span class="max-word-count"><?= $essay['max_word_count'] ?></span> words
                     </small>
@@ -229,21 +228,19 @@
             // Show loading state
             const spinner = this.querySelector('.loading-spinner');
             spinner.classList.remove('d-none');
-            this.disabled = true;
-
-            // Collect essay data
-            let programEssays = [];
+            this.disabled = true; // Collect essay data
+            let essays = [];
             document.querySelectorAll('.essay-textarea').forEach(function(textarea) {
                 const essayId = textarea.name.match(/\[(\d+)\]/)[1];
-                programEssays.push({
-                    id: essayId,
+                essays.push({
+                    program_essay_id: essayId,
                     answer: textarea.value
                 });
             });
 
             // Collect form data
             const formData = {
-                programEssays: programEssays,
+                essays: essays,
                 competition_category_id: document.getElementById('entry-competition-category').value,
                 program_subtheme_id: document.getElementById('entry-subtheme').value
             };

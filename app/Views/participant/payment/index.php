@@ -85,9 +85,35 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                             <h4 class="mb-0">
                                                                 <?php
                                                                 $pendingPayments = 0;
-                                                                if (isset($participantPayments) && !empty($participantPayments)) {
-                                                                    foreach ($participantPayments as $payment) {
-                                                                        if ($payment['status'] == 0 || $payment['status'] == 1) {
+                                                                $currentDate = new DateTime();
+
+                                                                if (!empty($programPayments)) {
+                                                                    foreach ($programPayments as $programPayment) {
+                                                                        $startDate = new DateTime($programPayment['start_date']);
+                                                                        $endDate = new DateTime($programPayment['end_date']);
+                                                                        $isPending = false;
+                                                                        $isPaid = false;
+
+                                                                        // Check if this payment is already in progress or paid
+                                                                        if (isset($participantPayments) && !empty($participantPayments)) {
+                                                                            foreach ($participantPayments as $payment) {
+                                                                                if ($payment['program_payment_id'] == $programPayment['id']) {
+                                                                                    if ($payment['status'] == 2) {
+                                                                                        $isPaid = true;
+                                                                                        break;
+                                                                                    } else if ($payment['status'] == 0 || $payment['status'] == 1) {
+                                                                                        $isPending = true;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+
+                                                                        // Count as pending if it's not paid, within the payment period,
+                                                                        // and either has a pending payment attempt or is due now
+                                                                        if (
+                                                                            !$isPaid && $currentDate >= $startDate && $currentDate <= $endDate &&
+                                                                            ($isPending || !isset($isPending))
+                                                                        ) {
                                                                             $pendingPayments++;
                                                                         }
                                                                     }
@@ -123,6 +149,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                         $endDate = new DateTime($programPayment['end_date']);
                                                                         $isPaid = false;
 
+                                                                        // Check if this program payment has been completed
                                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                                             foreach ($participantPayments as $payment) {
                                                                                 if ($payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
@@ -132,6 +159,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                             }
                                                                         }
 
+                                                                        // Count as overdue if payment deadline has passed and payment is not completed
                                                                         if (!$isPaid && $currentDate > $endDate) {
                                                                             $overduePayments++;
                                                                         }
@@ -218,30 +246,82 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                             <tbody>
                                                 <?php if (!empty($programPayments)): ?>
                                                     <?php foreach ($programPayments as $key => $programPayment): ?>
-                                                        <?php
-
-                                                        $startDate = new DateTime($programPayment['start_date']);
+                                                        <?php $startDate = new DateTime($programPayment['start_date']);
                                                         $endDate = new DateTime($programPayment['end_date']);
                                                         $currentDate = new DateTime();
 
+                                                        // Calculate days remaining until deadline
+                                                        $daysRemaining = $currentDate->diff($endDate)->format('%r%a'); // %r preserves the sign, %a gives days
+
+                                                        // Format the period string with the date range
                                                         $period = $startDate->format('M d, Y') . ' - ' . $endDate->format('M d, Y');
 
-                                                        // loop through participantPayments to check if programPayment exists
-                                                        $payment = null;
+                                                        // Get current payment status from participant payments
+                                                        $status = 'unpaid'; // Default status
+                                                        $latestPayment = null;
+                                                        $latestTimestamp = 0;
 
                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                             foreach ($participantPayments as $participantPayment) {
                                                                 if ($participantPayment['program_payment_id'] == $programPayment['id']) {
-                                                                    $payment = $participantPayment;
-                                                                    break;
+                                                                    // Track the latest payment attempt by timestamp
+                                                                    $paymentTimestamp = strtotime($participantPayment['created_at'] ?? '0');
+                                                                    if ($paymentTimestamp > $latestTimestamp) {
+                                                                        $latestTimestamp = $paymentTimestamp;
+                                                                        $latestPayment = $participantPayment;
+                                                                        // Update status based on latest payment
+                                                                        $status = $participantPayment['status'] == 0 ? 'created' : ($participantPayment['status'] == 1 ? 'pending' : ($participantPayment['status'] == 2 ? 'paid' : ($participantPayment['status'] == 3 ? 'cancelled' : 'rejected')));
+                                                                    }
                                                                 }
                                                             }
                                                         }
 
+                                                        // Add days remaining indicator - only if payment isn't completed
+                                                        if ($daysRemaining > 0 && $status != 'paid' && $status != 'complete') {
+                                                            $periodBadgeClass = ($daysRemaining <= 3) ? 'bg-danger-subtle text-danger' : (($daysRemaining <= 7) ? 'bg-warning-subtle text-warning' :
+                                                                'bg-info-subtle text-info');
+                                                        }
+
+                                                        // Check for all payments related to this program payment
+                                                        $payment = null;
+                                                        $latestPayment = null;
+                                                        $hasSuccessfulPayment = false;
+                                                        $latestTimestamp = 0;
+
+                                                        if (isset($participantPayments) && !empty($participantPayments)) {
+                                                            foreach ($participantPayments as $participantPayment) {
+                                                                if ($participantPayment['program_payment_id'] == $programPayment['id']) {
+                                                                    // Check if this is a successful payment
+                                                                    if ($participantPayment['status'] == 2) {
+                                                                        $hasSuccessfulPayment = true;
+                                                                        $payment = $participantPayment; // Store successful payment for receipt link
+                                                                    }
+
+                                                                    // Track the latest payment attempt by timestamp (if available) or just the last one we encounter
+                                                                    if (isset($participantPayment['created_at'])) {
+                                                                        $paymentTimestamp = strtotime($participantPayment['created_at']);
+                                                                        if ($paymentTimestamp > $latestTimestamp) {
+                                                                            $latestTimestamp = $paymentTimestamp;
+                                                                            $latestPayment = $participantPayment;
+                                                                        }
+                                                                    } else {
+                                                                        $latestPayment = $participantPayment;
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Set payment reference for receipt if successful payment found
+                                                        if (!$payment && $latestPayment) {
+                                                            $payment = $latestPayment;
+                                                        }
+
                                                         // Check if payment status is (0: created, 1: pending, 2: success, 3: cancelled, 4: rejected),	
                                                         // if payment is not found, set status to unpaid
-                                                        if (isset($payment)) {
-                                                            $status = $payment['status'] == 0 ? 'created' : ($payment['status'] == 1 ? 'pending' : ($payment['status'] == 2 ? 'paid' : ($payment['status'] == 3 ? 'cancelled' : 'rejected')));
+                                                        if ($hasSuccessfulPayment) {
+                                                            $status = 'paid';
+                                                        } else if (isset($latestPayment)) {
+                                                            $status = $latestPayment['status'] == 0 ? 'created' : ($latestPayment['status'] == 1 ? 'pending' : ($latestPayment['status'] == 2 ? 'paid' : ($latestPayment['status'] == 3 ? 'cancelled' : 'rejected')));
                                                         } else {
                                                             $status = 'unpaid';
                                                         }
@@ -270,11 +350,46 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                             <td>
                                                                 <?= $key + 1; ?>
                                                             </td>
-                                                            <td>
-                                                                <strong><?= $programPayment['name']; ?></strong>
-                                                                <span class="badge bg-soft-secondary text-secondary ms-1"><?= $programPayment['category']; ?></span>
+                                                            <td> <strong><?= $programPayment['name']; ?></strong>
+                                                                <?php
+                                                                // Normalize category names
+                                                                $normalizedCategory = $programPayment['category'];
+
+                                                                // Convert to lowercase first to standardize
+                                                                $lowerCategory = strtolower($normalizedCategory);
+
+                                                                // Handle specific conversions
+                                                                if ($lowerCategory === 'registration') {
+                                                                    $normalizedCategory = 'Registration';
+                                                                } elseif (strpos($lowerCategory, 'program_fee') !== false) {
+                                                                    $normalizedCategory = 'Program Fee';
+                                                                } elseif ($lowerCategory === 'deposit') {
+                                                                    $normalizedCategory = 'Deposit';
+                                                                } else {
+                                                                    // Capitalize first letter of each word for other categories
+                                                                    $normalizedCategory = ucwords($normalizedCategory);
+                                                                }
+                                                                ?>
+                                                                <span class="badge bg-secondary-subtle text-secondary fs-11 ms-1"><?= $normalizedCategory; ?></span>
                                                             </td>
-                                                            <td><?= $period; ?></td>
+                                                            <td>
+                                                                <?= $period; ?>
+                                                                <?php if (isset($daysRemaining) && $daysRemaining > 0 && $programPayment['status'] != 'paid' && $programPayment['status'] != 'complete'): ?>
+                                                                    <div class="mt-1">
+                                                                        <span class="badge <?= $periodBadgeClass; ?> fs-11">
+                                                                            <i class="ri-time-line align-bottom me-1"></i>
+                                                                            <?= $daysRemaining; ?> day<?= ($daysRemaining != 1) ? 's' : ''; ?> remaining
+                                                                        </span>
+                                                                    </div>
+                                                                <?php elseif (isset($daysRemaining) && $daysRemaining <= 0 && $programPayment['status'] != 'paid' && $programPayment['status'] != 'complete'): ?>
+                                                                    <div class="mt-1">
+                                                                        <span class="badge bg-danger-subtle text-danger fs-11">
+                                                                            <i class="ri-error-warning-line align-bottom me-1"></i>
+                                                                            Deadline passed
+                                                                        </span>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </td>
                                                             <td><?= formatCurrency($programPayment['usd_amount'], 'USD'); ?></td>
                                                             <td>
                                                                 <?php if ($programPayment['status'] == 'unpaid'): ?>
@@ -305,10 +420,9 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                     <?php elseif ($programPayment['status'] == 'pending'): ?>
                                                                         <button type="button" class="btn btn-sm btn-warning" disabled title="Payment Processing">
                                                                             <i class="ri-time-line align-middle me-1"></i> Processing
-                                                                        </button> <?php elseif ($programPayment['status'] == 'paid' || $programPayment['status'] == 'complete'): ?>
-                                                                        <a href="<?= site_url('payments/receipt/' . $payment['id']); ?>" class="btn btn-sm btn-info" title="Download Receipt">
+                                                                        </button> <?php elseif ($programPayment['status'] == 'paid' || $programPayment['status'] == 'complete'): ?> <a target="_blank" href="<?= site_url('payments/receipt/' . $payment['id']); ?>" class="btn btn-sm btn-info receipt-button" title="Download Receipt">
                                                                             <i class="ri-download-2-line align-middle me-1"></i> Receipt
-                                                                        </a> <?php elseif (($programPayment['status'] == 'cancelled' || $programPayment['status'] == 'rejected') && $dueStatus != 'Overdue'): ?><button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                                                        </a><?php elseif (($programPayment['status'] == 'cancelled' || $programPayment['status'] == 'rejected') && $dueStatus != 'Overdue'): ?><button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                                                             data-payment-id="<?= $programPayment['id']; ?>"
                                                                             data-payment-index="<?= $key; ?>"
                                                                             title="Try Payment Again">
@@ -367,10 +481,31 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
         const paymentMethods = <?= json_encode($paymentMethods ?? []); ?>;
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Add click handler for receipt download buttons
-            const receiptButtons = document.querySelectorAll('a[href^="<?= site_url('payments/receipt/') ?>"]');
+            // Check if there are any flash messages set in session
+            <?php if (session()->has('swal')): ?>
+                // Parse the JSON flash data
+                const swalData = JSON.parse('<?= session()->getFlashdata('swal') ?>');
+
+                // Display SweetAlert2 notification
+                Swal.fire({
+                    title: swalData.title || '',
+                    text: swalData.text || '',
+                    icon: swalData.icon || 'info',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    position: 'center',
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+            <?php endif; ?> // Add click handler for receipt download buttons
+            const receiptButtons = document.querySelectorAll('.receipt-button');
             receiptButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default to handle the navigation manually
+
                     // Get the original href
                     const downloadUrl = this.getAttribute('href');
 
@@ -385,8 +520,55 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                         }
                     });
 
-                    // Continue with download - we don't prevent default here to allow normal link behavior
-                    // The page will navigate away to start the download
+                    // Use fetch to request the receipt generation
+                    fetch(downloadUrl)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Failed to generate receipt');
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            // Create blob URL
+                            const blobUrl = URL.createObjectURL(blob);
+
+                            // Close the loading modal
+                            Swal.close();
+
+                            // Show success message with option to open/download
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Receipt Ready',
+                                text: 'Your receipt has been generated successfully!',
+                                footer: '<small>You can view or save the receipt using the buttons below.</small>',
+                                showCancelButton: true,
+                                confirmButtonText: 'View Receipt',
+                                cancelButtonText: 'Download Receipt',
+                                showCloseButton: true,
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Open in new tab
+                                    window.open(blobUrl, '_blank');
+                                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                    // Create temporary link for download
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = 'receipt_' + Date.now() + '.pdf';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                }
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error generating receipt:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error Generating Receipt',
+                                text: 'There was a problem generating your receipt. Please try again later.',
+                                showCloseButton: true
+                            });
+                        });
                 });
             });
 
@@ -400,10 +582,9 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
 
                     // Get the full program payment object using the index
                     const selectedPayment = programPayments[paymentIndex] || null;
-
                     if (selectedPayment) {
                         // Set the selected program payment data to hidden input to be sent to the server
-                        document.getElementById('payment_id').value = selectedPayment.id;
+                        document.getElementById('program_payment_id').value = selectedPayment.id;
                         document.getElementById('payment_amount').value = selectedPayment.usd_amount;
 
                         // Update display elements

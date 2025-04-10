@@ -82,7 +82,7 @@
                             <span class="loading-spinner d-none spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                             Submit Application
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="review-again-btn">
+                        <button type="button" class="btn btn-outline-secondary" id="review-again-btn" data-bs-toggle="tab" data-bs-target="#steparrow-personal" role="tab" aria-controls="steparrow-personal" aria-selected="false">
                             <i class="ri-arrow-left-line me-1"></i> Review Again
                         </button>
                     </div>
@@ -132,21 +132,19 @@
             printSummaryBtn.addEventListener('click', function() {
                 printApplicationSummary();
             });
-        }
-
-        // Submit button event
+        }        // Submit button event
         if (submitBtn) {
             submitBtn.addEventListener('click', function(e) {
                 e.preventDefault();
 
-                // Show detailed confirmation modal
-                YBBAlerts.custom({
+                // Show detailed confirmation modal with prominent warning
+                Swal.fire({
                     title: 'Confirm Submission',
                     html: `
                         <div class="text-start">
                             <p>You are about to submit your application. Please confirm that all information is correct.</p>
-                            <div class="alert alert-info">
-                                <i class="ri-information-line me-2"></i> After submission, you won't be able to make further changes.
+                            <div class="alert alert-warning">
+                                <i class="ri-error-warning-line me-2"></i> <strong>Important:</strong> After submission, your application will be locked and you <u>cannot make any further changes</u>.
                             </div>
                             <div class="form-check mt-3">
                                 <input class="form-check-input" type="checkbox" id="confirm-checkbox">
@@ -161,6 +159,7 @@
                     cancelButtonText: 'Cancel',
                     confirmButtonColor: '#28a745',
                     cancelButtonColor: '#6c757d',
+                    showCloseButton: true,
                     preConfirm: () => {
                         const checkbox = document.getElementById('confirm-checkbox');
                         if (!checkbox.checked) {
@@ -168,9 +167,22 @@
                             return false;
                         }
                         return true;
-                    },
-                    callback: function() {
-                        // Show loading state
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show processing message with loading indicator
+                        Swal.fire({
+                            title: 'Submitting Application',
+                            html: 'Please wait while we process your submission...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Show loading state on button
                         const spinner = submitBtn.querySelector('.loading-spinner');
                         spinner.classList.remove('d-none');
                         submitBtn.disabled = true;
@@ -179,21 +191,95 @@
                         const previewContainer = document.querySelector('.preview-container');
                         previewContainer.classList.add('submitting');
 
-                        // Submit the form
-                        document.querySelector('form').submit();
+                        // Call the API endpoint to submit the form
+                        fetch('<?= base_url('submission/submit') ?>', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="X-CSRF-TOKEN"]')?.getAttribute('content') || ''
+                            },
+                            body: JSON.stringify({})
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            // Remove loading state
+                            spinner.classList.add('d-none');
+                            previewContainer.classList.remove('submitting');
+                            
+                            if (data.success) {
+                                // Show success message
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Application Submitted!',
+                                    html: `
+                                        <div class="text-center">
+                                            <p>${data.message || 'Your application has been successfully submitted.'}</p>
+                                            <p class="mt-3">You will be redirected to the submission page shortly.</p>
+                                        </div>
+                                    `,
+                                    confirmButtonText: 'View My Submission',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false
+                                }).then(() => {
+                                    // Redirect to submission page
+                                    window.location.href = '<?= base_url('submission') ?>';
+                                });
+                            } else {
+                                // Re-enable the submit button
+                                submitBtn.disabled = false;
+                                
+                                // Show error message
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Submission Failed',
+                                    html: `<p>${data.message || 'There was an error submitting your application. Please try again.'}</p>`,
+                                    confirmButtonText: 'Try Again'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error submitting application:', error);
+                            
+                            // Remove loading state
+                            spinner.classList.add('d-none');
+                            previewContainer.classList.remove('submitting');
+                            submitBtn.disabled = false;
+                            
+                            // Show error message
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Connection Error',
+                                html: '<p>There was a problem connecting to the server. Please check your internet connection and try again.</p>',
+                                confirmButtonText: 'Try Again'
+                            });
+                        });
                     }
                 });
             });
-        }
-
-        // Review again button event
+        }        // Review again button event
         if (reviewAgainBtn) {
             reviewAgainBtn.addEventListener('click', function() {
-                // Find the first tab and activate it
-                const firstTab = document.querySelector('[data-bs-toggle="tab"][href*="steparrow"]:not([href="#steparrow-preview"])');
-                if (firstTab) {
-                    const tabTrigger = new bootstrap.Tab(firstTab);
-                    tabTrigger.show();
+                // Get the target from the button's data-bs-target attribute
+                const targetId = this.getAttribute('data-bs-target');
+                
+                // Find the corresponding tab button element
+                // First try to find the tab using the ID from the target
+                const tabId = targetId.replace('#', '') + '-tab';
+                let tabEl = document.getElementById(tabId);
+                
+                // If that doesn't work, try to find it by data-bs-target attribute
+                if (!tabEl) {
+                    tabEl = document.querySelector(`button[data-bs-toggle="pill"][data-bs-target="${targetId}"]`);
+                }
+                
+                // If we found a tab element, activate it
+                if (tabEl) {
+                    // Show the tab
+                    tabEl.click();
+                    console.log('Successfully navigated to tab:', targetId);
+                } else {
+                    console.error(`Tab with target "${targetId}" not found`);
                 }
             });
         }

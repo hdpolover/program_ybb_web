@@ -46,14 +46,15 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                 // Sort by created_at in descending order to show newest first
                 usort($sortedPayments, function ($a, $b) {
                     return strtotime($b['created_at'] ?? 0) - strtotime($a['created_at'] ?? 0);
-                });                foreach ($sortedPayments as $index => $history):
+                });
+                foreach ($sortedPayments as $index => $history):
                     $statusInfo = getPaymentStatusInfo($history['status'] ?? 0);
                     $historyId = isset($history['id']) ? $history['id'] : rand(1000, 9999);
-                    
+
                     // Map status values to filter classes
                     $status_value = $history['status'] ?? 0;
                     $status_class = '';
-                    
+
                     switch ($status_value) {
                         case 0:
                             $status_class = 'created';
@@ -125,17 +126,14 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                             <?php endif; ?>
 
                             <!-- View Details Button -->
-                            <button class="btn btn-sm btn-outline-secondary mt-1" type="button" data-bs-toggle="collapse"
+                            <button class="btn btn-sm btn-outline-primary mt-1" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#paymentDetails<?= $historyId ?>"
                                 aria-expanded="false" aria-controls="paymentDetails<?= $historyId ?>">
                                 <i class="ri-information-line align-middle"></i> View Details
-                            </button>
-
-                            <!-- Download Receipt Button (if payment is successful) -->
+                            </button> <!-- Download Receipt Button (if payment is successful) -->
                             <?php if (($history['status'] ?? 0) == 2): ?>
-                                <a href="<?= site_url('payments/' . (isset($history['id']) ? $history['id'] : '') . '/receipt'); ?>"
-                                    class="btn btn-sm btn-outline-success mt-1 ms-1">
-                                    <i class="ri-file-download-line align-middle"></i> Receipt
+                                <a target="_blank" href="<?= site_url('payments/receipt/' . $history['id']); ?>" class="btn btn-sm btn-success receipt-button" title="Download Receipt">
+                                    <i class="ri-download-2-line align-middle me-1"></i> Receipt
                                 </a>
                             <?php endif; ?>
 
@@ -212,7 +210,7 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
                                                                 <a href="<?= $history['proof_url'] ?>" target="_blank" class="btn btn-sm btn-primary">
                                                                     <i class="ri-eye-line align-middle me-1"></i> View Full Image
                                                                 </a>
-                                                                <a href="<?= $history['proof_url'] ?>" download class="btn btn-sm btn-info ms-1">
+                                                                <a href="<?= $history['proof_url'] ?>" target="_blank" download class="btn btn-sm btn-info ms-1">
                                                                     <i class="ri-download-line align-middle me-1"></i> Download
                                                                 </a>
                                                             </div>
@@ -255,7 +253,8 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
         </div>
     </div>
 
-    <!-- Add JavaScript for filtering -->    <script>
+    <!-- Add JavaScript for filtering -->
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const filterButtons = document.querySelectorAll('.filter-history');
             const historyItems = document.querySelectorAll('.payment-history-item');

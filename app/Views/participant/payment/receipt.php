@@ -256,9 +256,9 @@
             </div>
             <div class="header-title">
                 <div class="receipt-title">PAYMENT RECEIPT</div>
-                <div class="receipt-subtitle">Official Payment Confirmation</div>
-            </div>
-        </div> <!-- Receipt Content -->
+                <div class="receipt-subtitle">Official Payment Confirmation</div>            </div>
+        </div>
+        <!-- Receipt Content -->
         <div class="receipt-content">
             <!-- Two-column layout for Transaction Details and Participant Information -->
             <div class="double-column">
@@ -294,21 +294,18 @@
                     <div class="section-title">Billing Information</div>
                     <table class="info-table">
                         <tr>
-                            <td>Participant Name:</td>
-                            <td><?= $participant['name'] ?? ($participant['first_name'] ?? '') . ' ' . ($participant['last_name'] ?? '') ?></td>
+                            <td>Account ID:</td>
+                            <td><?= $participant['account_id'] ?? '-' ?></td>
                         </tr>
                         <tr>
-                            <td>Email Address:</td>
-                            <td><?= $participant['email'] ?? '-' ?></td>
+                            <td>Participant Name:</td>
+                            <td><?= $participant['full_name']  ?></td>
                         </tr>
                         <tr>
                             <td>Program:</td>
                             <td><?= $program['name'] ?? '-' ?></td>
                         </tr>
-                        <tr>
-                            <td>Participant ID:</td>
-                            <td><?= $participant['id'] ?? '-' ?></td>
-                        </tr>
+
                     </table>
                 </div>
             </div> <!-- Payment Details Section -->

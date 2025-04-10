@@ -88,7 +88,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
     <script src="/assets/libs/swiper/swiper-bundle.min.js"></script>
 
     <!-- Dashboard init -->
-    <script src="/assets/js/pages/dashboard-ecommerce.init.js"></script>    <!-- App js -->
+    <script src="/assets/js/pages/dashboard-ecommerce.init.js"></script> <!-- App js -->
     <script src="/assets/js/app.js"></script>
 
     <!-- Loading Manager js (handles loading overlays) -->
@@ -99,7 +99,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
         document.addEventListener('DOMContentLoaded', function() {
             const hour = new Date().getHours();
             let greetingText = "";
-            
+
             if (hour >= 0 && hour < 12) {
                 greetingText = "Good Morning";
             } else if (hour >= 12 && hour < 17) {
@@ -107,7 +107,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
             } else {
                 greetingText = "Good Evening";
             }
-            
+
             // Find and update the greeting element
             const greetingElement = document.querySelector('.col-12 h3');
             if (greetingElement) {
@@ -121,5 +121,8 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
         <?= $footer_scripts ?>
     <?php endif; ?>
 </body>
+
+ <!-- Add SweetAlert2 library for better user notifications -->
+ <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 </html>

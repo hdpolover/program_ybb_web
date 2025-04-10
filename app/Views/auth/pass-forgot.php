@@ -63,14 +63,14 @@
                                             Enter your email and instructions will be sent to you!
                                         </div>
                                         <div class="p-2">
-                                            <form action="<?= site_url('send-reset-link') ?>" method="POST" class="mt-4">
+                                            <form action="<?= site_url('send-reset-link') ?>" method="POST" class="mt-4" id="reset-password-form">
                                                 <div class="mb-4">
                                                     <label class="form-label">Email</label>
                                                     <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address" required>
                                                 </div>
 
                                                 <div class="text-center mt-4">
-                                                    <button class="btn btn-success w-100" type="submit">Send Reset Link</button>
+                                                    <button class="btn btn-success w-100" type="submit" id="submit-btn">Send Reset Link</button>
                                                 </div>
                                             </form><!-- end form -->
                                         </div>
@@ -117,6 +117,21 @@
     <!-- end auth-page-wrapper -->
 
     <?= $this->include('partials/vendor-scripts') ?>
+
+    <!-- Add script for handling form submission loading state -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('reset-password-form');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            form.addEventListener('submit', function() {
+                // Disable the button
+                submitBtn.disabled = true;
+                // Change button text to loading state
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Sending...';
+            });
+        });
+    </script>
 </body>
 
 </html>
