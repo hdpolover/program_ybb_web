@@ -206,6 +206,83 @@ class TopbarController extends BaseController
     }
 
     /**
+     * Update participant data in the session
+     * Called via AJAX after a user updates their personal information
+     * 
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function updateParticipantSession()
+    {
+        // Only allow AJAX requests
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Direct access is not allowed'
+            ]);
+        }
+
+        // Get JSON data from request
+        $requestData = $this->request->getJSON(true);
+        
+        // Validate required data
+        if (empty($requestData) || !isset($requestData['participant_id'])) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'success' => false,
+                'message' => 'Participant ID is required'
+            ]);
+        }
+
+        // Get the current participant from the session
+        $currentParticipant = session()->get('current_participant');
+        
+        if (!$currentParticipant) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No participant found in session'
+            ]);
+        }
+
+        // Check if this is the current active participant
+        if ($currentParticipant['id'] != $requestData['participant_id']) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Participant ID does not match current participant'
+            ]);
+        }
+
+        // Update fields in the session
+        $updated = false;
+
+        if (isset($requestData['full_name'])) {
+            $currentParticipant['full_name'] = $requestData['full_name'];
+            $updated = true;
+        }
+
+        if (isset($requestData['picture_url'])) {
+            $currentParticipant['picture_url'] = $requestData['picture_url'];
+            $updated = true;
+        }
+
+        if ($updated) {
+            // Update the session with modified participant data
+            session()->set('current_participant', $currentParticipant);
+            
+            // Log successful update for debugging
+            log_message('debug', 'Updated participant session data for ID: ' . $requestData['participant_id']);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Participant session data updated successfully'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'No fields to update'
+        ]);
+    }
+
+    /**
      * Process the topbar data and pass it to the view
      * 
      * @return array
@@ -259,29 +336,41 @@ class TopbarController extends BaseController
 
             // Then by active status
             return ($b['is_active'] ?? 0) <=> ($a['is_active'] ?? 0);
-        });
-
-        // Get current program id from session or use the first program
+        });        // Get current program id from session or determine the most appropriate one
         $currentProgramId = null;
 
         // First try to get from session
         if (session()->has('current_program_id')) {
             $currentProgramId = session()->get('current_program_id');
-
+            
             // Verify if the current program ID is one the participant is registered for
             if (!in_array($currentProgramId, $participant_programs) && !empty($participant_programs)) {
                 // If not registered for current program but registered for others,
                 // switch to a program they are registered for
                 $currentProgramId = $participant_programs[0];
             }
-        }
-        // Otherwise use the first registered program if available
+        } 
+        // If no program ID in session but user is registered for programs, select the first registered program
         else if (!empty($participant_programs)) {
             $currentProgramId = $participant_programs[0];
+            log_message('debug', 'TopbarController: First sign-in, selected registered program ID: ' . $currentProgramId);
         }
-        // As last resort, use the first program in the sorted list
+        // If user has no registered programs, select an active program if possible
         else if (!empty($sorted_programs)) {
-            $currentProgramId = $sorted_programs[0]['id'] ?? null;
+            // Try to find an active program first
+            foreach ($sorted_programs as $program) {
+                if (isset($program['is_active']) && $program['is_active'] == '1') {
+                    $currentProgramId = $program['id'];
+                    log_message('debug', 'TopbarController: First sign-in, selected active program ID: ' . $currentProgramId);
+                    break;
+                }
+            }
+            
+            // If no active program found, fall back to the first program
+            if ($currentProgramId === null) {
+                $currentProgramId = $sorted_programs[0]['id'] ?? null;
+                log_message('debug', 'TopbarController: First sign-in, selected first available program ID: ' . $currentProgramId);
+            }
         }
 
         // Set current program id to session if we have one

@@ -99,11 +99,63 @@
     <script>
         // Set base URL for the flag-input script to use
         var baseAssetsUrl = "<?= base_url('assets/json/') ?>";
+
+        // Check if current program is active
+        document.addEventListener('DOMContentLoaded', function() {
+            const programActive = <?= isset($currentProgram['is_active']) ? ($currentProgram['is_active'] ? 'true' : 'false') : 'true' ?>;
+            const programName = "<?= isset($currentProgram['name']) ? htmlspecialchars($currentProgram['name'], ENT_QUOTES) : 'Selected program' ?>";
+
+            if (!programActive) {
+                // Disable all form elements
+                const formElements = document.querySelectorAll('input, select, textarea, button.nexttab, button#submit-application-btn');
+                formElements.forEach(function(element) {
+                    element.disabled = true;
+                });
+
+                // Show alert message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Inactive Program',
+                        html: `<p>The program <strong>${programName}</strong> is currently inactive.</p>
+                               <p>You cannot access or edit the submission form for an inactive program.</p>
+                               <p>Please select an active program from the dropdown menu above.</p>`,
+                        icon: 'warning',
+                        allowOutsideClick: false,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                    }).then((result) => {
+                        // Redirect to dashboard after dismissing
+                        window.location.href = "<?= base_url('dashboard') ?>";
+                    });
+                } else {
+                    // Fallback for browsers without SweetAlert
+                    alert(`The program "${programName}" is currently inactive. You cannot access or edit the submission form for an inactive program. Please select an active program from the dropdown menu.`);
+                    window.location.href = "<?= base_url('dashboard') ?>";
+                }
+
+                // Add a visual indicator at the top of the form
+                const formCard = document.querySelector('.card-body');
+                if (formCard) {
+                    const inactiveAlert = document.createElement('div');
+                    inactiveAlert.className = 'alert alert-warning mb-4';
+                    inactiveAlert.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="ri-alert-line me-3 fs-3"></i>
+                            <div>
+                                <h5 class="mb-1">Inactive Program</h5>
+                                <p class="mb-0">This program is currently inactive. Form editing is disabled.</p>
+                            </div>
+                        </div>
+                    `;
+                    formCard.prepend(inactiveAlert);
+                }
+            }
+        });
     </script>
 
     <!-- QuillJS JavaScript -->
     <script src="<?= base_url('assets/libs/quill/quill.min.js') ?>"></script>
-    
+
     <!-- input flag init -->
     <script src="/assets/js/custom/submission-flag-input.init.js"></script>
 

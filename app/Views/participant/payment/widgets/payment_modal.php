@@ -114,6 +114,42 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Gateway Payment Methods - only shown for gateway payment type -->
+                    <div id="gatewayPaymentOptions" style="display: block;">
+                        <div class="mb-4">
+                            <?php
+                            // Find the active gateway payment method (should be only one)
+                            $gatewayMethod = null;
+                            if (isset($paymentMethods) && !empty($paymentMethods)):
+                                foreach ($paymentMethods as $method):
+                                    if (isset($method['type']) && $method['type'] == 'gateway' && isset($method['is_active']) && $method['is_active'] == 1):
+                                        $gatewayMethod = $method;
+                                        break;
+                                    endif;
+                                endforeach;
+                            endif;
+                            ?>
+
+                            <?php if ($gatewayMethod): ?>
+                                <div class="alert alert-info">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="ri-bank-card-line fs-24 me-2"></i>
+                                        <h6 class="mb-0">Automatic Secure Payment Gateway</h6>
+                                    </div>
+                                    <?php if (isset($gatewayMethod['description']) && !empty($gatewayMethod['description'])): ?>
+                                        <p class="mb-0"><?= $gatewayMethod['description'] ?></p>
+                                    <?php else: ?>
+                                        <p class="mb-0">You'll be redirected to our secure payment provider to complete this transaction.</p>
+                                    <?php endif; ?>
+                                    <input type="hidden" id="gatewayPaymentMethodId" value="<?= $gatewayMethod['id'] ?>">
+                                </div>
+                            <?php else: ?>
+                                <div class="alert alert-warning">
+                                    <p class="mb-0">No active payment gateway is available. Please try manual payment instead or contact support.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                     <div class="modal-footer">
                         <div class="hstack gap-2 justify-content-end">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -122,49 +158,124 @@
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
+        </div>    </div>
 </div>
+
+<!-- Payment Gateway Handler -->
+<script src="/assets/js/pages/payment-gateway-handler.js"></script>
 
 <!-- Payment Modal Script -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Form validation
+    document.addEventListener('DOMContentLoaded', function() { // Form validation and submission handling
         const paymentForm = document.getElementById('paymentForm');
-        if (paymentForm) {
+        if (paymentForm) {            // Track if payment is in progress to prevent duplicates
+            let isPaymentInProgress = false;
+            
             paymentForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Always prevent default form submission
+                
+                // Prevent multiple submissions
+                if (isPaymentInProgress) {
+                    console.log('Payment already in progress, ignoring duplicate submission');
+                    return;
+                }
+                
                 const paymentType = document.getElementById('payment_type').value;
 
-                // Only validate manual payment fields if payment type is manual
+                // Validate manual payment fields if payment type is manual
                 if (paymentType === 'manual') {
                     if (!this.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
                         this.classList.add('was-validated');
                         return;
                     }
 
                     // Add validation classes to show error messages
                     this.classList.add('was-validated');
-                }                // If form is valid, show loading indicator
-                if (this.checkValidity()) {
-                    event.preventDefault();
-                    
-                    // Close the modal first
-                    let paymentModal = bootstrap.Modal.getInstance(document.getElementById('makePaymentModal'));
-                    paymentModal.hide();
-                    
-                    // Show loading indicator
-                    Swal.fire({
-                        title: 'Processing Payment',
-                        html: 'Please wait while we process your payment...',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    
-                    // Submit the form after showing loading indicator
+                }
+
+                // Set flag to prevent duplicate submissions
+                isPaymentInProgress = true;
+
+                // Close the modal first
+                let paymentModal = bootstrap.Modal.getInstance(document.getElementById('makePaymentModal'));
+                paymentModal.hide();
+
+                // Show loading indicator
+                const loadingAlert = Swal.fire({
+                    title: 'Processing Payment',
+                    html: 'Please wait while we process your payment...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Handle different payment types
+                if (paymentType === 'gateway') {
+                    // Use fetch API for gateway payments to handle the redirect
+                    const formData = new FormData(this);
+
+                    fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Payment response:', data);
+
+                            if (data.status === 'success' && data.redirect_url) {
+                                // Show success message and redirect to payment gateway
+                                Swal.fire({
+                                    title: 'Redirecting to Payment Gateway',
+                                    text: 'You will be redirected to complete your payment.',
+                                    icon: 'info',
+                                    timer: 2000,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false,
+                                    willClose: () => {
+                                        // Redirect to payment gateway
+                                        window.location.href = data.redirect_url;
+                                    }
+                                });
+                            } else if (data.status === 'success' && data.payment_id) {
+                                // Show success without redirect URL
+                                Swal.fire({
+                                    title: 'Payment Initiated',
+                                    text: 'Your payment has been initiated. Please check payment status.',
+                                    icon: 'success',
+                                    timer: 2000,
+                                    timerProgressBar: true,
+                                    willClose: () => {
+                                        // Redirect to payment detail page
+                                        window.location.href = '<?= site_url('payments/detail/') ?>' + document.getElementById('program_payment_id').value;
+                                    }
+                                });
+                            } else {
+                                // Show error message
+                                Swal.fire({
+                                    title: 'Payment Error',
+                                    text: data.message || 'There was an error processing your payment. Please try again.',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Payment error:', error);
+                            Swal.fire({
+                                title: 'Payment Error',
+                                text: 'There was an error processing your payment. Please try again.',
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        });
+                } else {
+                    // For manual payments, use traditional form submission
                     setTimeout(() => {
                         this.submit();
                     }, 500);
@@ -294,8 +405,10 @@
 
                 // Toggle manual payment options visibility
                 const manualOptionsSection = document.getElementById('manualPaymentOptions');
-                if (manualOptionsSection) {
+                const gatewayOptionsSection = document.getElementById('gatewayPaymentOptions');
+                if (manualOptionsSection && gatewayOptionsSection) {
                     manualOptionsSection.style.display = selectedType === 'manual' ? 'block' : 'none';
+                    gatewayOptionsSection.style.display = selectedType === 'gateway' ? 'block' : 'none';
                 }
 
                 // Update payment method requirement
@@ -340,7 +453,15 @@
                 }
 
             });
-        } // Function to filter payment methods based on selected type
+        }
+        // Automatically set the gateway payment method ID when available
+        const gatewayPaymentMethodId = document.getElementById('gatewayPaymentMethodId');
+        if (gatewayPaymentMethodId) {
+            // Set payment_method_id hidden field value on page load
+            document.getElementById('payment_method_id').value = gatewayPaymentMethodId.value;
+        }
+
+        // Function to filter payment methods based on selected type
         function filterPaymentMethodsByType(type) {
             const paymentMethodSelect = document.getElementById('paymentMethod');
             if (!paymentMethodSelect) return;
@@ -388,3 +509,5 @@
         filterPaymentMethodsByType('gateway');
     });
 </script>
+
+<?php include(__DIR__ . '/payment_modal_footer.php'); ?>

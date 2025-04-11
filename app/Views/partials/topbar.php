@@ -56,12 +56,13 @@
                             <!-- List of Programs -->
                             <div class="dropdown-programs-container" style="max-height: 350px; overflow-y: auto; padding: 8px 0;">
                                 <?php if (isset($sorted_programs) && is_array($sorted_programs) && count($sorted_programs) > 0): ?>
-                                    <?php foreach ($sorted_programs as $program): ?>                                        <?php 
-                                            // Check if participant is registered for this program
-                                            $isRegistered = false;
-                                            if (isset($participant_programs) && is_array($participant_programs)) {
-                                                $isRegistered = in_array($program['id'] ?? null, $participant_programs);
-                                            }
+                                    <?php foreach ($sorted_programs as $program): ?>
+                                        <?php
+                                        // Check if participant is registered for this program
+                                        $isRegistered = false;
+                                        if (isset($participant_programs) && is_array($participant_programs)) {
+                                            $isRegistered = in_array($program['id'] ?? null, $participant_programs);
+                                        }
                                         ?>
                                         <a class="dropdown-item d-flex align-items-center <?= (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId) ? 'active' : '' ?>"
                                             href="<?= site_url('topbar/setProgram/' . $program['id']) ?>"
@@ -71,20 +72,20 @@
                                             <div class="d-flex align-items-center flex-grow-1">
                                                 <div style="max-width: 85%;">
                                                     <span class="fw-medium"><?= isset($program['name']) ? esc($program['name']) : 'Unnamed Program' ?></span>
-                                                    
+
                                                     <div class="d-flex align-items-center mt-1">
                                                         <?php if (isset($program['is_active']) && $program['is_active']): ?>
                                                             <span class="badge bg-success-subtle text-success fs-11 me-2">Active</span>
                                                         <?php else: ?>
                                                             <span class="badge bg-danger-subtle text-danger fs-11 me-2">Inactive</span>
                                                         <?php endif; ?>
-                                                          <?php if (!$isRegistered): ?>
+                                                        <?php if (!$isRegistered): ?>
                                                             <span class="badge bg-warning-subtle text-warning fs-11 me-2">Not Registered</span>
                                                         <?php endif; ?>
-                                                        
+
                                                         <?php if (isset($program['start_date']) && !empty($program['start_date'])): ?>
                                                             <span class="badge bg-light-subtle text-dark fs-11 me-2 py-1 px-2 border">
-                                                                <i class="ri-calendar-line align-bottom"></i> 
+                                                                <i class="ri-calendar-line align-bottom"></i>
                                                                 <?= date('M d, Y', strtotime($program['start_date'])) ?>
                                                                 <?php if (isset($program['end_date']) && !empty($program['end_date'])): ?>
                                                                     - <?= date('M d, Y', strtotime($program['end_date'])) ?>
@@ -92,9 +93,9 @@
                                                             </span>
                                                         <?php endif; ?>
                                                     </div>
-                                                    
+
                                                 </div>
-                                            </div>                                            <?php if (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId): ?>
+                                            </div> <?php if (isset($program['id']) && isset($currentProgramId) && $program['id'] == $currentProgramId): ?>
                                                 <i class="ri-checkbox-circle-fill text-white ms-2 fs-17"></i>
                                             <?php endif; ?>
                                         </a>
@@ -103,28 +104,72 @@
                                     <div class="dropdown-item py-3 text-center">No programs available</div>
                                 <?php endif; ?>
                             </div>
-                        </div>
-                    </div>
-
+                        </div>                    </div>
                     <div class="dropdown ms-sm-3 header-item topbar-user">
-                        <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-user-id="<?= session()->get('user')['id'] ?? '' ?>">
+                        <button type="button" class="btn btn-soft-primary rounded-pill px-3" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-user-id="<?= session()->get('user')['id'] ?? '' ?>">
                             <span class="d-flex align-items-center">
-                                <?php if (isset($profileImage) && !empty($profileImage)): ?>
-                                    <img class="rounded-circle header-profile-user" src="<?= esc($profileImage) ?>" alt="Header Avatar">
-                                <?php else: ?>
-                                    <i class="ri-user-3-line fs-24 rounded-circle header-profile-user d-flex align-items-center justify-content-center bg-light text-primary"></i>
-                                <?php endif; ?>
-                                <span class="text-start ms-xl-2">
-                                    <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text"><?= isset($name) ? esc($name) : 'Guest' ?></span>
+                                <span class="text-start">
+                                    <span class="d-none d-xl-inline-block fw-semibold user-name-text"><?= isset($name) ? strtoupper($name) : 'Guest' ?></span>
+                                    <span class="d-none d-xl-block fs-12 text-muted">
+                                        <?php
+                                        // Get email from user session data
+                                        $email = session()->get('user')['email'] ?? '';
+                                        // Obscure the middle part of email
+                                        if (!empty($email)) {
+                                            $parts = explode('@', $email);
+                                            if (count($parts) == 2) {
+                                                $username = $parts[0];
+                                                $domain = $parts[1];
+                                                $len = strlen($username);
+                                                if ($len > 3) {
+                                                    $visible = min(3, $len - 3);
+                                                    $stars = str_repeat('*', $len - $visible);
+                                                    $obscuredEmail = substr($username, 0, $visible) . $stars . '@' . $domain;
+                                                    echo $obscuredEmail;
+                                                } else {
+                                                    echo $username[0] . '***@' . $domain;
+                                                }
+                                            } else {
+                                                echo 'User';
+                                            }
+                                        } else {
+                                            echo 'User';
+                                        }
+                                        ?>
+                                    </span>
                                 </span>
+                                <i class="ri-arrow-down-s-line ms-2 fs-18"></i>
                             </span>
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <!-- item-->
-                            <h6 class="dropdown-header">Welcome, <?= isset($name) ? esc($name) : 'Guest' ?>!</h6>
-                            <a class="dropdown-item" href="#"><i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span class="align-middle">Profile</span></a>
+                        <div class="dropdown-menu dropdown-menu-end border-0 shadow-lg py-2">
+                            <!-- User info section -->
+                            <div class="p-3 border-bottom">
+                                <div class="text-center">
+                                    <!-- <div class="avatar-md mx-auto mb-2">
+                                        <div class="avatar-title bg-soft-primary text-primary rounded-circle fs-2">
+                                            <span><?= isset($name) && !empty($name) ? mb_substr($name, 0, 1) : 'G' ?></span>
+                                        </div>
+                                    </div> -->
+                                    <h5 class="mb-1 fs-16"><?= isset($name) ? strtoupper($name) : 'Guest' ?></h5>
+                                    <p class="text-muted mb-0 fs-13">
+                                        <?= isset($currentProgram['name']) ? esc($currentProgram['name']) : 'Program Participant' ?>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- <a class="dropdown-item d-flex align-items-center px-3 py-2" href="#">
+                                <i class="mdi mdi-account-outline text-primary fs-18 me-2"></i>
+                                <span class="align-middle">My Profile</span>
+                            </a>
+                            <a class="dropdown-item d-flex align-items-center px-3 py-2" href="#">
+                                <i class="mdi mdi-cog-outline text-primary fs-18 me-2"></i>
+                                <span class="align-middle">Settings</span>
+                            </a> -->
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="<?= base_url('sign-out') ?>"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Sign Out</span></a>
+                            <a class="dropdown-item d-flex align-items-center px-3 py-2" href="<?= base_url('sign-out') ?>">
+                                <i class="mdi mdi-logout text-primary fs-18 me-2"></i>
+                                <span class="align-middle">Sign Out</span>
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -35,18 +35,6 @@ echo $this->include('landing/program-detail/components/application-cta', [
                 </li>
             <?php endif; ?>
 
-            <?php if (isset($program['start_date']) && !empty($program['start_date'])) : ?>
-                <li class="list-group-item px-0 d-flex">
-                    <div class="flex-shrink-0">
-                        <i class="ri-calendar-line text-primary me-2 fs-16"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h5 class="fs-15 mb-1">Start Date</h5>
-                        <p class="text-muted mb-0"><?= date('F d, Y', strtotime($program['start_date'])) ?></p>
-                    </div>
-                </li>
-            <?php endif; ?>
-
             <?php if (isset($program['location']) && !empty($program['location'])) : ?>
                 <li class="list-group-item px-0 d-flex">
                     <div class="flex-shrink-0">

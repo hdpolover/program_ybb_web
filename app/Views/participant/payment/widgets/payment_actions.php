@@ -183,7 +183,7 @@ $latestPayment = $paymentStatus['latestPayment'];
                     </div>
                     <h5 class="fs-16 mb-2">Payment Processing</h5>
                     <div class="alert alert-warning mb-3">
-                        <p class="mb-0">Your payment is being processed. This may take a few minutes to complete.</p>
+                        <p class="mb-0">Your payment is being processed. Contact administrator if your payment is not completed within 1x12 hours.</p>
                     </div>
 
                     <!-- Processing animation -->
@@ -301,9 +301,13 @@ $latestPayment = $paymentStatus['latestPayment'];
                 ?>
 
                 <?php if (!$isOverdue): ?>
-                    <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '')); ?>" class="btn btn-success btn-lg w-100">
+                    <button type="button" class="btn btn-lg btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                        data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
+                        data-payment-amount="<?= $programPayment['usd_amount'] ?? ''; ?>"
+                        data-payment-description="<?= $programPayment['name'] ?? ''; ?>"
+                        title="Make Payment">
                         <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
-                    </a>
+                    </button>
                 <?php else: ?>
                     <div class="alert alert-danger mb-3">
                         <div class="d-flex">
@@ -328,20 +332,48 @@ $latestPayment = $paymentStatus['latestPayment'];
         <!-- Additional Actions -->
         <h6 class="fs-14 mb-3">Quick Actions</h6>
         <div class="d-grid gap-2">
-            <button type="button" class="btn btn-soft-primary btn-print-details">
+            <button type="button" class="btn btn-primary btn-print-details">
                 <i class="ri-printer-line align-middle me-1"></i> Print Details
             </button>
 
             <!-- Share Payment Link (if not completed) -->
-            <?php if (!$paymentCompleted): ?>
+            <!-- <?php if (!$paymentCompleted): ?>
                 <button type="button" class="btn btn-soft-info" data-bs-toggle="modal" data-bs-target="#sharePaymentModal">
                     <i class="ri-share-line align-middle me-1"></i> Share Payment Link
                 </button>
-            <?php endif; ?>
+            <?php endif; ?> -->
 
-            <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-soft-danger">
+            <!-- Contact Administrator Button -->
+            <div class="dropdown">
+                <button class="btn btn-info dropdown-toggle w-100" type="button" id="contactAdminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ri-admin-line align-middle me-1"></i>Contact Administrator
+                </button>
+                <ul class="dropdown-menu w-100" aria-labelledby="contactAdminDropdown">
+                    <li>
+                        <a class="dropdown-item" href="mailto:<?= isset($webSettings['email']) ? $webSettings['email'] : 'admin@example.com' ?>" target="_blank">
+                            <i class="ri-mail-line me-2"></i> Via Email
+                        </a>
+                    </li>
+                    <?php
+                    $whatsappNumber = isset($webSettings['contact']) ? $webSettings['contact'] : '1234567890';
+
+                    // remove plus from numbers
+                    $cleanedNumbers = preg_replace('/[^0-9]/', '', $whatsappNumber);
+
+                    $message = urlencode('Hello, I need assistance with my payment.');
+                    $whatsappUrl = "https://api.whatsapp.com/send?phone={$cleanedNumbers}&text={$message}";
+                    ?>
+                    <li>
+                        <a class="dropdown-item" href="<?= $whatsappUrl ?>" target="_blank">
+                            <i class="ri-whatsapp-line me-2"></i> Via WhatsApp
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-soft-danger">
                 <i class="ri-question-line align-middle me-1"></i> Need Help?
-            </a>
+            </a> -->
         </div>
     </div>
 </div>

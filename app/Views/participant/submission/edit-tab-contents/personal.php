@@ -17,12 +17,15 @@
                 </div>
             </div>
         </div>
-
         <div class="row">
             <div class="col-lg-12">
                 <div class="mb-3">
                     <label class="form-label" for="personal-fullname">Full Name</label>
-                    <input type="text" class="form-control" id="personal-fullname" placeholder="Enter your full name" value="<?= $participant['full_name'] ?? '' ?>" required>
+                    <input type="text" class="form-control" id="personal-fullname" placeholder="Enter your full name" value="<?= $participant['full_name'] ?? '' ?>" required maxlength="25" oninput="updateCharCount(this, 'fullname-char-count')">
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted"><i class="ri-information-line me-1"></i>Please ensure correct spelling as this will appear on all certificates</small>
+                        <small id="fullname-char-count" class="text-muted"><?= strlen($participant['full_name'] ?? '') ?>/25</small>
+                    </div>
                     <div class="invalid-feedback">Please enter your full name</div>
                 </div>
             </div>
@@ -170,246 +173,23 @@
     </div>
 </div>
 
+<!-- Hidden fields for data storage -->
+<input type="hidden" id="participant-id-holder" value="<?= $participant['id'] ?>">
+<input type="hidden" id="saved-nationality" value="<?= $participant['nationality'] ?? '' ?>">
+<input type="hidden" id="saved-nationality-code" value="<?= $participant['nationality_code'] ?? '' ?>">
+<input type="hidden" id="saved-nationality-flag" value="<?= $participant['nationality_flag'] ?? '' ?>">
+<input type="hidden" id="saved-country-code" value="<?= $participant['country_code'] ?? '' ?>">
+<input type="hidden" id="saved-phone-flag" value="<?= $participant['phone_flag'] ?? '' ?>">
+<input type="hidden" id="saved-emergency-country-code" value="<?= $participant['emergency_country_code'] ?? '' ?>">
+<input type="hidden" id="saved-emergency-phone-flag" value="<?= $participant['emergency_phone_flag'] ?? '' ?>">
+
+<!-- Include the consolidated form handler -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Profile image handling with a completely different approach
-        const profileImgInput = document.getElementById('profile-img-file-input');
-        const profileImageContainer = document.getElementById('profile-image-container');
-        const defaultImgSrc = 'https://storage.ybbfoundation.com/general-files/default.jpg';
-
-        // Create a reset button
-        const resetButton = document.createElement('button');
-        resetButton.type = 'button';
-        resetButton.className = 'btn btn-sm btn-outline-danger position-absolute bottom-0 start-0 m-1';
-        resetButton.innerHTML = '<i class="ri-delete-bin-line"></i>';
-        resetButton.title = 'Remove image';
-        resetButton.style.display = 'none'; // Hidden by default
-
-        // Add the reset button to the profile user container
-        document.querySelector('.profile-user').appendChild(resetButton);
-
-        // Handle image selection
-        profileImgInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                // Validate the file is an image
-                if (!file.type.match('image.*')) {
-                    alert('Please select an image file');
-                    return;
-                }
-
-                // Size validation - limit to 5MB
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Image size should be less than 5MB');
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Set background image
-                    profileImageContainer.style.backgroundImage = `url('${e.target.result}')`;
-
-                    // Store in a form data field or upload immediately
-                    const imgData = document.createElement('input');
-                    imgData.type = 'hidden';
-                    imgData.name = 'profile_image_data';
-                    imgData.value = e.target.result;
-
-                    // Remove any existing image data input
-                    const existingData = document.querySelector('input[name="profile_image_data"]');
-                    if (existingData) {
-                        existingData.parentNode.removeChild(existingData);
-                    }
-
-                    // Add the new image data input
-                    document.querySelector('form').appendChild(imgData);
-
-                    // Show reset button
-                    resetButton.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Reset button functionality
-        resetButton.addEventListener('click', function() {
-            // Reset to default image
-            profileImageContainer.style.backgroundImage = `url('${defaultImgSrc}')`;
-
-            // Clear file input
-            profileImgInput.value = '';
-
-            // Remove the stored image data
-            const existingData = document.querySelector('input[name="profile_image_data"]');
-            if (existingData) {
-                existingData.parentNode.removeChild(existingData);
-            }
-
-            // Hide reset button
-            resetButton.style.display = 'none';
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const saveButton = document.getElementById('save-personal-btn');
-
-        saveButton.addEventListener('click', function() {
-            // Show loading state
-            const spinner = this.querySelector('.loading-spinner');
-            spinner.classList.remove('d-none');
-            this.disabled = true;
-
-            // Collect form data
-            const formData = {
-                participant: {
-                    full_name: document.getElementById('personal-fullname').value,
-                    birthdate: document.getElementById('personal-birthdate').value,
-                    gender: document.getElementById('personal-gender').value,
-                    nationality: getNationalityData('personal-nationality').name,
-                    nationality_code: getNationalityData('personal-nationality').code,
-                    nationality_flag: getNationalityData('personal-nationality').flag,
-                    origin_address: document.getElementById('personal-origin-address').value,
-                    current_address: document.getElementById('personal-current-address').value,
-                    country_code: getPhoneInputData('personal-phone').code,
-                    phone_number: getPhoneInputData('personal-phone').number,
-                    phone_flag: getPhoneInputData('personal-phone').flag,
-                    emergency_country_code: getPhoneInputData('emergency-phone').code,
-                    emergency_phone_flag: getPhoneInputData('emergency-phone').flag,
-                    emergency_account: getPhoneInputData('emergency-phone').number,
-                    contact_relation: document.getElementById('emergency-relationship').value,
-                    tshirt_size: document.getElementById('personal-tshirt').value,
-                    disease_history: document.getElementById('personal-disease').value,
-                    // Add profile image data if exists
-                    profile_image: document.querySelector('input[name="profile_image_data"]')?.value || null
-                }
-            };
-
-            function getNationalityData(inputId) {
-                const inputElement = document.getElementById(inputId);
-                if (!inputElement) return {
-                    code: '',
-                    name: '',
-                    flag: '',
-                };
-
-                const container = inputElement.closest('[data-input-flag]');
-                if (!container) return {
-                    code: '',
-                    name: '',
-                    flag: ''
-                };
-
-                // Get the name (always present)
-                const name = inputElement.value.trim();
-
-                // Safely extract code - might not be present on initial load
-                let code = '';
-                const codeElement = container.querySelector('.country-codeno');
-                if (codeElement) {
-                    code = codeElement.textContent.trim().replace(/[^\d]/g, ''); // Remove non-digits
-                }
-
-                // Safely extract flag - might not be present on initial load
-                let flag = '';
-                const flagImg = container.querySelector('.country-flagimg');
-                if (flagImg && flagImg.src) {
-                    flag = flagImg.src.split('/').pop().split('.')[0]; // Get the flag image name
-                }
-
-                // Fall back to hidden inputs if available
-                if (!flag) {
-                    const flagInput = document.getElementById('nationality-flag');
-                    if (flagInput) flag = flagInput.value;
-                }
-
-                console.log(`Nationality data for ${inputId}:`, {
-                    code,
-                    name,
-                    flag,
-                });
-
-                return {
-                    code: code,
-                    name: name,
-                    flag: flag
-                };
-            }
-
-            // Function to get phone input data by input ID
-            function getPhoneInputData(inputId) {
-                const inputElement = document.getElementById(inputId);
-                if (!inputElement) return {
-                    code: '',
-                    number: '',
-                    full: '',
-                    flag: ''
-                };
-
-                const container = inputElement.closest('[data-input-flag]');
-                if (!container) return {
-                    code: '',
-                    number: '',
-                    full: '',
-                    flag: ''
-                };
-
-                const codeElement = container.querySelector('.country-codeno');
-                // Get the full country code including the '+'
-                const code = codeElement ? codeElement.textContent.trim() : '';
-                const number = inputElement.value.trim();
-                const flag = container.querySelector('.country-flagimg').src.split('/').pop().split('.')[0]; // Get the flag image name
-
-                console.log(`Phone data for ${inputId}:`, {
-                    code,
-                    number,
-                    full: code + number,
-                    flag,
-                });
-
-                return {
-                    code: code,
-                    number: number,
-                    full: code + number,
-                    flag: flag
-                };
-            }
-
-            // Send API request
-            // Get participant ID from session
-            const participant_id = <?= $participant['id'] ?>;
-
-            // Send the data to the server
-            fetch(`/submission/personal/${participant_id}/update`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show success message
-                        YBBAlerts.success('Data Saved', 'Your personal information has been saved successfully.', function() {
-                            document.getElementById('steparrow-professional-tab').click();
-                        });
-                    } else {
-                        // Show error with SweetAlert
-                        const errorMessage = data.message || 'There was a problem saving your personal information.';
-                        YBBAlerts.error('Error Saving Data', errorMessage);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error saving data:', error);
-                    YBBAlerts.error('Error Saving Data', 'An unexpected error occurred while saving your data. Please try again later.');
-                })
-                .finally(() => {
-                    // Hide loading state
-                    spinner.classList.add('d-none');
-                    this.disabled = false;
-                });
-        });
-    });
+    function updateCharCount(input, counterId) {
+        const maxLength = input.getAttribute('maxlength');
+        const currentLength = input.value.length;
+        document.getElementById(counterId).textContent = currentLength + '/' + maxLength;
+    }
 </script>
+
+<script src="<?= base_url('assets/js/custom/personal-form-handler.js') ?>"></script>

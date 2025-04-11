@@ -37,11 +37,14 @@
                     <div class="pt-4 mb-4 mb-lg-3 pb-lg-4 profile-wrapper">
                         <div class="row g-4">
                             <div class="col-auto">
-                                <div class="avatar-lg">
+                                <div class="avatar-xl">
                                     <?php if (!empty($participant['picture_url'])): ?>
-                                        <img src="<?= $participant['picture_url'] ?>" alt="user-img" class="img-thumbnail rounded-circle" />
+                                        <img src="<?= $participant['picture_url'] ?>" alt="user-img" 
+                                             class="img-thumbnail rounded-circle" 
+                                             style="object-fit: cover; width: 100%; height: 100%; border-radius: 50%;" />
                                     <?php else: ?>
-                                        <div class="avatar-lg bg-light rounded-circle d-flex align-items-center justify-content-center">
+                                        <div class="avatar-xl bg-light rounded-circle d-flex align-items-center justify-content-center"
+                                             style="border-radius: 50%; overflow: hidden;">
                                             <i class="ri-user-3-fill text-primary fs-1"></i>
                                         </div>
                                     <?php endif; ?>
@@ -50,7 +53,7 @@
                             <!--end col-->
                             <div class="col">
                                 <div class="p-2">
-                                    <h3 class="text-white mb-1"><?= $participant['full_name'] ?></h3>
+                                    <h3 class="text-white mb-1"><?= strtoupper($participant['full_name']) ?></h3>
                                     <p class="text-white text-opacity-75"><?= !empty($participant['occupation']) ? $participant['occupation'] : '-' ?></p>
                                     <div class="hstack text-white-50 gap-1">
                                         <div class="me-2"><i class="ri-map-pin-user-line me-1 text-white text-opacity-75 fs-16 align-middle"></i><?= !empty($participant['nationality']) ? $participant['nationality'] : '-' ?></div>

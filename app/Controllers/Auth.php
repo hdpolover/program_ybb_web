@@ -332,9 +332,7 @@ class Auth extends BaseController
 
                 if ($participants) {
 
-                    $session->set('participants', $participants);
-
-                    $session->set('isLoggedIn', true);
+                    $session->set('participants', $participants);                    $session->set('isLoggedIn', true);
                     log_message('info', 'User logged in successfully: ' . $response['user']['id']);
 
                     // get programs by category id
@@ -342,6 +340,53 @@ class Auth extends BaseController
 
                     if ($programs) {
                         $session->set('programs', $programs);
+                        
+                        // Set initial program ID during sign-in
+                        // First check for programs the participant is registered in
+                        $participant_programs = [];
+                        foreach ($participants as $p) {
+                            if (isset($p['program_id'])) {
+                                $participant_programs[] = $p['program_id'];
+                            }
+                        }
+                        
+                        $initialProgramId = null;
+                        
+                        // First try to use a program the user is registered for
+                        if (!empty($participant_programs)) {
+                            $initialProgramId = $participant_programs[0];
+                            log_message('debug', 'Auth: Setting initial program to registered program: ' . $initialProgramId);
+                        } 
+                        // If not registered for any program, try to find an active one
+                        else {
+                            foreach ($programs as $program) {
+                                if (isset($program['is_active']) && $program['is_active'] == '1') {
+                                    $initialProgramId = $program['id'];
+                                    log_message('debug', 'Auth: Setting initial program to active program: ' . $initialProgramId);
+                                    break;
+                                }
+                            }
+                            
+                            // Last resort - use the first available program
+                            if ($initialProgramId === null && !empty($programs)) {
+                                $initialProgramId = $programs[0]['id'];
+                                log_message('debug', 'Auth: Setting initial program to first available: ' . $initialProgramId);
+                            }
+                        }
+                        
+                        // Set the selected program ID in session
+                        if ($initialProgramId !== null) {
+                            $session->set('current_program_id', $initialProgramId);
+                            
+                            // Also set the current participant if applicable
+                            foreach ($participants as $p) {
+                                if (($p['program_id'] ?? null) === $initialProgramId) {
+                                    $session->set('current_participant', $p);
+                                    $session->set('current_participant_id', $p['id'] ?? null);
+                                    break;
+                                }
+                            }
+                        }
                     } else {
                         log_message('error', 'Failed to fetch programs for user ID: ' . $response['user']['id']);
                         return redirect()->back()->with('error', 'Failed to fetch programs. Please try again later.');

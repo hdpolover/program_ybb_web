@@ -252,6 +252,9 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
 
                                                         // Calculate days remaining until deadline
                                                         $daysRemaining = $currentDate->diff($endDate)->format('%r%a'); // %r preserves the sign, %a gives days
+                                                        if ($daysRemaining >= 0) {
+                                                            $daysRemaining++; // Include the last day in the calculation
+                                                        }
 
                                                         // Format the period string with the date range
                                                         $period = $startDate->format('M d, Y') . ' - ' . $endDate->format('M d, Y');
@@ -500,7 +503,9 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                         toast.addEventListener('mouseleave', Swal.resumeTimer)
                     }
                 });
-            <?php endif; ?> // Add click handler for receipt download buttons
+            <?php endif; ?>
+
+            // Add click handler for receipt download buttons
             const receiptButtons = document.querySelectorAll('.receipt-button');
             receiptButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
@@ -636,6 +641,9 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
             }
         });
     </script>
+
+    <script src="/assets/js/pages/payment-gateway-handler.js"></script>
+
 </body>
 
 </html>

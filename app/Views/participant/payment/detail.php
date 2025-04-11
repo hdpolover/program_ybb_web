@@ -97,15 +97,15 @@
 
     <!-- Add SweetAlert2 library for better user notifications -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <!-- SweetAlert2 Flash Message Handler -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check if there are any flash messages set in session
-            <?php if(session()->has('swal')): ?>
+            <?php if (session()->has('swal')): ?>
                 // Parse the JSON flash data
                 const swalData = JSON.parse('<?= session()->getFlashdata('swal') ?>');
-                
+
                 // Display SweetAlert2 notification
                 Swal.fire({
                     title: swalData.title || '',
@@ -124,6 +124,8 @@
             <?php endif; ?>
         });
     </script>
+
+    <script src="/assets/js/pages/payment-gateway-handler.js"></script>
 </body>
 
 </html>

@@ -223,6 +223,7 @@ class Payments extends BaseController
 
         return $this->render('participant/payment/detail', $data);
     }
+
     /**
      * Process a new programPayment attempt for a specific program programPayment
      */
@@ -361,6 +362,133 @@ class Payments extends BaseController
                         ->with('error', 'Error submitting payment request.');
                 }
             }
+        } else {
+            // Handle gateway payment types
+            $programPaymentId = $inputs['program_payment_id'];
+            $paymentMethodId = $inputs['payment_method_id'];
+
+            // Check if this is an AJAX request
+            $isAjax = $this->request->isAJAX();
+            log_message('debug', 'Gateway payment is AJAX request: ' . ($isAjax ? 'yes' : 'no'));
+
+            // Verify we have a valid payment method ID
+            if (empty($paymentMethodId)) {
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => 'Please select a valid payment method'
+                    ]);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('error', 'Please select a valid payment method.');
+                }
+            }
+
+            $paymentData = [
+                'participant_id' => $participantId,
+                'program_payment_id' => $programPaymentId,
+                'payment_method_id' => $paymentMethodId,
+            ];
+
+            log_message('debug', 'Gateway payment data: ' . json_encode($paymentData));
+
+            // Make API call to initiate gateway payment           
+            $response = $this->makePostRequest(
+                '/payments/create',
+                $paymentData,
+                [], // No additional headers
+                false, // Use JWT if needed
+                true, // Send as JSON
+                false // Not multipart
+            );
+
+            if (!$response) {
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => 'Failed to initiate payment. Please try again or contact support.'
+                    ]);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('error', 'Failed to initiate payment. Please try again or contact support.');
+                }
+            }
+
+            // Log the complete response for debugging
+            log_message('debug', 'Payment response structure: ' . json_encode($response));
+
+            // Check if we have a redirect URL in the response data (handling nested data object)
+            if (isset($response['data']['redirect_url']) && !empty($response['data']['redirect_url'])) {
+                $redirectUrl = $response['data']['redirect_url'];
+                log_message('debug', 'Found gateway URL in data.redirect_url: ' . $redirectUrl);
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'success',
+                        'redirect_url' => $redirectUrl
+                    ]);
+                } else {
+                    return redirect()->to($redirectUrl);
+                }
+            }
+            // Direct redirect_url (non-nested)
+            else if (isset($response['redirect_url']) && !empty($response['redirect_url'])) {
+                $redirectUrl = $response['redirect_url'];
+                log_message('debug', 'Found direct gateway URL: ' . $redirectUrl);
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'success',
+                        'redirect_url' => $redirectUrl
+                    ]);
+                } else {
+                    return redirect()->to($redirectUrl);
+                }
+            }
+            // Payment ID in data object
+            else if (isset($response['data']['payment_id'])) {
+                $paymentId = $response['data']['payment_id'];
+                log_message('debug', 'Found payment_id in data object: ' . $paymentId);
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'success',
+                        'payment_id' => $paymentId,
+                        'message' => 'Payment initiated. Please check payment status.'
+                    ]);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('success', 'Payment initiated. Please check payment status.');
+                }
+            }
+            // Direct payment_id (non-nested)
+            else if (isset($response['payment_id'])) {
+                $paymentId = $response['payment_id'];
+                log_message('debug', 'Found direct payment_id: ' . $paymentId);
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'success',
+                        'payment_id' => $paymentId,
+                        'message' => 'Payment initiated. Please check payment status.'
+                    ]);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('success', 'Payment initiated. Please check payment status.');
+                }
+            } else {
+                log_message('error', 'No redirect URL or payment ID found in response: ' . json_encode($response));
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => 'Payment gateway error. Please try again later.'
+                    ]);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('error', 'Payment gateway error. Please try again later.');
+                }
+            }
         }
 
         // Validate input
@@ -456,7 +584,7 @@ class Payments extends BaseController
                 'paymentMethod' => $paymentMethod,
                 'webSettings' => $this->data['webSettings'] ?? null,
             ];
-            
+
             // Format the data to match the template's expected structure
             if (isset($programPayment)) {
                 $data['programPayment'] = [
@@ -514,21 +642,22 @@ class Payments extends BaseController
             log_message('info', 'Rendering PDF - completed');
 
             // Generate a filename
-            $fileName = 'Receipt_' . ($payment['transaction_code'] ?? 'YBB-' . $id) . '.pdf';            log_message('info', 'Streaming PDF to browser: ' . $fileName);
+            $fileName = 'Receipt_' . ($payment['transaction_code'] ?? 'YBB-' . $id) . '.pdf';
+            log_message('info', 'Streaming PDF to browser: ' . $fileName);
 
             // Reset memory limit
             ini_set('memory_limit', $currentMemoryLimit);
-            
+
             // Get the PDF content
             $pdfContent = $dompdf->output();
-            
+
             // Set the appropriate headers
             $response = service('response');
             $response->setHeader('Content-Type', 'application/pdf');
-            $response->setHeader('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+            $response->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"');
             $response->setHeader('Cache-Control', 'no-store');
             $response->setHeader('Content-Length', strlen($pdfContent));
-            
+
             // Output the PDF content directly
             return $response->setBody($pdfContent);
         } catch (\Exception $e) {

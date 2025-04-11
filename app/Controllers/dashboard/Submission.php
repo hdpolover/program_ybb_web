@@ -172,26 +172,82 @@ class Submission extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'No participant data provided']);
         }
 
+        // Check for profile image data
+        if (!empty($requestData['participant']['profile_image'])) {
+            // Log that we found image data
+            log_message('debug', 'updatePersonal - Profile image data found');
+
+            // The image data is already Base64 encoded, so we can pass it directly to the API
+            // Make sure the API expects the data in this format
+        }
+
         // Log the extracted participant data for debugging
-        log_message('debug', 'updatePersonal - Extracted Participant Data: ' . json_encode($requestData));
-
-        // Send data to API endpoint
-        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $requestData);
-
-        // Log the API response
+        log_message('debug', 'updatePersonal - Extracted Participant Data: ' . json_encode($requestData));        // Send data to API endpoint
+        $response = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $requestData);        // Log the API response
         log_message('debug', 'updatePersonal - API Response: ' . json_encode($response));
+
+        // Extract picture_url from response if it exists
+        $picture_url = null;
+        if (isset($response['participant']) && isset($response['participant']['picture_url'])) {
+            $picture_url = $response['participant']['picture_url'];
+            log_message('debug', 'Picture URL from API response: ' . $picture_url);
+        }
 
         if (isset($response['participant']) && $response['participant']) {
             // Update session data
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
 
             if ($updatedParticipant) {
+                // Force the picture_url to be updated using the value from the API response
+                if ($picture_url) {
+                    log_message('debug', 'Forcing picture_url update in session to: ' . $picture_url);
+                    $updatedParticipant['picture_url'] = $picture_url;
+                }
+
+                // Log the participant data we're about to save
+                log_message('debug', 'Updating session with participant data: ' . json_encode($updatedParticipant));
+
+                // Store in session so it's available on other pages
                 session()->set('current_participant', $updatedParticipant);
+
+                // IMPORTANT: Also update the participants array in session
+                $participants = session()->get('participants') ?? [];
+
+                // Flag to track if we updated any participant
+                $participantUpdated = false;
+
+                // Update participant in the participants array
+                foreach ($participants as $key => &$p) {
+                    if (($p['id'] ?? null) == $participantId) {
+                        // Create an updated copy
+                        $p = $updatedParticipant;
+
+                        // Make doubly sure picture_url is updated
+                        if ($picture_url) {
+                            $p['picture_url'] = $picture_url;
+                        }
+
+                        $participantUpdated = true;
+                        break;
+                    }
+                }
+
+                // If updated, save back to session
+                if ($participantUpdated) {
+                    log_message('debug', 'Updated participant in participants array');
+                    session()->set('participants', $participants);
+                } else {
+                    log_message('debug', 'Participant not found in participants array');
+                }
+
+                // Force session save
+                session()->set('session_refreshed_at', time());
             }
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Personal information updated successfully'
+                'message' => 'Personal information updated successfully',
+                'participant' => $updatedParticipant // Include updated data in response
             ]);
         }
 

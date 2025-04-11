@@ -9,5 +9,7 @@
 <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
 <!-- Custom SweetAlert Utils -->
 <script src="/assets/js/custom/sweetalert-utils.js"></script>
+<!-- Global AJAX Error Handler with Timeout Support -->
+<script src="/assets/js/ajax-error-handler.js"></script>
 <!-- Loading Manager (handles loading overlays) -->
 <script src="/assets/js/loading-manager.js"></script>

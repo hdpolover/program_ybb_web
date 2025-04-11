@@ -112,7 +112,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
             const greetingElement = document.querySelector('.col-12 h3');
             if (greetingElement) {
                 const fullName = greetingElement.textContent.split(',')[1] || '';
-                greetingElement.textContent = `${greetingText},${fullName}`;
+                greetingElement.textContent = `${greetingText},${fullName.toUpperCase()}`; // Corrected to use toUpperCase()
             }
         });
     </script>

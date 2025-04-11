@@ -97,20 +97,6 @@
             </div>
             <?php endif; ?>
             
-            <?php if(isset($program['start_date'])): ?>
-            <div class="col-sm-6 col-lg-3">
-                <div class="p-2 border rounded text-center">
-                    <div class="avatar-sm mx-auto mb-2">
-                        <div class="avatar-title bg-soft-primary text-primary rounded-circle fs-18">
-                            <i class="ri-calendar-line"></i>
-                        </div>
-                    </div>
-                    <h5 class="fs-15 mb-0"><?= date('M d, Y', strtotime($program['start_date'])) ?></h5>
-                    <p class="text-muted mb-0 fs-13">Start Date</p>
-                </div>
-            </div>
-            <?php endif; ?>
-            
             <?php if(isset($program['capacity'])): ?>
             <div class="col-sm-6 col-lg-3">
                 <div class="p-2 border rounded text-center">

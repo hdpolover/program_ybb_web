@@ -14,6 +14,9 @@ function initTopbar() {
     // Add event listeners for program selection
     setupProgramSelection();
 
+    // Check for initial program selection
+    ensureInitialProgramSelection();
+
     // Initialize loading overlay if not already present
     initLoadingOverlay();
 
@@ -266,6 +269,178 @@ function updateTopbarUI(programId) {
 }
 
 /**
+ * Update the user information in the topbar
+ * @param {string} fullName - The user's full name to display
+ * @param {string|null} pictureUrl - URL to the user's profile picture, or null if none
+ */
+function updateUserInfoInTopbar(fullName, pictureUrl) {
+    if (!fullName && !pictureUrl) {
+        return; // Nothing to update
+    }
+
+    // Update user name if provided
+    if (fullName) {
+        const userNameElements = document.querySelectorAll('.user-name-text, .dropdown-header');
+        userNameElements.forEach(element => {
+            if (element.classList.contains('dropdown-header')) {
+                element.textContent = 'Welcome, ' + fullName.toUpperCase() + '!';
+            } else {
+                element.textContent = fullName.toUpperCase();
+            }
+        });
+    }    // Update profile picture if provided
+    if (pictureUrl) {
+        // Look for existing profile image
+        const profileImg = document.querySelector('.header-profile-user');
+        const userDropdownBtn = document.getElementById('page-header-user-dropdown');
+
+        if (profileImg && profileImg.tagName === 'IMG') {
+            // If there's already an img element, just update its src
+            profileImg.src = pictureUrl;
+        } else if (userDropdownBtn) {            // If there's no img element but an icon instead, replace it with an img
+            const iconElement = userDropdownBtn.querySelector('.header-profile-user');
+            if (iconElement) {
+                // Remove the icon
+                iconElement.remove();
+
+                // Create a new img element
+                const imgElement = document.createElement('img');
+                imgElement.className = 'rounded-circle header-profile-user';
+                imgElement.src = pictureUrl;
+                imgElement.alt = 'Header Avatar';
+
+                // Insert the img element at the beginning of the span
+                const span = userDropdownBtn.querySelector('.d-flex.align-items-center');
+                if (span) {
+                    span.insertBefore(imgElement, span.firstChild);
+                }
+            }
+        }
+    }
+    // Update the participant data in the session so it's available on all pages
+    if (fullName || pictureUrl) {
+        updateParticipantSessionData(fullName, pictureUrl);
+    }
+}
+
+/**
+ * Update participant data in the session via AJAX request
+ * This ensures the updated participant info is available on all pages
+ * 
+ * @param {string} fullName - The participant's full name
+ * @param {string|null} pictureUrl - URL to the participant's profile picture, or null if none
+ */
+function updateParticipantSessionData(fullName, pictureUrl) {
+    // Only proceed if we have data to update
+    if (!fullName && !pictureUrl) {
+        return;
+    }
+
+    // Get the current participant ID from the hidden field in the personal form
+    const participantId = document.getElementById('participant-id-holder')?.value;
+
+    // If no participant ID found, we can't update the session
+    if (!participantId) {
+        console.warn('Cannot update session: Participant ID not found in the form');
+        return;
+    }
+
+    // Prepare the data to update
+    const updateData = {
+        participant_id: participantId
+    };
+
+    if (fullName) {
+        updateData.full_name = fullName;
+    }
+
+    if (pictureUrl) {
+        updateData.picture_url = pictureUrl;
+    }
+
+    // Send the data to the server to update the session
+    fetch('/topbar/updateParticipantSession', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(updateData)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        }).then(data => {
+            if (data.success) {
+                console.log('Session participant data updated successfully');
+            } else {
+                console.warn('Failed to update session participant data:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating session participant data:', error);
+        });
+}
+
+/**
+ * Ensures that a program is selected when the page loads
+ * This handles the case when a user first signs in and sees the dashboard
+ */
+function ensureInitialProgramSelection() {
+    // Check if we're on a page that uses the program selector
+    const programDropdown = document.getElementById('program-dropdown');
+    if (!programDropdown) return;
+
+    // Check if a program is currently selected in the UI
+    const currentProgramName = document.querySelector('#program-dropdown .fw-medium');
+    const noSelectionText = 'Select Program';
+
+    // If no program is selected or it shows the default text
+    if (!currentProgramName || currentProgramName.textContent === noSelectionText) {
+        // Try to find a program that should be selected (one marked as active)
+        const programItems = document.querySelectorAll('.dropdown-programs-container .dropdown-item');
+        let programToSelect = null;
+
+        // First look for programs marked as registered
+        for (const item of programItems) {
+            if (item.getAttribute('data-registered') === '1') {
+                programToSelect = item;
+                break;
+            }
+        }
+
+        // If no registered program found, look for active programs
+        if (!programToSelect) {
+            for (const item of programItems) {
+                const activeLabel = item.querySelector('.badge.bg-success-subtle');
+                if (activeLabel) {
+                    programToSelect = item;
+                    break;
+                }
+            }
+        }
+
+        // If still no program found, use the first one
+        if (!programToSelect && programItems.length > 0) {
+            programToSelect = programItems[0];
+        }
+
+        // If we found a program to select, update the UI
+        if (programToSelect) {
+            const programId = programToSelect.getAttribute('href').split('/').pop();
+            // Just update UI without making an AJAX call since the backend should have set the program
+            updateTopbarUI(programId);
+
+            console.log('Initial program selected:', programId);
+        }
+    }
+}
+
+/**
  * Show error notification to user
  */
 function showErrorNotification(message) {
@@ -360,28 +535,28 @@ function registerForProgram(programId, programName) {
             }
             return response.json();
         })
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            // Show success message
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Registration Successful!',
-                    html: `<p>You have been successfully registered for <strong>${programName}</strong>.</p>
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                // Show success message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Registration Successful!',
+                        html: `<p>You have been successfully registered for <strong>${programName}</strong>.</p>
                            <p>We'll switch you to this program now.</p>`,
-                    icon: 'success',
-                    confirmButtonColor: '#28a745',
-                }).then(() => {
-                    // Switch to the newly registered program
+                        icon: 'success',
+                        confirmButtonColor: '#28a745',
+                    }).then(() => {
+                        // Switch to the newly registered program
+                        switchToProgram(programId, programName);
+                    });
+                } else {
+                    alert(`Successfully registered for ${programName}. Switching to this program now.`);
                     switchToProgram(programId, programName);
-                });
+                }
             } else {
-                alert(`Successfully registered for ${programName}. Switching to this program now.`);
-                switchToProgram(programId, programName);
+                throw new Error(data.message || 'Unknown error occurred during registration');
             }
-        } else {
-            throw new Error(data.message || 'Unknown error occurred during registration');
-        }
         })
         .catch(error => {
             console.error('Error registering for program:', error);
@@ -480,7 +655,7 @@ function fetchUserIdSynchronously() {
 function switchToProgram(programId, programName) {
     // Show loading overlay
     showLoading();
-    
+
     // Call the API to set the program
     fetch(`/topbar/setProgram/${programId}`, {
         method: 'POST',
@@ -492,41 +667,41 @@ function switchToProgram(programId, programName) {
         credentials: 'same-origin',
         body: JSON.stringify({ program_id: programId })
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Update the dropdown menu to reflect the new program
-            updateProgramDropdownUI(programId, programName);
-            
-            // Get current URL to reload with the new program context
-            const currentUrl = window.location.href;
-            
-            // Add cache-busting parameter to force a complete reload with new program context
-            const timestamp = new Date().getTime();
-            const separator = currentUrl.indexOf('?') !== -1 ? '&' : '?';
-            const newUrl = currentUrl + separator + '_reload=' + timestamp;
-            
-            // Redirect to refresh the page with the new program context
-            window.location.href = newUrl;
-        } else {
-            throw new Error(data.message || 'Failed to switch program');
-        }
-    })
-    .catch(error => {
-        console.error('Error switching program:', error);
-        hideLoading();
-        
-        // Display error message but still try to reload the page
-        showErrorNotification('Error switching to new program. Refreshing page...');
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-    });
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Update the dropdown menu to reflect the new program
+                updateProgramDropdownUI(programId, programName);
+
+                // Get current URL to reload with the new program context
+                const currentUrl = window.location.href;
+
+                // Add cache-busting parameter to force a complete reload with new program context
+                const timestamp = new Date().getTime();
+                const separator = currentUrl.indexOf('?') !== -1 ? '&' : '?';
+                const newUrl = currentUrl + separator + '_reload=' + timestamp;
+
+                // Redirect to refresh the page with the new program context
+                window.location.href = newUrl;
+            } else {
+                throw new Error(data.message || 'Failed to switch program');
+            }
+        })
+        .catch(error => {
+            console.error('Error switching program:', error);
+            hideLoading();
+
+            // Display error message but still try to reload the page
+            showErrorNotification('Error switching to new program. Refreshing page...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        });
 }
 
 /**
@@ -538,37 +713,37 @@ function switchToProgram(programId, programName) {
 function updateProgramDropdownUI(programId, programName) {
     // Find the dropdown item for this program
     const programItem = document.querySelector(`.dropdown-programs-container .dropdown-item[data-program-id="${programId}"]`);
-    
+
     if (programItem) {
         // Update the registered status
         programItem.setAttribute('data-registered', '1');
-        
+
         // Remove any "Not Registered" badge if it exists
         const notRegisteredBadge = programItem.querySelector('.badge.bg-warning-subtle.text-warning');
         if (notRegisteredBadge) {
             notRegisteredBadge.remove();
         }
-        
+
         // Update active state in dropdown menu
         document.querySelectorAll('.dropdown-programs-container .dropdown-item').forEach(item => {
             // Remove active class from all items
             item.classList.remove('active');
-            
+
             // Remove checkmark icon if it exists
             const checkIcon = item.querySelector('.ri-checkbox-circle-fill');
             if (checkIcon) {
                 checkIcon.remove();
             }
         });
-        
+
         // Add active class to the newly registered program item
         programItem.classList.add('active');
-        
+
         // Add checkmark icon to selected item
         const checkIcon = document.createElement('i');
         checkIcon.className = 'ri-checkbox-circle-fill text-success ms-2 fs-17';
         programItem.appendChild(checkIcon);
-        
+
         // Update program name in dropdown button
         const programNameInButton = document.querySelector('#program-dropdown .fw-medium');
         if (programNameInButton) {

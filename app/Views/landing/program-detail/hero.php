@@ -48,8 +48,15 @@
                 </div>
 
                 <div class="mt-4 pt-2">
-                    <?php if (isset($program['registration_open']) && $program['registration_open']) : ?>
-                        <a href="<?= base_url('registration/' . ($program['slug'] ?? $program['id'] ?? '')) ?>" class="btn btn-success btn-lg">
+                    <?php
+                    //  generate slug
+                    helper('url'); // Ensure the helper is loaded
+                    $slug = create_slug($title);
+
+                    $apply_url = "/sign-up?program=" . urlencode($slug);
+                    ?>
+                    <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] == "1") : ?>
+                        <a href="<?= base_url($apply_url) ?>" class="btn btn-success btn-lg">
                             <i class="ri-user-add-line me-1"></i> Apply Now
                         </a>
                     <?php else : ?>
@@ -57,69 +64,75 @@
                             <i class="ri-calendar-event-line me-1"></i> Registration Closed
                         </button>
                     <?php endif; ?>
-                    <a href="#program-detail" class="btn btn-info btn-lg ms-2">
-                        <i class="ri-information-line me-1"></i> Learn More
-                    </a>
+
                 </div>
             </div>
         </div>
         <!-- Key info badges -->
         <div class="row mt-5">
             <div class="col-12">
-            <div class="row justify-content-center">
-                <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                <div class="card bg-white bg-opacity-10 border-0 text-center">
-                    <div class="card-body p-3">
-                    <div class="avatar-sm mx-auto mb-3">
-                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                        <i class="ri-calendar-line"></i>
+                <div class="row justify-content-center">
+                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                        <div class="card bg-white bg-opacity-10 border-0 text-center">
+                            <div class="card-body p-3">
+                                <div class="avatar-sm mx-auto mb-3">
+                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                                        <i class="ri-calendar-line"></i>
+                                    </div>
+                                </div>
+                                <h5 class="text-black fs-16">
+                                    <?php if(isset($program['start_date']) && isset($program['end_date'])): ?>
+                                        <?= date('M d', strtotime($program['start_date'])) ?> - <?= date('M d, Y', strtotime($program['end_date'])) ?>
+                                    <?php elseif(isset($program['start_date'])): ?>
+                                        <?= date('M d, Y', strtotime($program['start_date'])) ?>
+                                    <?php else: ?>
+                                        Date TBA
+                                    <?php endif; ?>
+                                </h5>
+                                <p class="text-black-75 mb-0">Program Date</p>
+                            </div>
                         </div>
                     </div>
-                    <h5 class="text-black fs-16"><?= isset($program['start_date']) ? date('M d, Y', strtotime($program['start_date'])) : 'Date TBA' ?></h5>
-                    <p class="text-black-75 mb-0">Start Date</p>
-                    </div>
-                </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                <div class="card bg-white bg-opacity-10 border-0 text-center">
-                    <div class="card-body p-3">
-                    <div class="avatar-sm mx-auto mb-3">
-                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                        <i class="ri-map-pin-line"></i>
+                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                        <div class="card bg-white bg-opacity-10 border-0 text-center">
+                            <div class="card-body p-3">
+                                <div class="avatar-sm mx-auto mb-3">
+                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                                        <i class="ri-map-pin-line"></i>
+                                    </div>
+                                </div>
+                                <h5 class="text-black fs-16"><?= $webSettings['location'] ?? 'Location TBA' ?></h5>
+                                <p class="text-black-75 mb-0">Location</p>
+                            </div>
                         </div>
                     </div>
-                    <h5 class="text-black fs-16"><?= $program['location'] ?? 'Location TBA' ?></h5>
-                    <p class="text-black-75 mb-0">Venue</p>
-                    </div>
-                </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                <div class="card bg-white bg-opacity-10 border-0 text-center">
-                    <div class="card-body p-3">
-                    <div class="avatar-sm mx-auto mb-3">
-                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                        <i class="ri-time-line"></i>
+                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                        <div class="card bg-white bg-opacity-10 border-0 text-center">
+                            <div class="card-body p-3">
+                                <div class="avatar-sm mx-auto mb-3">
+                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                                        <i class="ri-time-line"></i>
+                                    </div>
+                                </div>
+                                <h5 class="text-black fs-16"><?= $program['duration'] ?? 'Duration TBA' ?></h5>
+                                <p class="text-black-75 mb-0">Program Length</p>
+                            </div>
                         </div>
                     </div>
-                    <h5 class="text-black fs-16"><?= $program['duration'] ?? 'Duration TBA' ?></h5>
-                    <p class="text-black-75 mb-0">Program Length</p>
-                    </div>
-                </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mt-4 pt-2">
-                <div class="card bg-white bg-opacity-10 border-0 text-center">
-                    <div class="card-body p-3">
-                    <div class="avatar-sm mx-auto mb-3">
-                        <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
-                        <i class="ri-group-line"></i>
+                    <div class="col-lg-3 col-md-6 mt-4 pt-2">
+                        <div class="card bg-white bg-opacity-10 border-0 text-center">
+                            <div class="card-body p-3">
+                                <div class="avatar-sm mx-auto mb-3">
+                                    <div class="avatar-title bg-soft-light text-white rounded-circle fs-18">
+                                        <i class="ri-group-line"></i>
+                                    </div>
+                                </div>
+                                <h5 class="text-black fs-16"><?= $program['capacity'] ?? 'Limited Spots' ?></h5>
+                                <p class="text-black-75 mb-0">Capacity</p>
+                            </div>
                         </div>
                     </div>
-                    <h5 class="text-black fs-16"><?= $program['capacity'] ?? 'Limited Spots' ?></h5>
-                    <p class="text-black-75 mb-0">Capacity</p>
-                    </div>
                 </div>
-                </div>
-            </div>
             </div>
         </div>
     </div>

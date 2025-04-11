@@ -43,6 +43,12 @@ $routes->setAutoRoute(false);
 // Maintenance route
 $routes->get('maintenance', 'landing\Maintenance::index');
 
+// AJAX Error Handler routes
+$routes->get('ajax/timeout', 'AjaxHandler::timeout');
+$routes->get('ajax/error/(:num)', 'AjaxHandler::error/$1');
+$routes->post('ajax/timeout', 'AjaxHandler::timeout');
+$routes->post('ajax/error/(:num)', 'AjaxHandler::error/$1');
+
 $routes->get('/', 'landing\Home::index');
 $routes->get('programs', 'landing\Programs::index');
 $routes->get('programs/(:any)/details', 'landing\Programs::detail/$1');
@@ -116,6 +122,7 @@ $routes->get('topbar/getTopbarData', 'TopbarController::getTopbarData');
 $routes->get('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 $routes->post('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 $routes->post('topbar/(:num)/create', 'TopbarController::registerForProgram/$1');
+$routes->post('topbar/updateParticipantSession', 'TopbarController::updateParticipantSession');
 
 // Public receipt download route (no authentication required)
 $routes->get('payments/receipt/(:num)', 'dashboard\Payments::downloadReceipt/$1');
