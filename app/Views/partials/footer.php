@@ -2,11 +2,11 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-sm-6">
-                <script>document.write(new Date().getFullYear())</script> © Youth Break the Boundaries Foundation.
+                <script>document.write(new Date().getFullYear())</script> © Youth Break the Boundaries Foundation. All rights reserved.
             </div>
             <div class="col-sm-6">
                 <div class="text-sm-end d-none d-sm-block">
-                   <?= $webSettings['name'] ?>. All rights reserved.
+                   <?= $webSettings['name'] ?>
                 </div>
             </div>
         </div>

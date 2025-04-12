@@ -21,9 +21,9 @@
             <div class="col-lg-12">
                 <div class="mb-3">
                     <label class="form-label" for="personal-fullname">Full Name</label>
-                    <input type="text" class="form-control" id="personal-fullname" placeholder="Enter your full name" value="<?= $participant['full_name'] ?? '' ?>" required maxlength="25" oninput="updateCharCount(this, 'fullname-char-count')">
+                    <input type="text" class="form-control text-uppercase" id="personal-fullname" placeholder="Enter your full name" value="<?= strtoupper($participant['full_name'] ?? '') ?>" required maxlength="25" oninput="this.value = this.value.toUpperCase(); updateCharCount(this, 'fullname-char-count')">
                     <div class="d-flex justify-content-between mt-1">
-                        <small class="text-muted"><i class="ri-information-line me-1"></i>Please ensure correct spelling as this will appear on all certificates</small>
+                        <small class="text-muted text-blue"><i class="ri-information-line me-1 text-blue"></i>Please ensure correct spelling as this will appear on all certificates</small>
                         <small id="fullname-char-count" class="text-muted"><?= strlen($participant['full_name'] ?? '') ?>/25</small>
                     </div>
                     <div class="invalid-feedback">Please enter your full name</div>

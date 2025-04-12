@@ -100,8 +100,118 @@
         // Set base URL for the flag-input script to use
         var baseAssetsUrl = "<?= base_url('assets/json/') ?>";
 
-        // Check if current program is active
+        // Track form changes
+        let formChanged = false;
+
+        // Function to mark form as changed
+        function markFormAsChanged() {
+            formChanged = true;
+        }
+
+        // Add event listeners to all form inputs to track changes
         document.addEventListener('DOMContentLoaded', function() {
+            const formInputs = document.querySelectorAll('input, select, textarea');
+            formInputs.forEach(function(input) {
+                input.addEventListener('change', markFormAsChanged);
+                input.addEventListener('input', markFormAsChanged);
+            });
+
+            // Add event listeners to Quill editors if any
+            const quillEditors = document.querySelectorAll('.quill-editor');
+            quillEditors.forEach(function(editor) {
+                if (editor.querySelector('.ql-editor')) {
+                    editor.querySelector('.ql-editor').addEventListener('DOMSubtreeModified', markFormAsChanged);
+                }
+            });
+
+            // Show warning when user tries to leave the page
+            window.addEventListener('beforeunload', function(e) {
+                if (formChanged) {
+                    // Standard message (browser will show its own dialog)
+                    const message = 'You have unsaved changes. Are you sure you want to leave this page?';
+                    e.returnValue = message;
+                    return message;
+                }
+            });
+
+            // For links within the application, use SweetAlert for better UX
+            document.addEventListener('click', function(e) {
+                // Check if the clicked element is a link or has a link parent
+                const linkElement = e.target.closest('a');
+                if (linkElement && formChanged && !linkElement.hasAttribute('data-no-confirm')) {
+                    const href = linkElement.getAttribute('href');
+                    // Only handle internal links and not anchors
+                    if (href && href !== '#' && !href.startsWith('javascript:')) {
+                        e.preventDefault();
+
+                        Swal.fire({
+                            title: 'Unsaved Changes',
+                            text: 'You have unsaved changes. Are you sure you want to leave this page?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, leave page',
+                            cancelButtonText: 'No, stay here',
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = href;
+                            }
+                        });
+                    }
+                }
+            });            // Track the current active tab
+            let currentActiveTab = document.querySelector('[data-bs-toggle="pill"].active');
+            
+            // Use Bootstrap's event system to intercept tab changes before they happen
+            const tabEls = document.querySelectorAll('[data-bs-toggle="pill"]');
+            tabEls.forEach(function(tabEl) {
+                tabEl.addEventListener('show.bs.tab', function(event) {
+                    // If form has changes and this is a tab switch (not initial load)
+                    if (formChanged && currentActiveTab) {
+                        // Prevent the default tab switching
+                        event.preventDefault();
+                        
+                        const clickedTab = event.target;
+                        
+                        // Show confirmation dialog
+                        Swal.fire({
+                            title: 'Unsaved Changes',
+                            text: 'You have unsaved changes in the current tab. Are you sure you want to switch tabs?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, switch tabs',
+                            cancelButtonText: 'No, stay here',
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            allowOutsideClick: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Temporarily disable the change detection
+                                const originalFormChanged = formChanged;
+                                formChanged = false;
+                                
+                                // Manually trigger tab switch using Bootstrap's API
+                                const bsTab = new bootstrap.Tab(clickedTab);
+                                bsTab.show();
+                                
+                                // Update current active tab reference
+                                currentActiveTab = clickedTab;
+                                
+                                // Restore change detection state
+                                setTimeout(() => {
+                                    formChanged = originalFormChanged;
+                                }, 100);
+                            }
+                        });
+                    } else {
+                        // Update current active tab reference
+                        currentActiveTab = event.target;
+                    }
+                });
+            });
+
+            // Check if current program is active
             const programActive = <?= isset($currentProgram['is_active']) ? ($currentProgram['is_active'] ? 'true' : 'false') : 'true' ?>;
             const programName = "<?= isset($currentProgram['name']) ? htmlspecialchars($currentProgram['name'], ENT_QUOTES) : 'Selected program' ?>";
 
@@ -117,8 +227,8 @@
                     Swal.fire({
                         title: 'Inactive Program',
                         html: `<p>The program <strong>${programName}</strong> is currently inactive.</p>
-                               <p>You cannot access or edit the submission form for an inactive program.</p>
-                               <p>Please select an active program from the dropdown menu above.</p>`,
+                           <p>You cannot access or edit the submission form for an inactive program.</p>
+                           <p>Please select an active program from the dropdown menu above.</p>`,
                         icon: 'warning',
                         allowOutsideClick: false,
                         confirmButtonText: 'OK',
@@ -139,14 +249,14 @@
                     const inactiveAlert = document.createElement('div');
                     inactiveAlert.className = 'alert alert-warning mb-4';
                     inactiveAlert.innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <i class="ri-alert-line me-3 fs-3"></i>
-                            <div>
-                                <h5 class="mb-1">Inactive Program</h5>
-                                <p class="mb-0">This program is currently inactive. Form editing is disabled.</p>
-                            </div>
+                    <div class="d-flex align-items-center">
+                        <i class="ri-alert-line me-3 fs-3"></i>
+                        <div>
+                            <h5 class="mb-1">Inactive Program</h5>
+                            <p class="mb-0">This program is currently inactive. Form editing is disabled.</p>
                         </div>
-                    `;
+                    </div>
+                `;
                     formCard.prepend(inactiveAlert);
                 }
             }

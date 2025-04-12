@@ -56,7 +56,7 @@
                                         <?php endif; ?>
 
                                         <div class="mt-4">
-                                            <form action="<?= base_url('authorize') ?>" method="post">
+                                            <form action="<?= base_url('authorize') ?>" method="post" id="login-form">
                                                 <!-- Hidden field for user type (2=participant) -->
                                                 <input type="hidden" name="type" value="2">
 
@@ -77,7 +77,7 @@
                                                 </div>
 
                                                 <div class="mt-4">
-                                                    <button class="btn btn-success w-100" type="submit">Sign In</button>
+                                                    <button class="btn btn-success w-100" type="submit" id="login-button">Sign In</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -127,6 +127,51 @@
 
     <!-- password-addon init -->
     <script src="/assets/js/pages/password-addon.init.js"></script>
+
+     <!-- Add SweetAlert2 library for better user notifications -->
+     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    <!-- SweetAlert loading animation -->
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function() {
+            Swal.fire({
+                title: 'Signing you in...',
+                html: '<div class="my-3">Please wait while we authenticate your credentials</div>',
+                icon: 'info',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                customClass: {
+                    popup: 'animated-popup',
+                    title: 'swal-title',
+                    icon: 'swal-icon'
+                },
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        });
+    </script>
+    
+    <!-- Custom styles for SweetAlert loading -->
+    <style>
+        .animated-popup {
+            border-radius: 15px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid rgba(0, 128, 0, 0.1) !important;
+        }
+        
+        .swal-title {
+            font-weight: 600 !important;
+            color: #2f55d4 !important;
+        }
+        
+        .swal-icon {
+            border-color: #2f55d4 !important;
+        }
+        
+        .swal2-loader {
+            border-color: #2f55d4 transparent #2f55d4 transparent !important;
+        }
+    </style>
 </body>
 
 </html>

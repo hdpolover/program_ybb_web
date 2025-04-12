@@ -129,9 +129,7 @@
     </div>
     <!-- end auth-page-wrapper -->
 
-    <?= $this->include('partials/vendor-scripts') ?>
-
-    <!-- Custom script for password matching validation -->
+    <?= $this->include('partials/vendor-scripts') ?>    <!-- Custom script for password matching validation -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Get password fields and error message element
@@ -141,9 +139,15 @@
             const passwordForm = document.getElementById('password-form');
             const passwordAddon = document.getElementById('password-addon');
             const confirmPasswordAddon = document.getElementById('confirm-password-addon');
+            const passwordContain = document.getElementById('password-contain');
 
             // Initially hide the error message
             passwordMatchError.style.display = 'none';
+
+            // Show password requirements when password input is focused
+            passwordInput.addEventListener('focus', function() {
+                passwordContain.style.display = 'block';
+            });
 
             // Function to check if passwords match
             function checkPasswordsMatch() {

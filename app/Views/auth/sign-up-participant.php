@@ -60,7 +60,7 @@
                                                 <input type="hidden" name="program_id" value="<?= $program['id'] ?? '' ?>">
                                                 <input type="hidden" name="program_category_id" value="<?= $program['program_category_id'] ?? '' ?>">
                                                 <input type="hidden" name="ambassador_id" value="<?= $ambassadorId ?? '' ?>">
-                                                
+
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>
                                                     <input type="text" class="form-control" id="fullname" name="fullname" placeholder="Enter your full name" required>
@@ -135,18 +135,18 @@
         <!-- footer -->
         <footer class="footer">
             <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                <div class="text-center">
-                    <p class="mb-0">&copy; 
-                    <script>
-                        document.write(new Date().getFullYear())
-                    </script> 
-                    <?= $webSettings['name'] ?? 'Your Company Name' ?>. All Rights Reserved.
-                    </p>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center">
+                            <p class="mb-0">&copy;
+                                <script>
+                                    document.write(new Date().getFullYear())
+                                </script>
+                                <?= $webSettings['name'] ?? 'Your Company Name' ?>. All Rights Reserved.
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                </div>
-            </div>
             </div>
         </footer>
         <!-- end Footer -->
@@ -159,40 +159,89 @@
     <script src="/assets/js/pages/form-validation.init.js"></script>
     <!-- password create init -->
     <script src="/assets/js/pages/passowrd-create.init.js"></script>
-    
-    <!-- Custom script for password confirmation validation -->
+
+    <!-- Add SweetAlert2 library for better user notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    <!-- Custom script for password confirmation validation -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const passwordInput = document.getElementById('password-input');
             const confirmPasswordInput = document.getElementById('confirm-password-input');
             const confirmPasswordFeedback = confirmPasswordInput.nextElementSibling.nextElementSibling;
-            
+
             // Function to validate passwords match
             function validatePasswordMatch() {
-                if(confirmPasswordInput.value === '') {
+                if (confirmPasswordInput.value === '') {
                     confirmPasswordFeedback.textContent = 'Please confirm your password';
                     confirmPasswordInput.setCustomValidity('');
                     return;
                 }
-                
-                if(passwordInput.value !== confirmPasswordInput.value) {
+
+                if (passwordInput.value !== confirmPasswordInput.value) {
                     confirmPasswordFeedback.textContent = 'Passwords do not match';
                     confirmPasswordInput.classList.add('is-invalid');
                     confirmPasswordInput.setCustomValidity('Passwords do not match');
                 } else {
                     confirmPasswordInput.classList.remove('is-invalid');
-                    if(confirmPasswordInput.value !== '') {
+                    if (confirmPasswordInput.value !== '') {
                         confirmPasswordInput.classList.add('is-valid');
                     }
                     confirmPasswordInput.setCustomValidity('');
                 }
             }
-            
+
             // Add event listeners to both password fields
             passwordInput.addEventListener('input', validatePasswordMatch);
             confirmPasswordInput.addEventListener('input', validatePasswordMatch);
         });
     </script>
+
+    <!-- SweetAlert loading animation -->
+    <script>
+        document.querySelector('form.needs-validation').addEventListener('submit', function(event) {
+            // Form validation will handle preventing the submission if invalid
+            // We only want to show the loading animation if the form is valid
+            if (this.checkValidity()) {
+                Swal.fire({
+                    title: 'Creating your account...',
+                    html: '<div class="my-3">Please wait while we process your registration</div>',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    customClass: {
+                        popup: 'animated-popup',
+                        title: 'swal-title',
+                        icon: 'swal-icon'
+                    },
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <!-- Custom styles for SweetAlert loading -->
+    <style>
+        .animated-popup {
+            border-radius: 15px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid rgba(0, 128, 0, 0.1) !important;
+        }
+        
+        .swal-title {
+            font-weight: 600 !important;
+            color: #2f55d4 !important;
+        }
+        
+        .swal-icon {
+            border-color: #2f55d4 !important;
+        }
+        
+        .swal2-loader {
+            border-color: #2f55d4 transparent #2f55d4 transparent !important;
+        }
+    </style>
 </body>
 
 </html>

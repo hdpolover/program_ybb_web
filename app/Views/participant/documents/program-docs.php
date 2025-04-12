@@ -33,7 +33,7 @@
                                 </div>
 
                                 <div class="card-body">
-                                    <p class="text-muted">View and download program documents. These files are provided to help you successfully complete your program.</p>
+                                    <p class="text-muted">Access and download important program materials. These documents contain essential information to ensure your successful program completion.</p>
 
                                     <div class="live-preview">
                                         <div class="table-responsive table-card">

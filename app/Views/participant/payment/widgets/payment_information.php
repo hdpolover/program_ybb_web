@@ -51,7 +51,13 @@ $statusClass = isset($statusInfo['iconClass']) ? $statusInfo['iconClass'] : 'pri
                                 </div>
                                 <div class="flex-grow-1 ms-2">
                                     <h6 class="text-muted fw-semibold mb-0 text-uppercase fs-12">Category</h6>
-                                    <p class="mb-0 fs-15"><?= isset($programPayment['category']) ? $programPayment['category'] : 'Category' ?></p>
+                                    <p class="mb-0 fs-15">
+                                        <?php
+                                        $category = isset($programPayment['category']) ? $programPayment['category'] : '';
+                                        $displayCategory = strtolower($category) === 'registration' ? 'Registration Fee' : 'Program Fee';
+                                        echo '<span class="badge bg-info-subtle text-info p-2">' . $displayCategory . '</span>';
+                                        ?>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -84,17 +90,6 @@ $statusClass = isset($statusInfo['iconClass']) ? $statusInfo['iconClass'] : 'pri
                         <div class="col-md-6">
                             <div class="d-flex align-items-center mb-2">
                                 <div class="flex-shrink-0">
-                                    <i class="ri-money-pound-circle-line text-muted fs-16 me-1"></i>
-                                </div>
-                                <div class="flex-grow-1 ms-2">
-                                    <h6 class="text-muted fw-semibold mb-0 text-uppercase fs-12">Currency</h6>
-                                    <p class="mb-0 fs-15"><?= isset($programPayment['currency']) ? strtoupper($programPayment['currency']) : 'USD' ?></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="flex-shrink-0">
                                     <i class="ri-calendar-check-line text-muted fs-16 me-1"></i>
                                 </div>
                                 <div class="flex-grow-1 ms-2">
@@ -104,12 +99,18 @@ $statusClass = isset($statusInfo['iconClass']) ? $statusInfo['iconClass'] : 'pri
                                             <?= date('F d, Y', strtotime($programPayment['end_date'])) ?>
                                             <?php
                                             $today = new DateTime();
+                                            $today->setTime(0, 0, 0); // Set to midnight for full day comparison
                                             $dueDate = new DateTime($programPayment['end_date']);
+                                            $dueDate->setTime(23, 59, 59); // Set to end of day
                                             $interval = $today->diff($dueDate);
+                                            $daysRemaining = $interval->days;
+                                            
                                             if ($dueDate < $today): ?>
                                                 <span class="badge bg-danger-subtle text-danger ms-1">Overdue</span>
                                             <?php elseif ($interval->days <= 7): ?>
-                                                <span class="badge bg-warning-subtle text-warning ms-1">Due soon</span>
+                                                <span class="badge bg-warning-subtle text-warning ms-1">Due soon (<?= $daysRemaining + 1 ?> days)</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-info-subtle text-info ms-1"><?= $daysRemaining + 1 ?> days remaining</span>
                                             <?php endif; ?>
                                         <?php else: ?>
                                             N/A
@@ -117,7 +118,8 @@ $statusClass = isset($statusInfo['iconClass']) ? $statusInfo['iconClass'] : 'pri
                                     </p>
                                 </div>
                             </div>
-                        </div>                    </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

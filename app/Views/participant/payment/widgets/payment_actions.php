@@ -161,12 +161,13 @@ $latestPayment = $paymentStatus['latestPayment'];
                                     </a>
                                 <?php endforeach; ?>
                             </div>
-                        </div>
-                    <?php else: ?>
+                        </div> <?php else: ?>
                         <div class="d-grid">
                             <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                 data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                                data-payment-index="<?= $programPayment; ?>"
+                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
                                 title="Make Payment">
                                 <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
                             </button>
@@ -255,7 +256,7 @@ $latestPayment = $paymentStatus['latestPayment'];
                     </div>
                     <h5 class="fs-16 mb-2">Payment Rejected</h5>
                     <div class="alert alert-danger mb-3">
-                        <p class="mb-0">Your payment was rejected. Please try a different payment method.</p>
+                        <p class="mb-0">Your payment was rejected. Please try making a payment again and review why it was rejected.</p>
                         <?php if (isset($latestPayment['rejection_reason']) && !empty($latestPayment['rejection_reason'])): ?>
                             <hr>
                             <h6 class="alert-heading mb-1">Reason:</h6>
@@ -263,12 +264,14 @@ $latestPayment = $paymentStatus['latestPayment'];
                         <?php endif; ?>
                     </div> <?php if (!$isOverdue): ?>
                         <div class="d-grid">
-                            <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
-                                data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                                data-payment-amount="<?= $programPayment['usd_amount'] ?? ''; ?>"
-                                data-payment-description="<?= $programPayment['name'] ?? ''; ?>"
-                                title="Make Payment">
-                                <i class="ri-bank-card-line align-middle me-1"></i> Try Again
+                            <button type="button" class="btn btn-md btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                data-payment-id="<?= $programPayment['id']; ?>"
+                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                
+                                title="Try Payment Again">
+                                <i class="ri-refresh-line align-middle me-1"></i> Try Again
                             </button>
                         </div>
                     <?php else: ?>

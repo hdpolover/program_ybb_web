@@ -8,7 +8,7 @@
 
 <!-- Make Payment Modal -->
 <div class="modal fade" id="makePaymentModal" tabindex="-1" aria-labelledby="makePaymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-light p-3">
                 <h5 class="modal-title" id="makePaymentModalLabel">Make Payment</h5>
@@ -17,8 +17,8 @@
             <div class="modal-body">
                 <form action="<?= site_url('payments/make'); ?>" method="post" id="paymentForm" enctype="multipart/form-data" novalidate>
                     <?= csrf_field() ?>
-                    <input type="hidden" name="program_payment_id" id="program_payment_id" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['id'] : '' ?>">
-                    <input type="hidden" name="amount" id="payment_amount" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['usd_amount'] : '' ?>">
+                    <input type="hidden" name="program_payment_id" id="program_payment_id" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['id'] : '-' ?>">
+                    <input type="hidden" name="amount" id="payment_amount" value="<?= isset($selectedProgramPayment) ? $selectedProgramPayment['usd_amount'] : '-' ?>">
                     <input type="hidden" name="paymentType" id="payment_type" value="gateway">
                     <input type="hidden" name="payment_method_id" id="payment_method_id" value="">
                     <?php if (isset($selectedProgramPayment)): ?>
@@ -26,7 +26,9 @@
                         <?php if (isset($selectedProgramPayment['category'])): ?>
                             <input type="hidden" name="paymentCategory" value="<?= esc($selectedProgramPayment['category']) ?>">
                         <?php endif; ?>
-                    <?php endif; ?><!-- Program Payment Details Section -->
+                    <?php endif; ?>
+
+                    <!-- Program Payment Details Section -->
                     <div class="card bg-light mb-4">
                         <div class="card-body">
                             <div class="mb-2">
@@ -51,6 +53,30 @@
                         </div>
                     </div>
 
+                    <!-- Currency Warning -->
+                    <div class="alert alert-warning mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="ri-exchange-dollar-line fs-18 me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Currency Conversion Notice</h6>
+                                <p class="mb-0">Although the amount is displayed in USD, payments will be processed in IDR (Indonesian Rupiah).
+                                    The current conversion rate is 1 USD = <?= number_format($webSettings['usd_in_idr'], 2) ?> IDR.</p>
+
+                                <div class="mt-3 pt-2 border-top">
+                                    <h5 class="mb-0">Amount in IDR: <span id="amount_in_idr" class="fw-bold fs-4">
+                                            <?php if (isset($selectedProgramPayment) && !empty($selectedProgramPayment)): ?>
+                                                <?php $idrAmount = $selectedProgramPayment['usd_amount'] * $webSettings['usd_in_idr']; ?>
+                                                <?= number_format($idrAmount, 0, ',', '.') ?> IDR
+                                            <?php else: ?>
+                                                -
+                                            <?php endif; ?>
+                                        </span>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Payment Type Selection -->
                     <div class="mb-4">
                         <label for="paymentType" class="form-label fw-medium">Payment Type</label>
@@ -67,20 +93,48 @@
                     <!-- Manual Payment Methods - only shown for manual payment type -->
                     <div id="manualPaymentOptions" style="display: none;">
                         <div class="mb-4">
-                            <label for="paymentMethod" class="form-label fw-medium">Payment Method</label> <select class="form-select" id="paymentMethod" name="paymentMethod">
+                            <label for="paymentMethod" class="form-label fw-medium">Payment Method</label>
+                            <select class="form-select payment-method-select" id="paymentMethod" name="paymentMethod">
                                 <option value="">Select Payment Method</option>
                                 <?php if (isset($paymentMethods) && !empty($paymentMethods)): ?>
                                     <?php foreach ($paymentMethods as $method): ?>
                                         <?php if (isset($method['type']) && $method['type'] == 'manual'): ?>
                                             <option value="<?= $method['id'] ?>"
-                                                data-description="<?= isset($method['description']) ? esc($method['description']) : '' ?>">
+                                                data-description="<?= isset($method['description']) ? esc($method['description']) : '' ?>"
+                                                data-img-url="<?= isset($method['img_url']) ? esc($method['img_url']) : '' ?>">
                                                 <?= esc($method['name']) ?>
                                             </option>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
-                        </div> <!-- Manual Payment Fields -->
+                        </div>
+
+                        <script>
+                            $(document).ready(function() {
+                                // Initialize Select2 for payment methods dropdown
+                                $('#paymentMethod').select2({
+                                    templateResult: formatPaymentMethod,
+                                    templateSelection: formatPaymentMethod,
+                                    escapeMarkup: function(m) {
+                                        return m;
+                                    }
+                                });
+
+                                // Format payment method options with images
+                                function formatPaymentMethod(method) {
+                                    if (!method.id) return method.text; // Skip placeholder
+
+                                    const imgUrl = $(method.element).data('img-url');
+                                    const imgHtml = imgUrl ?
+                                        `<img src="${imgUrl}" class="payment-method-img" alt="${method.text}" />` :
+                                        '<div class="payment-method-img-placeholder"></div>';
+
+                                    return $(`<span>${imgHtml} ${method.text}</span>`);
+                                }
+                            });
+                        </script>
+                        <!-- Manual Payment Fields -->
                         <div id="manualPaymentFields" class="payment-method-fields" style="display: none;">
                             <div class="mb-3">
                                 <div class="alert alert-info">
@@ -105,8 +159,9 @@
                             </div>
                             <div class="mb-3">
                                 <label for="manualProof" class="form-label">Payment Proof (Required)</label>
-                                <input type="file" class="form-control" id="manualProof" name="proof_url" accept="image/*" required>
-                                <div class="form-text">Upload a photo of your receipt or payment proof</div>
+                                <input type="file" class="form-control" id="manualProof" name="proof_url" accept="image/*" required max-size="1024">
+                                <div class="form-text">Upload a photo of your receipt or payment proof (Max: 1 MB)</div>
+                                <div class="invalid-feedback" id="filesize-error">The file is too large. Maximum allowed size is 1 MB.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="notes" class="form-label">Additional Notes</label>
@@ -158,40 +213,101 @@
                     </div>
                 </form>
             </div>
-        </div>    </div>
+        </div>
+    </div>
 </div>
 
-<!-- Payment Gateway Handler -->
-<script src="/assets/js/pages/payment-gateway-handler.js"></script>
+<!-- Include Select2 for enhanced dropdowns with images -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<style>
+    /* Custom styles for payment method select with images */
+    .payment-method-img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    .select2-container--default .select2-results__option {
+        padding: 8px 12px;
+    }
+
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        padding: 5px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
 
 <!-- Payment Modal Script -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() { // Form validation and submission handling
+    document.addEventListener('DOMContentLoaded', function() {
+        // Log to confirm the initialization
+        console.log('Payment Modal initialized');
+
         const paymentForm = document.getElementById('paymentForm');
-        if (paymentForm) {            // Track if payment is in progress to prevent duplicates
+        if (paymentForm) {
+            console.log('Payment form found');
+
+            // Make sure the payment gateway handler is loaded
+            if (typeof window.gatewayHandlerLoaded === 'undefined') {
+                console.log('Gateway handler not detected. Form may not work correctly.');
+            }
+
+            // Track if payment is in progress to prevent duplicates
             let isPaymentInProgress = false;
-            
+
             paymentForm.addEventListener('submit', function(event) {
-                event.preventDefault(); // Always prevent default form submission
-                
+                console.log('Form submit event fired');
+
+                const paymentType = document.getElementById('payment_type').value;
+                console.log('Payment type in modal handler:', paymentType);
+
+                // Only handle manual payments here - gateway payments are handled by payment-gateway-handler.js
+                if (paymentType !== 'manual') {
+                    console.log('This is a gateway payment - letting the gateway handler take over');
+                    // Let payment-gateway-handler.js handle gateway payments
+                    return;
+                }
+
+                event.preventDefault(); // Prevent default form submission for manual payments
+
                 // Prevent multiple submissions
                 if (isPaymentInProgress) {
                     console.log('Payment already in progress, ignoring duplicate submission');
                     return;
-                }
-                
-                const paymentType = document.getElementById('payment_type').value;
+                } // Check file size limit (1 MB = 1024 * 1024 bytes)
+                const fileInput = document.getElementById('manualProof');
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    const fileSize = fileInput.files[0].size;
+                    const maxSize = 1024 * 1024; // 1 MB in bytes
 
-                // Validate manual payment fields if payment type is manual
-                if (paymentType === 'manual') {
-                    if (!this.checkValidity()) {
+                    if (fileSize > maxSize) {
+                        console.log('File size exceeds limit:', fileSize, 'bytes');
+                        document.getElementById('filesize-error').style.display = 'block';
+                        fileInput.setCustomValidity('File size exceeds the maximum limit of 1 MB');
                         this.classList.add('was-validated');
                         return;
+                    } else {
+                        fileInput.setCustomValidity(''); // Clear any previous validation errors
+                        document.getElementById('filesize-error').style.display = 'none';
                     }
-
-                    // Add validation classes to show error messages
-                    this.classList.add('was-validated');
                 }
+
+                // Validate manual payment fields
+                if (!this.checkValidity()) {
+                    this.classList.add('was-validated');
+                    return;
+                }
+
+                // Add validation classes to show error messages
+                this.classList.add('was-validated');
 
                 // Set flag to prevent duplicate submissions
                 isPaymentInProgress = true;
@@ -202,8 +318,8 @@
 
                 // Show loading indicator
                 const loadingAlert = Swal.fire({
-                    title: 'Processing Payment',
-                    html: 'Please wait while we process your payment...',
+                    title: 'Processing Manual Payment',
+                    html: 'Please wait while we process your payment submission...',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     showConfirmButton: false,
@@ -212,74 +328,10 @@
                     }
                 });
 
-                // Handle different payment types
-                if (paymentType === 'gateway') {
-                    // Use fetch API for gateway payments to handle the redirect
-                    const formData = new FormData(this);
-
-                    fetch(this.action, {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Payment response:', data);
-
-                            if (data.status === 'success' && data.redirect_url) {
-                                // Show success message and redirect to payment gateway
-                                Swal.fire({
-                                    title: 'Redirecting to Payment Gateway',
-                                    text: 'You will be redirected to complete your payment.',
-                                    icon: 'info',
-                                    timer: 2000,
-                                    timerProgressBar: true,
-                                    showConfirmButton: false,
-                                    willClose: () => {
-                                        // Redirect to payment gateway
-                                        window.location.href = data.redirect_url;
-                                    }
-                                });
-                            } else if (data.status === 'success' && data.payment_id) {
-                                // Show success without redirect URL
-                                Swal.fire({
-                                    title: 'Payment Initiated',
-                                    text: 'Your payment has been initiated. Please check payment status.',
-                                    icon: 'success',
-                                    timer: 2000,
-                                    timerProgressBar: true,
-                                    willClose: () => {
-                                        // Redirect to payment detail page
-                                        window.location.href = '<?= site_url('payments/detail/') ?>' + document.getElementById('program_payment_id').value;
-                                    }
-                                });
-                            } else {
-                                // Show error message
-                                Swal.fire({
-                                    title: 'Payment Error',
-                                    text: data.message || 'There was an error processing your payment. Please try again.',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Payment error:', error);
-                            Swal.fire({
-                                title: 'Payment Error',
-                                text: 'There was an error processing your payment. Please try again.',
-                                icon: 'error',
-                                confirmButtonText: 'OK'
-                            });
-                        });
-                } else {
-                    // For manual payments, use traditional form submission
-                    setTimeout(() => {
-                        this.submit();
-                    }, 500);
-                }
+                // For manual payments, use traditional form submission
+                setTimeout(() => {
+                    this.submit();
+                }, 500);
             });
         }
 
@@ -287,17 +339,40 @@
         const makePaymentModal = document.getElementById('makePaymentModal');
         if (makePaymentModal) {
             makePaymentModal.addEventListener('show.bs.modal', function(event) {
-                // Check if we have a button that triggered this modal                // If not, assume we're using pre-populated data from selectedProgramPayment
+                // Always make sure we have a button that triggered the modal
                 if (event.relatedTarget) {
                     const button = event.relatedTarget;
                     const paymentId = button.getAttribute('data-payment-id');
+                    const paymentName = button.getAttribute('data-payment-name');
+                    const paymentAmount = button.getAttribute('data-payment-amount');
+                    const paymentCategory = button.getAttribute('data-payment-category');
                     const paymentData = button.getAttribute('data-payment-object');
                     let selectedPayment = null;
+
+                    console.log('Modal triggered with payment ID:', paymentId);
+                    console.log('Payment name:', paymentName);
+                    console.log('Payment amount:', paymentAmount);
+
+                    // multipy by usd_in_idr to get the amount in IDR
+                    const usdInIdr = <?= $webSettings['usd_in_idr'] ?>;
+                    const idrAmount = paymentAmount * usdInIdr;
+                    console.log('IDR amount:', idrAmount);
+
+                    // set the IDR amount in the modal
+                    const amountInIdrElement = document.getElementById('amount_in_idr');
+
+                    if (amountInIdrElement) {
+                        amountInIdrElement.textContent = new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR'
+                        }).format(idrAmount);
+                    }
 
                     // Try parsing the full payment object if available
                     if (paymentData) {
                         try {
                             selectedPayment = JSON.parse(paymentData);
+                            console.log('Parsed payment object:', selectedPayment);
                         } catch (e) {
                             console.error('Error parsing payment object:', e);
                         }
@@ -308,6 +383,7 @@
                         const paymentIndex = button.getAttribute('data-payment-index');
                         if (paymentIndex) {
                             selectedPayment = programPayments[paymentIndex] || null;
+                            console.log('Using payment from programPayments array:', selectedPayment);
                         }
                     }
 
@@ -318,6 +394,7 @@
 
                         if (document.getElementById('payment_description')) {
                             document.getElementById('payment_description').textContent = selectedPayment.name || 'Program Payment';
+                            console.log('Setting payment description from selectedPayment:', selectedPayment.name);
                         }
 
                         if (document.getElementById('payment_amount_display')) {
@@ -326,14 +403,14 @@
                     } else {
                         // Final fallback to individual attributes
                         document.getElementById('program_payment_id').value = paymentId;
-                        document.getElementById('payment_amount').value = button.getAttribute('data-payment-amount');
+                        document.getElementById('payment_amount').value = paymentAmount;
 
                         if (document.getElementById('payment_description')) {
-                            document.getElementById('payment_description').textContent = button.getAttribute('data-payment-description') || 'Program Payment';
+                            document.getElementById('payment_description').textContent = paymentName || 'Program Payment';
                         }
 
                         if (document.getElementById('payment_amount_display')) {
-                            const amount = button.getAttribute('data-payment-amount') || '0.00';
+                            const amount = paymentAmount || '0.00';
                             document.getElementById('payment_amount_display').textContent = '$' + parseFloat(amount).toFixed(2);
                         }
                     }
@@ -341,7 +418,8 @@
                     // Only update the description if it's empty
                     const descElement = document.getElementById('payment_description');
                     if (descElement && !descElement.innerText.trim()) {
-                        descElement.textContent = paymentDescription || 'Program Payment';
+                        // Use paymentName instead of undefined paymentDescription variable
+                        descElement.textContent = paymentName || 'Program Payment';
                     }
 
                     // Only update the amount display if it's empty
@@ -355,11 +433,12 @@
                     }
                 }
 
-                // Reset payment type to gateway by default
+                // Ensure payment type is set to gateway by default (both select and hidden input)
                 const paymentTypeSelect = document.getElementById('paymentType');
                 if (paymentTypeSelect) {
                     paymentTypeSelect.value = 'gateway';
                     document.getElementById('payment_type').value = 'gateway';
+                    console.log('Payment type set to gateway');
                 }
 
                 // Update help text visibility
@@ -372,11 +451,24 @@
                     manualOptionsSection.style.display = 'none';
                 }
 
+                // Show gateway payment options by default
+                const gatewayOptionsSection = document.getElementById('gatewayPaymentOptions');
+                if (gatewayOptionsSection) {
+                    gatewayOptionsSection.style.display = 'block';
+                }
+
                 // Reset payment method selection
                 const paymentMethodSelect = document.getElementById('paymentMethod');
                 if (paymentMethodSelect) {
                     paymentMethodSelect.selectedIndex = 0;
                     paymentMethodSelect.required = false; // Not required for gateway payment
+                }
+
+                // Set the gateway payment method ID if available
+                const gatewayPaymentMethodId = document.getElementById('gatewayPaymentMethodId');
+                if (gatewayPaymentMethodId && gatewayPaymentMethodId.value) {
+                    document.getElementById('payment_method_id').value = gatewayPaymentMethodId.value;
+                    console.log('Gateway payment method ID set to:', gatewayPaymentMethodId.value);
                 }
 
                 // Hide all payment method fields
@@ -423,7 +515,9 @@
                     field.style.display = 'none';
                 });
             });
-        } // Payment method fields toggle
+        }
+
+        // Payment method fields toggle
         const paymentMethodSelect = document.getElementById('paymentMethod');
         if (paymentMethodSelect) {
             paymentMethodSelect.addEventListener('change', function() {
@@ -454,6 +548,7 @@
 
             });
         }
+
         // Automatically set the gateway payment method ID when available
         const gatewayPaymentMethodId = document.getElementById('gatewayPaymentMethodId');
         if (gatewayPaymentMethodId) {
@@ -468,6 +563,12 @@
 
             // Hide or show the payment method section based on type
             const paymentMethodSection = document.getElementById('paymentMethodSection');
+
+            // Skip if paymentMethodSection doesn't exist
+            if (!paymentMethodSection) {
+                console.log('Payment method section not found, skipping display toggle');
+                return;
+            }
 
             // For gateway payment, just show the section (continue button will be shown)
             // For manual payment, show detailed form fields
@@ -505,8 +606,12 @@
             }
         }
 
-        // Initialize the payment type on page load
-        filterPaymentMethodsByType('gateway');
+        // Skip initialize the filtering on page load since the section might not exist in all contexts
+        // Instead, just ensure the gateway payment method is properly set
+        if (gatewayPaymentMethodId && gatewayPaymentMethodId.value) {
+            document.getElementById('payment_method_id').value = gatewayPaymentMethodId.value;
+            console.log('Gateway payment method ID set to:', gatewayPaymentMethodId.value);
+        }
     });
 </script>
 

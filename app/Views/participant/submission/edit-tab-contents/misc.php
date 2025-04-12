@@ -37,26 +37,34 @@
         <!-- Twibbon Guide Modal -->
         <div class="modal fade" id="twibbonGuideModal" tabindex="-1" aria-labelledby="twibbonGuideModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="twibbonGuideModalLabel">Twibbon Guide</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Add your twibbon guide content here -->
-                        <p>Follow these steps to use the twibbon:</p>
-                        <ol>
-                            <li>Visit the twibbon link <a href="<?= $currentProgram['twibbon'] ?>" target="_blank">here</a></li>
-                            <li>Upload your photo</li>
-                            <li>Download the generated image</li>
-                            <li>Share to your social media</li>
-                            <li>Copy and paste your twibbon post link to this input</li>
-                        </ol>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
+            <div class="modal-content">
+                <div class="modal-header">
+                <h5 class="modal-title" id="twibbonGuideModalLabel">Twibbon Guide</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <div class="modal-body">
+                <!-- Add your twibbon guide content here -->
+                <p>Follow these steps to use the twibbon:</p>
+                <ol>
+                    <li>Visit the twibbon link <a href="<?= $currentProgram['twibbon'] ?>" target="_blank">here</a></li>
+                    <li>Upload your photo</li>
+                    <li>Download the generated image</li>
+                    <li>Share to your social media</li>
+                    <li>Copy and paste your twibbon post link to the provided input</li>
+                </ol>
+                
+                <div class="mt-4 text-center">
+                    <a href="<?= $currentProgram['twibbon_video_url'] ?? '#' ?>" 
+                       class="btn btn-primary" 
+                       target="_blank">
+                    <i class="ri-video-line me-1"></i> Watch Video Tutorial
+                    </a>
+                </div>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
             </div>
         </div>
         <!-- End Twibbon Guide Modal -->

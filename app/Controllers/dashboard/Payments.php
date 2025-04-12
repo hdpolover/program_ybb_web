@@ -425,7 +425,8 @@ class Payments extends BaseController
                 if ($isAjax) {
                     return $this->response->setJSON([
                         'status' => 'success',
-                        'redirect_url' => $redirectUrl
+                        'redirect_url' => $redirectUrl,
+                        'program_payment_id' => $programPaymentId // Add program_payment_id to the response
                     ]);
                 } else {
                     return redirect()->to($redirectUrl);
@@ -490,29 +491,6 @@ class Payments extends BaseController
                 }
             }
         }
-
-        // Validate input
-        // $validation = \Config\Services::validation();
-        // $validation->setRules([
-        //     'paymentId' => 'required|numeric',
-        //     'paymentMethod' => 'required',
-        //     'amount' => 'required|numeric'
-        // ]);
-
-        // if (!$validation->withRequest($this->request)->run()) {
-        //     return redirect()->back()->with('errors', $validation->getErrors());
-        // }
-
-        // Process the programPayment (in a real implementation, this would connect to a programPayment gateway)
-        // $paymentModel = new \App\Models\ProgramPaymentModel();
-        // $result = $paymentModel->processPayment(
-        //     $this->request->getPost('paymentId'),
-        //     $this->request->getPost('paymentMethod'),
-        //     $this->request->getPost('amount')
-        // );
-
-        // Simulate successful programPayment for demonstration
-        //return redirect()->back()->with('success', 'Payment processed successfully');
     }
 
     /**
