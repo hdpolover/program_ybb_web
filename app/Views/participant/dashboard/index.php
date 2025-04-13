@@ -52,16 +52,112 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                                 </div>
                                 <!--end row-->
 
+                                <!-- Include Guideline Widget -->
+                                <?php echo view('participant/dashboard/guideline-small-card', [
+                                    'program' => $currentProgram ?? null,
+                                ]); ?>
+
+                                <!-- Notification Center -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header align-items-center d-flex">
+                                                <h4 class="card-title mb-0 flex-grow-1">Notifications & Alerts</h4>
+                                                <div class="flex-shrink-0">
+                                                    <button type="button" class="btn btn-sm btn-ghost-primary" id="markAllRead">
+                                                        <i class="ri-check-double-line align-bottom"></i> Mark All as Read
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body pt-0">
+                                                <div id="notificationList" class="notification-list">
+                                                    <?php
+                                                    // Add dynamic notifications based on participant status
+                                                    $hasNotifications = false;
+                                                    ?>
+
+                                                    <!-- Payment notification -->
+                                                    <?php if (isset($paymentStatus) && $paymentStatus === 'pending'): ?>
+                                                        <?php $hasNotifications = true; ?>
+                                                        <div class="notification-item d-flex p-3 border-bottom">
+                                                            <div class="flex-shrink-0 me-3">
+                                                                <div class="avatar-sm bg-danger-subtle rounded-circle text-center">
+                                                                    <i class="ri-money-dollar-circle-fill text-danger fs-4 mt-2"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="mb-1 lh-base">Payment Required</h6>
+                                                                <p class="text-muted mb-1">Please complete your payment to continue with the program.</p>
+                                                                <small class="mb-0 text-muted">Due date: <?= isset($paymentDueDate) ? date('d M Y', strtotime($paymentDueDate)) : 'As soon as possible' ?></small>
+                                                            </div>
+                                                            <div class="flex-shrink-0 align-self-center">
+                                                                <a href="<?= base_url('payments') ?>" class="btn btn-sm btn-primary">Pay Now</a>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
+
+                                                    <!-- Incomplete form submission notification -->
+                                                    <?php if (isset($hasSubmittedForm) && $hasSubmittedForm === false): ?>
+                                                        <?php $hasNotifications = true; ?>
+                                                        <div class="notification-item d-flex p-3 border-bottom">
+                                                            <div class="flex-shrink-0 me-3">
+                                                                <div class="avatar-sm bg-warning-subtle rounded-circle text-center">
+                                                                    <i class="ri-file-text-line text-warning fs-4 mt-2"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="mb-1 lh-base">Incomplete Registration</h6>
+                                                                <p class="text-muted mb-1">You have not completed your registration form yet.</p>
+                                                                <small class="mb-0 text-muted">Please complete your submission to be eligible for the program.</small>
+                                                            </div>
+                                                            <div class="flex-shrink-0 align-self-center">
+                                                                <a href="<?= base_url('submission/edit') ?>" class="btn btn-sm btn-warning">Complete Form</a>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
+
+                                                    <!-- Program deadline notification -->
+                                                    <?php if (isset($currentProgram) && isset($currentProgram['deadline'])): ?>
+                                                        <?php $hasNotifications = true; ?>
+                                                        <div class="notification-item d-flex p-3 border-bottom">
+                                                            <div class="flex-shrink-0 me-3">
+                                                                <div class="avatar-sm bg-info-subtle rounded-circle text-center">
+                                                                    <i class="ri-calendar-event-line text-info fs-4 mt-2"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="mb-1 lh-base">Upcoming Deadline</h6>
+                                                                <p class="text-muted mb-1">Program registration closes soon.</p>
+                                                                <small class="mb-0 text-muted">Deadline: <?= date('d M Y', strtotime($currentProgram['deadline'])) ?></small>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
+
+                                                    <!-- Empty state -->
+                                                    <?php if (!$hasNotifications): ?>
+                                                        <div class="text-center p-4">
+                                                            <div class="avatar-md mx-auto mb-4">
+                                                                <div class="avatar-title bg-light rounded-circle text-primary">
+                                                                    <i class="ri-checkbox-circle-line fs-1"></i>
+                                                                </div>
+                                                            </div>
+                                                            <h5 class="mb-1">All Caught Up!</h5>
+                                                            <p class="text-muted">You have no pending notifications at this time.</p>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- End Notification Center -->
 
                             </div> <!-- end .h-100-->
 
                         </div> <!-- end col -->
                     </div>
 
-                    <!-- Include Payment Modal Widget -->
-                    <?php echo view('landing/program-detail/registration-cta', [
-                        'program' => $currentProgram ?? null,
-                    ]); ?>
+
                 </div>
                 <!-- container-fluid -->
             </div>
@@ -122,7 +218,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
     <?php endif; ?>
 </body>
 
- <!-- Add SweetAlert2 library for better user notifications -->
- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Add SweetAlert2 library for better user notifications -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 </html>

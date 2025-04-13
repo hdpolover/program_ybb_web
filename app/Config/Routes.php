@@ -83,6 +83,14 @@ $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 
 $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'dashboard\Dashboard::index');
 
+    // announcements
+    $routes->get('announcements', 'dashboard\Announcements::index');
+    $routes->get('announcements/(:num)', 'dashboard\Announcements::details/$1');
+    $routes->get('announcements/(:num)/details', 'dashboard\Announcements::details/$1');
+
+    // settings
+    $routes->get('settings', 'dashboard\Settings::index');
+    
     // submission
     $routes->get('submission', 'dashboard\Submission::index');
     $routes->get('submission/edit', 'dashboard\Submission::edit');

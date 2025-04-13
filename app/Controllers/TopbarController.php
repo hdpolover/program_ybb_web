@@ -346,14 +346,44 @@ class TopbarController extends BaseController
             // Verify if the current program ID is one the participant is registered for
             if (!in_array($currentProgramId, $participant_programs) && !empty($participant_programs)) {
                 // If not registered for current program but registered for others,
-                // switch to a program they are registered for
-                $currentProgramId = $participant_programs[0];
+                // find an active program among those they're registered for
+                $foundActiveProgram = false;
+                foreach ($programs as $program) {
+                    if (in_array($program['id'] ?? null, $participant_programs) && 
+                        isset($program['is_active']) && $program['is_active'] == '1') {
+                        $currentProgramId = $program['id'];
+                        $foundActiveProgram = true;
+                        log_message('debug', 'TopbarController: Switched to active registered program ID: ' . $currentProgramId);
+                        break;
+                    }
+                }
+                
+                // If no active program found among registered ones, use the first registered program
+                if (!$foundActiveProgram) {
+                    $currentProgramId = $participant_programs[0];
+                    log_message('debug', 'TopbarController: Switched to first registered program ID: ' . $currentProgramId);
+                }
             }
         } 
-        // If no program ID in session but user is registered for programs, select the first registered program
+        // If no program ID in session but user is registered for programs,
+        // select the first active registered program if available
         else if (!empty($participant_programs)) {
-            $currentProgramId = $participant_programs[0];
-            log_message('debug', 'TopbarController: First sign-in, selected registered program ID: ' . $currentProgramId);
+            $foundActiveProgram = false;
+            foreach ($programs as $program) {
+                if (in_array($program['id'] ?? null, $participant_programs) && 
+                    isset($program['is_active']) && $program['is_active'] == '1') {
+                    $currentProgramId = $program['id'];
+                    $foundActiveProgram = true;
+                    log_message('debug', 'TopbarController: First sign-in, selected active registered program ID: ' . $currentProgramId);
+                    break;
+                }
+            }
+            
+            // If no active program found among registered ones, use the first registered program
+            if (!$foundActiveProgram) {
+                $currentProgramId = $participant_programs[0];
+                log_message('debug', 'TopbarController: First sign-in, selected first registered program ID: ' . $currentProgramId);
+            }
         }
         // If user has no registered programs, select an active program if possible
         else if (!empty($sorted_programs)) {

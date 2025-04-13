@@ -40,7 +40,7 @@ class Auth extends BaseController
             } else {
                 return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
             }
-        } 
+        }
 
         // Get program slug from query parameter
         $programSlug = $this->request->getGet('program');
@@ -192,28 +192,28 @@ class Auth extends BaseController
     {
         // Check if token exists in the query parameters
         $token = $this->request->getGet('token');
-        
+
         if (!$token) {
             return redirect()->to('forgot-password')->with('error', 'Reset token is missing. Please request a new password reset link.');
         }
-        
+
         try {
-            
+
             $response = $this->makeGetRequest('/auth/verify-token?token=' . $token, [], false);
-            
+
             // Log response for debugging
             log_message('debug', 'API Token Verification Response: ' . json_encode($response));
-            
+
             if (!isset($response)) {
                 return redirect()->to('forgot-password')->with('error', 'Invalid or expired token. Please request a new password reset link.');
             }
-            
+
             // Token is valid, proceed with password reset
             $data = [
                 'title' => 'Reset Password',
                 'token' => $token,
             ];
-            
+
             return $this->render('auth/pass-reset', $data);
         } catch (\Exception $e) {
             log_message('error', 'Token verification error: ' . $e->getMessage());
@@ -332,7 +332,8 @@ class Auth extends BaseController
 
                 if ($participants) {
 
-                    $session->set('participants', $participants);                    $session->set('isLoggedIn', true);
+                    $session->set('participants', $participants);
+                    $session->set('isLoggedIn', true);
                     log_message('info', 'User logged in successfully: ' . $response['user']['id']);
 
                     // get programs by category id
@@ -340,7 +341,7 @@ class Auth extends BaseController
 
                     if ($programs) {
                         $session->set('programs', $programs);
-                        
+
                         // Set initial program ID during sign-in
                         // First check for programs the participant is registered in
                         $participant_programs = [];
@@ -349,14 +350,27 @@ class Auth extends BaseController
                                 $participant_programs[] = $p['program_id'];
                             }
                         }
-                        
+
                         $initialProgramId = null;
-                        
+
                         // First try to use a program the user is registered for
                         if (!empty($participant_programs)) {
-                            $initialProgramId = $participant_programs[0];
-                            log_message('debug', 'Auth: Setting initial program to registered program: ' . $initialProgramId);
-                        } 
+                            // find active program from the list of registered programs
+                            foreach ($programs as $program) {
+                                if (in_array($program['id'], $participant_programs) && isset($program['is_active']) && $program['is_active'] == '1') {
+                                    $initialProgramId = $program['id'];
+                                    log_message('debug', 'Auth: Setting initial program to registered program: ' . $initialProgramId);
+                                    break;
+                                }
+                            }
+
+                            // If no active program is found, use the first registered program
+                            if ($initialProgramId === null) {
+                                $initialProgramId = $participant_programs[0];
+                                log_message('debug', 'Auth: Setting initial program to first registered program: ' . $initialProgramId);
+                            }
+                        }
+
                         // If not registered for any program, try to find an active one
                         else {
                             foreach ($programs as $program) {
@@ -366,18 +380,18 @@ class Auth extends BaseController
                                     break;
                                 }
                             }
-                            
+
                             // Last resort - use the first available program
                             if ($initialProgramId === null && !empty($programs)) {
                                 $initialProgramId = $programs[0]['id'];
                                 log_message('debug', 'Auth: Setting initial program to first available: ' . $initialProgramId);
                             }
                         }
-                        
+
                         // Set the selected program ID in session
                         if ($initialProgramId !== null) {
                             $session->set('current_program_id', $initialProgramId);
-                            
+
                             // Also set the current participant if applicable
                             foreach ($participants as $p) {
                                 if (($p['program_id'] ?? null) === $initialProgramId) {
@@ -423,7 +437,7 @@ class Auth extends BaseController
         $programId = $this->request->getPost('program_id'); // Get program ID from form data
         $programCategoryId = $this->request->getPost('program_category_id'); // Get program category ID from form data
         $ambassadorId = $this->request->getPost('ambassador_id');
-        
+
 
         // Validate input
         if (!$fullname || !$email || !$password) {
@@ -498,17 +512,17 @@ class Auth extends BaseController
         if (!$token) {
             return redirect()->to('sign-in')->with('error', 'Verification token is missing. Please request a new verification link.');
         }
-        
+
         try {
             $response = $this->makeGetRequest('/auth/verify-email?token=' . $token . '&email=' . $email, [], false);
-            
+
             // Log response for debugging
             log_message('debug', 'API Email Verification Response: ' . json_encode($response));
-            
+
             if (!isset($response)) {
                 return redirect()->to('sign-in')->with('error', 'Invalid or expired token. Please request a new verification link.');
             }
-            
+
             // Token is valid, proceed with email verification
             return redirect()->to('sign-in')->with('success', 'Email verified successfully! You can now sign in.');
         } catch (\Exception $e) {

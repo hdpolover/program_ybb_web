@@ -20,7 +20,7 @@
         <section class="section py-5 position-relative bg-light" id="program-detail">
             <div class="container">
                 <!-- Registration Guidelines CTA Section -->
-                <?= $this->include('landing/program-detail/registration-cta') ?>
+                <?= $this->include('landing/program-detail/guideline-full-card') ?>
 
                 <div class="row mt-4">
                     <!-- Program Content Column -->
