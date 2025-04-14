@@ -226,10 +226,10 @@
         }
 
         .compact-info {
-            text-align: left; 
-            margin-bottom: 10px; 
-            font-size: 10px; 
-            display: flex; 
+            text-align: left;
+            margin-bottom: 10px;
+            font-size: 10px;
+            display: flex;
             justify-content: space-between;
         }
 
@@ -252,20 +252,21 @@
                 <?php if (isset($webSettings['logo_url']) && !empty($webSettings['logo_url'])): ?>
                     <img src="<?= $webSettings['logo_url'] ?>" alt="<?= $program['name'] ?? 'Program Logo' ?>" width="100">
                 <?php else: ?>
-                    <div style="font-size: 16px; font-weight: bold; color: #000;">YBB</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #000;"><?= $program['name']?></div>
                 <?php endif; ?>
-                <div class="receipt-number">Receipt #: <?= $payment['transaction_code'] ?? 'YBB-' . ($payment['id'] ?? '000') ?></div>
+                <div class="receipt-number">Receipt #<?= $payment['transaction_code'] ?? $payment['id'] ?></div>
             </div>
             <div class="header-title">
                 <div class="receipt-title">PAYMENT RECEIPT</div>
                 <div class="receipt-subtitle">Official Payment Confirmation</div>
             </div>
-        </div>        <!-- Receipt Content -->
+        </div> <!-- Receipt Content -->
         <div class="receipt-content">
             <!-- Combined Transaction and Billing Information Section -->
             <div class="receipt-section">
                 <div class="section-title">Payment Information</div>
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">                    <tr style="background-color: #f8f9fa;">
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                    <tr style="background-color: #f8f9fa;">
                         <td style="padding: 8px 12px; width: 25%; font-weight: bold; border: 1px solid #ddd;">Transaction Date/Time:</td>
                         <td style="padding: 8px 12px; width: 25%; border: 1px solid #ddd;"><?= date('F j, Y - g:i a', strtotime($payment['created_at'] ?? date('Y-m-d H:i:s'))) ?></td>
                         <td style="padding: 8px 12px; width: 25%; font-weight: bold; border: 1px solid #ddd;">Account ID:</td>
@@ -286,71 +287,72 @@
                         <td style="padding: 8px 12px; border: 1px solid #ddd;"><?= esc($program['name']) ?></td>
                     </tr>
                     <?php if (!empty($payment['source_name'])): ?>
-                    <tr>
-                        <td style="padding: 8px 12px; font-weight: bold; border: 1px solid #ddd;">Source Name:</td>
-                        <td style="padding: 8px 12px; border: 1px solid #ddd;"><?= esc($payment['source_name']) ?></td>
-                        <?php if (!empty($payment['account_name'])): ?>
-                        <td style="padding: 8px 12px; font-weight: bold; border: 1px solid #ddd;">Account Name:</td>
-                        <td style="padding: 8px 12px; border: 1px solid #ddd;"><?= esc($payment['account_name']) ?></td>
-                        <?php else: ?>
-                        <td style="padding: 8px 12px; border: 1px solid #ddd;" colspan="2"></td>
-                        <?php endif; ?>
-                    </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; font-weight: bold; border: 1px solid #ddd;">Source Name:</td>
+                            <td style="padding: 8px 12px; border: 1px solid #ddd;"><?= esc($payment['source_name']) ?></td>
+                            <?php if (!empty($payment['account_name'])): ?>
+                                <td style="padding: 8px 12px; font-weight: bold; border: 1px solid #ddd;">Account Name:</td>
+                                <td style="padding: 8px 12px; border: 1px solid #ddd;"><?= esc($payment['account_name']) ?></td>
+                            <?php else: ?>
+                                <td style="padding: 8px 12px; border: 1px solid #ddd;" colspan="2"></td>
+                            <?php endif; ?>
+                        </tr>
                     <?php elseif (!empty($payment['account_name'])): ?>
-                    <tr>
-                        <td style="padding: 8px 12px; font-weight: bold; border: 1px solid #ddd;">Account Name:</td>
-                        <td style="padding: 8px 12px; border: 1px solid #ddd;" colspan="3"><?= esc($payment['account_name']) ?></td>
-                    </tr>
+                        <tr>
+                            <td style="padding: 8px 12px; font-weight: bold; border: 1px solid #ddd;">Account Name:</td>
+                            <td style="padding: 8px 12px; border: 1px solid #ddd;" colspan="3"><?= esc($payment['account_name']) ?></td>
+                        </tr>
                     <?php endif; ?>
-                    </table>
-                </div>
+                </table>
             </div>
+        </div>
 
-            <!-- Payment Details Section -->
-            <div class="receipt-section">
-                <div class="section-title">Payment Details</div>                <table class="summary-table">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Payment Type</th>
-                            <th class="text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><?= $programPayment['name'] ?></td>
-                            <td><?= $programPayment['type'] ?></td>
-                            <td class="text-right">$ <?= number_format($payment['usd_amount'] ?? 0, 2) ?></td>
-                        </tr>
-                        <?php if (!empty($payment['usd_processing_fee']) && $payment['usd_processing_fee'] > 0): ?>
+        <!-- Payment Details Section -->
+        <div class="receipt-section">
+            <div class="section-title">Payment Details</div>
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Payment Type</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><?= $programPayment['name'] ?></td>
+                        <td><?= $programPayment['type'] ?></td>
+                        <td class="text-right">$ <?= number_format($programPayment['amount'] ?? 0, 2) ?></td>
+                    </tr>
+                    <?php if (!empty($payment['usd_processing_fee']) && $payment['usd_processing_fee'] > 0): ?>
                         <tr>
                             <td>Processing Fee</td>
                             <td>Service Fee</td>
                             <td class="text-right">$ <?= number_format($payment['usd_processing_fee'] ?? 0, 2) ?></td>
                         </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                    <?php endif; ?>
+                </tbody>
+            </table>
 
-                <div class="total-section">
-                    Total: <span class="total-amount">$ <?= number_format(($payment['usd_amount'] ?? 0) + ($payment['usd_processing_fee'] ?? 0), 2) ?></span>
-                </div>
+            <div class="total-section">
+                Total: <span class="total-amount">$ <?= number_format(($programPayment['amount'] ?? 0) + ($payment['usd_processing_fee'] ?? 0), 2) ?></span>
             </div>
+        </div>
 
-            <?php if (!empty($payment['notes'])): ?>
-                <div class="receipt-notes">
-                    <strong>Notes:</strong> <?= $payment['notes'] ?>
-                </div>
-            <?php endif; ?>
-            
-            <div class="paid-stamp">
-                <div class="stamp">PAID</div>
+        <?php if (!empty($payment['notes'])): ?>
+            <div class="receipt-notes">
+                <strong>Notes:</strong> <?= $payment['notes'] ?>
             </div>
-        </div>        <!-- Receipt Footer -->
-        <div class="footer">
-            <?php if (isset($webSettings) && !empty($webSettings)): ?>
+        <?php endif; ?>
+
+        <div class="paid-stamp">
+            <div class="stamp">PAID</div>
+        </div>
+    </div> <!-- Receipt Footer -->
+    <div class="footer">
+        <?php if (isset($webSettings) && !empty($webSettings)): ?>
             <div class="compact-info" style="text-align: center; margin-bottom: 10px; font-size: 10px;">
-                <?php 
+                <?php
                 $infoItems = [];
                 if (isset($webSettings['contact']) && !empty($webSettings['contact'])) {
                     $infoItems[] = "<strong>Contact:</strong> {$webSettings['contact']}";
@@ -367,18 +369,18 @@
                 echo implode(' | ', $infoItems);
                 ?>
             </div>
+        <?php endif; ?>
+
+        <div class="footer-note">
+            <p style="margin: 5px 0;">This is an official receipt for your payment. Please keep it for your records.</p>
+
+            <?php if (isset($program['email'])): ?>
+                <p style="margin: 5px 0;">For questions: <?= $program['email'] ?></p>
             <?php endif; ?>
 
-            <div class="footer-note">
-                <p style="margin: 5px 0;">This is an official receipt for your payment. Please keep it for your records.</p>
-                
-                <?php if (isset($program['email'])): ?>
-                    <p style="margin: 5px 0;">For questions: <?= $program['email'] ?></p>
-                <?php endif; ?>
-                
-                <p style="margin: 5px 0; font-size: 9px; color: #777;">Generated: <?= date('Y-m-d H:i') ?> | &copy; <?= date('Y') ?> <?= $program['name'] ?? 'Youth Break the Boundaries' ?></p>
-            </div>
+            <p style="margin: 5px 0; font-size: 9px; color: #777;">Generated: <?= date('Y-m-d H:i') ?> | &copy; <?= date('Y') ?> <?= $program['name'] ?? 'Youth Break the Boundaries' ?></p>
         </div>
+    </div>
     </div>
 
 </body>

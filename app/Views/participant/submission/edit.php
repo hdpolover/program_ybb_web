@@ -124,6 +124,29 @@
                 }
             });
 
+            // Add event listener for the submit button to bypass the unsaved changes check
+            const submitBtn = document.getElementById('submit-application-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function() {
+                    // Reset formChanged to false when submit button is clicked
+                    // This prevents the beforeunload warning when form is properly submitted
+                    formChanged = false;
+                });
+            }
+
+            // Add event listeners for all save buttons to bypass the unsaved changes check
+            const saveButtonIds = ['save-personal-btn', 'save-professional-btn', 'save-entry-btn', 'save-misc-btn'];
+            saveButtonIds.forEach(function(btnId) {
+                const saveBtn = document.getElementById(btnId);
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function() {
+                        // Reset formChanged to false when any save button is clicked
+                        // This prevents the beforeunload warning after user has saved the form
+                        formChanged = false;
+                    });
+                }
+            });
+
             // Show warning when user tries to leave the page
             window.addEventListener('beforeunload', function(e) {
                 if (formChanged) {
@@ -160,9 +183,9 @@
                         });
                     }
                 }
-            });            // Track the current active tab
+            }); // Track the current active tab
             let currentActiveTab = document.querySelector('[data-bs-toggle="pill"].active');
-            
+
             // Use Bootstrap's event system to intercept tab changes before they happen
             const tabEls = document.querySelectorAll('[data-bs-toggle="pill"]');
             tabEls.forEach(function(tabEl) {
@@ -171,9 +194,9 @@
                     if (formChanged && currentActiveTab) {
                         // Prevent the default tab switching
                         event.preventDefault();
-                        
+
                         const clickedTab = event.target;
-                        
+
                         // Show confirmation dialog
                         Swal.fire({
                             title: 'Unsaved Changes',
@@ -190,14 +213,14 @@
                                 // Temporarily disable the change detection
                                 const originalFormChanged = formChanged;
                                 formChanged = false;
-                                
+
                                 // Manually trigger tab switch using Bootstrap's API
                                 const bsTab = new bootstrap.Tab(clickedTab);
                                 bsTab.show();
-                                
+
                                 // Update current active tab reference
                                 currentActiveTab = clickedTab;
-                                
+
                                 // Restore change detection state
                                 setTimeout(() => {
                                     formChanged = originalFormChanged;

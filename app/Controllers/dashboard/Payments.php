@@ -568,7 +568,8 @@ class Payments extends BaseController
             if (isset($programPayment)) {
                 $data['programPayment'] = [
                     'name' => $programPayment['name'] ?? 'Program Payment',
-                    'type' => $programPayment['category'] ?? 'Payment'
+                    'type' => $programPayment['category'] ?? 'Payment',
+                    'amount' => $programPayment['usd_amount'] ?? 0,
                 ];
             }
 

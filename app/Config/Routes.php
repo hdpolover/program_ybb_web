@@ -90,7 +90,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // settings
     $routes->get('settings', 'dashboard\Settings::index');
-    
+
     // submission
     $routes->get('submission', 'dashboard\Submission::index');
     $routes->get('submission/edit', 'dashboard\Submission::edit');
@@ -100,16 +100,18 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('submission/entry/(:num)/update', 'dashboard\Submission::updateEntry/$1');
     $routes->post('submission/miscs/(:num)/update', 'dashboard\Submission::updateMisc/$1');
     $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');
-    $routes->post('submission/submit', 'dashboard\Submission::submitForm');    // payment
+    $routes->post('submission/submit', 'dashboard\Submission::submitForm');
+
+    // payment
     $routes->get('payments', 'dashboard\Payments::index');
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
     $routes->post('payments/make', 'dashboard\Payments::makePayment');
-    
     // documents
     $routes->get('documents/program', 'dashboard\Documents::index');
     $routes->get('documents/program/details/(:num)', 'dashboard\Documents::details/$1');
     $routes->get('documents/certificates', 'dashboard\Documents::certificates');
-
+    // generate loa
+    $routes->get('documents/generate-loa/(:num)/(:num)', 'dashboard\Documents::generateLoa/$1/$2');
     // ambassadors
     $routes->group('ambassadors', function ($routes) {
         $routes->get('sign-in', 'Auth::ambassadorSignIn', ['filter' => 'noauth']);

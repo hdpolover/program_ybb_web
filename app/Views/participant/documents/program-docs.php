@@ -47,55 +47,55 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <?php 
+                                                    <?php
                                                     $hasVisibleDocs = false;
                                                     $counter = 1;
-                                                    if(isset($documents) && !empty($documents)): 
-                                                        foreach($documents as $document): 
+                                                    if (isset($documents) && !empty($documents)):
+                                                        foreach ($documents as $document):
                                                             // Only show documents with visibility = 1
-                                                            if($document['visibility'] == 1):
+                                                            if ($document['visibility'] == 1):
                                                                 $hasVisibleDocs = true;
                                                     ?>
-                                                        <tr>
-                                                            <td><?= $counter++ ?></td>
-                                                            <td><?= $document['name'] ?? 'Program Document' ?></td>
-                                                            <td>
-                                                                <?php if($document['is_upload']): ?>
-                                                                    <span class="badge bg-info">Upload Required</span>
-                                                                <?php elseif($document['is_generated']): ?>
-                                                                    <span class="badge bg-primary">Can Generate</span>
-                                                                <?php else: ?>
-                                                                    <span class="badge bg-secondary">Reference</span>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td>
-                                                                <div class="btn-group">
-                                                                    <?php if(!empty($document['file_url'])): ?>
-                                                                        <a href="<?= $document['file_url'] ?>" class="btn btn-sm btn-primary" download>
-                                                                            <i class="ri-download-2-line align-middle"></i>
-                                                                        </a>
-                                                                    <?php elseif(!empty($document['drive_url'])): ?>
-                                                                        <a href="<?= $document['drive_url'] ?>" class="btn btn-sm btn-info" target="_blank">
-                                                                            <i class="ri-external-link-line align-middle"></i>
-                                                                        </a>
-                                                                    <?php else: ?>
-                                                                        <button class="btn btn-sm btn-secondary" disabled>
-                                                                            <i class="ri-close-circle-line align-middle"></i>
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                    <a href="<?= base_url('documents/program/details/' . ($document['id'] ?? '')) ?>" class="btn btn-sm btn-info" title="View Details">
-                                                                        <i class="ri-eye-line align-middle"></i>
-                                                                    </a>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    <?php 
+                                                                <tr>
+                                                                    <td><?= $counter++ ?></td>
+                                                                    <td><?= $document['name'] ?? 'Program Document' ?></td>
+                                                                    <td>
+                                                                        <?php if ($document['is_upload']): ?>
+                                                                            <span class="badge bg-info">Upload Required</span>
+                                                                        <?php elseif ($document['is_generated']): ?>
+                                                                            <span class="badge bg-primary">Can Generate</span>
+                                                                        <?php else: ?>
+                                                                            <span class="badge bg-secondary">Reference</span>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div class="btn-group">
+                                                                            <?php if (!empty($document['file_url'])): ?>
+                                                                                <a href="<?= $document['file_url'] ?>" class="btn btn-sm btn-primary" download>
+                                                                                    <i class="ri-download-2-line align-middle"></i>
+                                                                                </a>
+                                                                            <?php elseif (!empty($document['drive_url'])): ?>
+                                                                                <a href="<?= $document['drive_url'] ?>" class="btn btn-sm btn-info" target="_blank">
+                                                                                    <i class="ri-external-link-line align-middle"></i>
+                                                                                </a>
+                                                                            <?php else: ?>
+                                                                                <button class="btn btn-sm btn-secondary" disabled>
+                                                                                    <i class="ri-close-circle-line align-middle"></i>
+                                                                                </button>
+                                                                            <?php endif; ?>
+                                                                            <a href="<?= base_url('documents/program/details/' . ($document['id'] ?? '')) ?>" class="btn btn-sm btn-info" title="View Details">
+                                                                                <i class="ri-eye-line align-middle"></i>
+                                                                            </a>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                        <?php
                                                             endif;
                                                         endforeach;
-                                                    endif; 
-                                                    
-                                                    if(!$hasVisibleDocs):
-                                                    ?>
+                                                    endif;
+
+                                                    if (!$hasVisibleDocs):
+                                                        ?>
                                                         <tr>
                                                             <td colspan="4" class="text-center">
                                                                 <div class="py-4">

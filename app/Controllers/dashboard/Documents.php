@@ -58,7 +58,6 @@ class Documents extends BaseController
             if (isset($documentsData) && is_array($documentsData)) {
                 foreach ($documentsData as $document) {
                     $visibleDocuments[] = $document;
-
                 }
             }
         } else {
@@ -96,10 +95,19 @@ class Documents extends BaseController
             return redirect()->to(base_url('documents/program'));
         }
 
+        // if document is of type loa, then get the document details from the API
+        if ($documentData['type'] === 'loa') {
+            $loaTemplate = $this->makeGetRequest('/loa-templates/program-documents/' . $id, [], false);
+        } else {
+            $loaTemplate = null;
+        }
+
         $data = [
             'title' => 'Document Details',
             'document' => $documentData,
+            'loaTemplate' => isset($loaTemplate) ? $loaTemplate : null,
         ];
+
 
         return $this->render('participant/documents/document-details', $data);
     }
@@ -107,5 +115,46 @@ class Documents extends BaseController
     public function certificates()
     {
         return $this->render('participant/documents/certificates');
+    }
+
+    /**
+     * Generate Letter of Acceptance document
+     * 
+     * @param int $documentId The document ID
+     * @param int $participantId The participant ID
+     */
+    public function generateLoa($documentId = null, $participantId = null)
+    {
+        if (empty($documentId) || empty($participantId)) {
+            log_message('error', 'LOA Generation: Missing parameters - Document ID: ' . ($documentId ?? 'null') . ', Participant ID: ' . ($participantId ?? 'null'));
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid request. Document ID and Participant ID are required.']);
+        }
+
+        // Get the current participant ID from the session for validation
+        $currentParticipantId = session()->get('current_participant_id');
+        log_message('debug', 'LOA Generation: Current participant ID from session: ' . ($currentParticipantId ?? 'null'));
+
+        // Security check - ensure the participant ID in the request matches the session
+        if ($participantId != $currentParticipantId) {
+            log_message('error', 'LOA Generation: Security check failed - Request participant ID: ' . $participantId . ', Session participant ID: ' . $currentParticipantId);
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized access.']);
+        }
+
+        try {
+            log_message('info', 'LOA Generation: Starting - Document ID: ' . $documentId . ', Participant ID: ' . $participantId);
+
+            // Attempt to generate the LOA document via API
+
+            $loaResult = $this->makeGetRequest('/program-documents/' . $documentId . '/participants/' . $participantId . '/generate', [], false);
+
+            if (isset($loaResult)) {
+                // print data
+                return $this->response->setJSON(['success' => true, 'message' => 'success', 'loa' => $loaResult]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'LOA Generation: Exception - ' . $e->getMessage());
+            log_message('error', 'LOA Generation: Stack trace - ' . $e->getTraceAsString());
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'An error occurred while generating the document: ' . $e->getMessage()]);
+        }
     }
 }
