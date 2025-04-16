@@ -18,50 +18,74 @@
             <table class="table table-bordered table-striped align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" style="width: 30%">Period</th>
-                        <th scope="col">Activity</th>
+                        <th scope="col" style="width: 30%" class="text-center">Period</th>
+                        <th scope="col" class="text-center">Activity</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($schedules as $schedule) : ?>
-                        <tr>
-                            <td>
-                                <?php if (isset($schedule['start_date'])) : ?>
-                                    <div class="d-flex flex-column">
-                                        <span class="badge bg-soft-primary text-primary px-3 py-2 mb-2 fs-12">
-                                            <?= date('M d, Y', strtotime($schedule['start_date'])) ?>
-                                        </span>
-                                        <?php if (isset($schedule['end_date']) && $schedule['end_date'] != $schedule['start_date']) : ?>
-                                            <span class="badge bg-soft-danger text-danger px-3 py-2 fs-12">
-                                                to <?= date('M d, Y', strtotime($schedule['end_date'])) ?>
+                    <?php
+                    $counter = 0;
+                    $currentDate = date('Y-m-d');
+                    foreach ($schedules as $schedule) :
+                        $counter++;
+
+                        // Check if schedule is currently active based on date range
+                        $isCurrentlyActive = false;
+                        if (isset($schedule['start_date']) && isset($schedule['end_date'])) {
+                            $startDate = date('Y-m-d', strtotime($schedule['start_date']));
+                            $endDate = date('Y-m-d', strtotime($schedule['end_date']));
+                            $isCurrentlyActive = ($currentDate >= $startDate && $currentDate <= $endDate);
+                        }
+
+                        // Only display if is_active is true (not deleted)
+                        if (isset($schedule['is_active']) && $schedule['is_active']):
+                    ?>
+                            <tr class="<?= $isCurrentlyActive ? 'table-active' : '' ?>">
+                                <td>
+                                    <?php if (isset($schedule['start_date'])) : ?>
+                                        <div class="d-flex flex-column">
+                                            <span class="badge bg-soft-primary text-primary px-3 py-2 mb-2 fs-12 rounded-pill">
+                                                <i class="ri-calendar-line me-1"></i>
+                                                <?= date('M d, Y', strtotime($schedule['start_date'])) ?>
                                             </span>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php else : ?>
-                                    <span class="badge bg-soft-secondary text-secondary">To Be Announced</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <?php if (isset($schedule['order_number'])): ?>
+                                            <?php if (isset($schedule['end_date']) && $schedule['end_date'] != $schedule['start_date']) : ?>
+                                                <span class="badge bg-soft-danger text-danger px-3 py-2 fs-12 rounded-pill">
+                                                    <i class="ri-arrow-right-line me-1"></i>
+                                                    <?= date('M d, Y', strtotime($schedule['end_date'])) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else : ?>
+                                        <span class="badge bg-soft-secondary text-secondary px-3 py-2 fs-12 rounded-pill">
+                                            <i class="ri-time-line me-1"></i> To Be Announced
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
                                         <div class="me-3">
                                             <div class="avatar-sm">
-                                                <span class="avatar-title rounded-circle bg-soft-info text-info">
-                                                    <?= $schedule['order_number'] ?>
+                                                <span class="avatar-title rounded-circle <?= $isCurrentlyActive ? 'bg-info text-white' : 'bg-soft-info text-info' ?> shadow-sm">
+                                                    <?= isset($schedule['order_number']) ? $schedule['order_number'] : $counter ?>
                                                 </span>
                                             </div>
                                         </div>
-                                    <?php endif; ?>
-                                    <div>
-                                        <h5 class="fs-14 mb-1"><?= $schedule['name'] ?? 'TBA' ?></h5>
-                                        <?php if (isset($schedule['description']) && !empty($schedule['description'])) : ?>
-                                            <p class="text-muted mb-0 fs-12"><?= $schedule['description'] ?></p>
-                                        <?php endif; ?>
+                                        <div class="timeline-event">
+                                            <h5 class="fs-14 mb-1 <?= $isCurrentlyActive ? 'fw-semibold text-primary' : '' ?>">
+                                                <?= $schedule['name'] ?? 'TBA' ?>
+                                                <?php if ($isCurrentlyActive): ?>
+                                                    <span class="badge bg-success-subtle text-success ms-1 fs-10">Current</span>
+                                                <?php endif; ?>
+                                            </h5>
+                                            <?php if (isset($schedule['description']) && !empty($schedule['description'])) : ?>
+                                                <p class="text-muted mb-0 fs-13"><?= $schedule['description'] ?></p>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
+                                </td>
+                            </tr>
+                    <?php endif; // end of is_active check
+                    endforeach; ?>
                 </tbody>
             </table>
         </div>

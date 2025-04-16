@@ -55,7 +55,7 @@
                                         <?php endif; ?>
 
                                         <div class="mt-4">
-                                            <form action="<?= base_url('register') ?>" method="post" class="needs-validation" novalidate>
+                                            <form action="<?= base_url('ambassadors/sign-up') ?>" method="post" class="needs-validation" novalidate>
 
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>

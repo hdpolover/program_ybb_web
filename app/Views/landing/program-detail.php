@@ -21,7 +21,7 @@
         <section class="section py-5 position-relative bg-light" id="program-detail">
             <div class="container">
                 <!-- Registration Guidelines CTA -->
-                <?= $this->include('landing/program-detail/registration-cta') ?>
+                <?= $this->include('landing/program-detail/guideline-full-card') ?>
 
                 <div class="row mt-4">
                     <!-- Left Column: Program Content -->
@@ -49,7 +49,6 @@
         </section>
 
         <!-- Photo Gallery Section -->
-        <?= $this->include('landing/program-detail/gallery') ?>
 
         <!-- Footer -->
         <?= $this->include('landing/common/footer') ?>

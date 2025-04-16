@@ -49,7 +49,6 @@
         <!-- end Program Detail section -->
 
         <!-- Photo Gallery Section -->
-        <?= $this->include('landing/program-detail/gallery') ?>
 
         <?= $this->include('landing/common/footer') ?>
     </div>

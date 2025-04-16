@@ -164,16 +164,19 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
         </div>
 
         <!-- Right column: Image -->
-        <div class="col-md-4 position-relative">
+        <div class="col-md-4 position-relative h-100">
             <?php if (!empty($image)): ?>
+            <div class="h-100 w-100 overflow-hidden" style="border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;">
                 <img src="<?= esc($image) ?>" alt="<?= esc($title) ?>"
-                    class="img-fluid h-100 w-100 program-img"
-                    style="object-fit: cover; border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;"
-                    loading="lazy">
+                class="img-fluid w-100 h-100 program-img"
+                style="object-fit: containe; object-position: center;"
+                loading="lazy">
+            </div>
             <?php else: ?>
-                <div class="d-flex align-items-center justify-content-center h-100 bg-light">
-                    <i class="ri-image-line display-4 text-muted"></i>
-                </div>
+            <div class="d-flex align-items-center justify-content-center h-100 bg-light"
+                 style="border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;">
+                <i class="ri-image-line display-4 text-muted"></i>
+            </div>
             <?php endif; ?>
         </div>
     </div>

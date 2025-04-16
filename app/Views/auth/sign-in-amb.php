@@ -56,24 +56,30 @@
                                         <?php endif; ?>
 
                                         <div class="mt-4">
-                                            <form action="<?= base_url('authorize') ?>" method="post">
+                                            <form action="<?= base_url('authorize') ?>" method="post" id="ambassador-login-form">
                                                 <!-- Hidden field for user type (3=ambassador) -->
                                                 <input type="hidden" name="type" value="3">
 
                                                 <div class="mb-3">
                                                     <label for="email" class="form-label">Email</label>
-                                                    <input type="text" class="form-control" id="email" name="email" placeholder="Enter email">
+                                                    <input type="text" class="form-control" id="email" name="email" placeholder="Enter email" required>
+                                                    <div class="invalid-feedback">Please enter your email</div>
                                                 </div>
 
                                                 <div class="mb-3">
                                                     <label class="form-label" for="referral-input">Referral Code</label>
                                                     <div class="position-relative mb-3">
-                                                        <input type="text" class="form-control" name="referral_code" placeholder="Enter referral code" id="referral-input">
+                                                        <input type="text" class="form-control" name="referral_code" placeholder="Enter referral code" id="referral-input" required>
+                                                        <div class="invalid-feedback">Please enter your referral code</div>
                                                     </div>
                                                 </div>
 
+                                                <div id="form-error" class="alert alert-danger mb-3" style="display:none;">
+                                                    Please fill in all required fields.
+                                                </div>
+
                                                 <div class="mt-4">
-                                                    <button class="btn btn-success w-100" type="submit">Sign In</button>
+                                                    <button class="btn btn-success w-100" type="submit" id="submit-btn">Sign In</button>
                                                 </div>
 
 
@@ -125,6 +131,56 @@
 
     <!-- password-addon init -->
     <script src="/assets/js/pages/password-addon.init.js"></script>
+
+    <!-- Form validation script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('ambassador-login-form');
+            const errorMessage = document.getElementById('form-error');
+            
+            form.addEventListener('submit', function(event) {
+                let isValid = true;
+                const email = document.getElementById('email');
+                const referralCode = document.getElementById('referral-input');
+                
+                // Reset validation state
+                errorMessage.style.display = 'none';
+                form.querySelectorAll('.form-control').forEach(input => {
+                    input.classList.remove('is-invalid');
+                });
+                
+                // Check if email is empty
+                if (!email.value.trim()) {
+                    email.classList.add('is-invalid');
+                    isValid = false;
+                }
+                
+                // Check if referral code is empty
+                if (!referralCode.value.trim()) {
+                    referralCode.classList.add('is-invalid');
+                    isValid = false;
+                }
+                
+                // If any validation fails, prevent form submission
+                if (!isValid) {
+                    event.preventDefault();
+                    errorMessage.style.display = 'block';
+                    // Scroll to error message
+                    errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            
+            // Clear validation errors when user starts typing
+            form.querySelectorAll('.form-control').forEach(input => {
+                input.addEventListener('input', function() {
+                    this.classList.remove('is-invalid');
+                    if (document.querySelectorAll('.is-invalid').length === 0) {
+                        errorMessage.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

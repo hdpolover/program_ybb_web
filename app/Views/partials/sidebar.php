@@ -22,7 +22,12 @@
         </a>
         <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
             id="vertical-hover">
-            <i class="ri-record-circle-line"></i>
+            <span class="hamburger-icon d-lg-none">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+            <i class="ri-record-circle-line d-none d-lg-block"></i>
         </button>
     </div>
 
@@ -58,7 +63,7 @@
                     </a>
                     <div class="collapse menu-dropdown <?= url_is('documents*') ? 'show' : '' ?>" id="sidebarApps">
                         <ul class="nav nav-sm flex-column">
-                          
+
                             <li class="nav-item">
                                 <a href="<?= base_url() ?>documents/program" class="nav-link <?= url_is('documents/program*') ? 'active' : '' ?>"> Program Documents </a>
                             </li>
@@ -68,7 +73,7 @@
                         </ul>
                     </div>
                 </li>
-<!-- 
+                <!-- 
                 <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('announcements*') ? 'active' : '' ?>" href="<?= base_url() ?>announcements">
                         <i class="ri-notification-2-line"></i> <span>Announcements</span>
