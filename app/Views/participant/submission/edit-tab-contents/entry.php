@@ -63,9 +63,44 @@
             </div>
         </div>
 
+        <?php if (isset($currentProgram['essay_guideline_url']) && !empty($currentProgram['essay_guideline_url'])): ?>
+
+            <div class="mb-3">
+                <div class="alert alert-warning border-0 shadow-sm rounded-3 p-4">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="ri-file-warning-line fs-28 text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-2 fw-semibold">Essay Guidelines</h5>
+                            <p class="mb-3 text-dark">Please carefully review the essay guidelines before preparing your submission. The guidelines contain important information about formatting requirements, word limits, evaluation criteria, and other essential details.</p>
+                            <p class="mb-3 text-dark"><strong>Note:</strong> Submissions that do not follow the guidelines may receive lower credit scores which can lower the possibility to be selected as a fully funded participant.</p>
+                            <a href="<?= htmlspecialchars($currentProgram['essay_guideline_url']) ?>" 
+                               class="btn btn-warning" 
+                               target="_blank" 
+                               rel="noopener noreferrer">
+                                <i class="ri-file-text-line me-1"></i> View Document
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <?php if (isset($currentProgram['main_essay_question']) && !empty($currentProgram['main_essay_question'])): ?>
             <div class="mb-3">
-                <div class="alert alert-primary mb-0"><strong><?= htmlspecialchars($currentProgram['main_essay_question']) ?></strong></div>
+                <div class="alert alert-primary border-0 shadow-sm rounded-3 p-4">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="ri-question-line fs-24 text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-2 fw-semibold">Main Essay Question</h5>
+                            <p class="mb-0 text-dark"><?= htmlspecialchars($currentProgram['main_essay_question']) ?></p>
+                            <small class="text-muted mt-2 d-block">Please address this question thoroughly in your essay responses below.</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
 

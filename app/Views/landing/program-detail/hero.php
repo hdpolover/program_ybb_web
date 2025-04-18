@@ -114,8 +114,24 @@
                                         <i class="ri-time-line"></i>
                                     </div>
                                 </div>
-                                <h5 class="text-black fs-16"><?= $program['duration'] ?? 'Duration TBA' ?></h5>
-                                <p class="text-black-75 mb-0">Program Length</p>
+                                <h5 class="text-black fs-16">
+                                    <?php
+                                    if(isset($program['start_date']) && isset($program['end_date'])) {
+                                        $start = new DateTime($program['start_date']);
+                                        $end = new DateTime($program['end_date']);
+                                        $diff = $start->diff($end);
+                                        
+                                        if($diff->days > 0) {
+                                            echo $diff->days + 1 . ' Days';
+                                        } else {
+                                            echo '1 Day';
+                                        }
+                                    } else {
+                                        echo $program['duration'] ?? 'Duration TBA';
+                                    }
+                                    ?>
+                                </h5>
+                                <p class="text-black-75 mb-0">Program Duration</p>
                             </div>
                         </div>
                     </div>
@@ -127,7 +143,7 @@
                                         <i class="ri-group-line"></i>
                                     </div>
                                 </div>
-                                <h5 class="text-black fs-16"><?= $program['capacity'] ?? 'Limited Spots' ?></h5>
+                                <h5 class="text-black fs-16">200 Slots</h5>
                                 <p class="text-black-75 mb-0">Capacity</p>
                             </div>
                         </div>

@@ -22,7 +22,7 @@
                     <a class="nav-link <?= strpos(uri_string(), 'partners-sponsors') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("partners-sponsors"); ?>">Partners & Sponsors</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= strpos(uri_string(), 'help-news') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("help-news"); ?>">Help & News</a>
+                    <a class="nav-link <?= strpos(uri_string(), 'announcements') === 0 ? 'active text-primary' : ''; ?>" href="<?= base_url("announcements"); ?>">Announcements</a>
                 </li>
             </ul>
 

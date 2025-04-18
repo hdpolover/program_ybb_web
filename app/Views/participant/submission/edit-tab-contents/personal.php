@@ -138,8 +138,8 @@
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="personal-tshirt">T-Shirt Size</label>
-                    <div class="d-flex align-items-center">
-                        <select class="form-select me-2" id="personal-tshirt" required>
+                    <div class="input-group">
+                        <select class="form-select" id="personal-tshirt" required>
                             <option value="">Select T-Shirt size</option>
                             <option value="xs" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xs') ? 'selected' : '' ?>>XS</option>
                             <option value="s" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 's') ? 'selected' : '' ?>>S</option>
@@ -149,10 +149,11 @@
                             <option value="xxl" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xxl') ? 'selected' : '' ?>>XXL</option>
                             <option value="xxxl" <?= (isset($participant['tshirt_size']) && $participant['tshirt_size'] == 'xxxl') ? 'selected' : '' ?>>XXXL</option>
                         </select>
-                        <button type="button" class="btn btn-sm btn-primary text-white" data-bs-toggle="modal" data-bs-target="#tshirtSizeChartModal">
-                            <i class="ri-information-line"></i> Size Guide
+                        <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#tshirtSizeChartModal">
+                            <i class="ri-ruler-line me-1"></i> Size Guide
                         </button>
                     </div>
+                    <small class="text-muted mt-1 d-block"><i class="ri-information-line me-1"></i> Select the appropriate size based on your measurements</small>
                     <div class="invalid-feedback">Please select your T-Shirt size</div>
                 </div>
 

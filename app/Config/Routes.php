@@ -54,7 +54,7 @@ $routes->get('programs', 'landing\Programs::index');
 $routes->get('programs/(:any)/details', 'landing\Programs::detail/$1');
 $routes->get('insights', 'landing\Insights::index');
 $routes->get('partners-sponsors', 'landing\PartnersSponsors::index');
-$routes->get('help-news', 'landing\HelpNews::index');
+$routes->get('announcements', 'landing\Announcements::index');
 
 // Legacy routes - can be removed if not needed
 // $routes->get('faqs', 'Faqs::index');

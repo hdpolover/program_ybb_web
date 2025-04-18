@@ -146,9 +146,9 @@
                             <div class="alert alert-warning">
                                 <i class="ri-error-warning-line me-2"></i> <strong>Important:</strong> After submission, your application will be locked and you <u>cannot make any further changes</u>.
                             </div>
-                            <div class="form-check mt-3">
-                                <input class="form-check-input" type="checkbox" id="confirm-checkbox">
-                                <label class="form-check-label" for="confirm-checkbox">
+                            <div class="form-check mt-3 p-3 border border-2 border-warning rounded bg-light">
+                                <input class="form-check-input" type="checkbox" id="confirm-checkbox" style="transform: scale(1.2); border: 2px solid #ffc107;">
+                                <label class="form-check-label fw-bold" for="confirm-checkbox">
                                     I confirm that all information provided is accurate and complete.
                                 </label>
                             </div>

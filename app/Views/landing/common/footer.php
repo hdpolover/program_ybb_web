@@ -81,12 +81,6 @@
                     <h5 class="text-white mb-3">Useful Resources</h5>
                     <ul class="list-unstyled footer-list">
                         <li>
-                            <a href="<?= base_url('faq') ?>">FAQ</a>
-                        </li>
-                        <li>
-                            <a href="<?= $category['guideline'] ?? '#' ?>" target="_blank">Program Guidelines</a>
-                        </li>
-                        <li>
                             <a href="<?= base_url('privacy-policy') ?>">Privacy Policy</a>
                         </li>
                         <li>
