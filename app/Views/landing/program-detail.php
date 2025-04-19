@@ -34,6 +34,11 @@
                             <?= $this->include('landing/program-detail/timeline') ?>
                         <?php endif; ?>
 
+                        <!-- Program Faqs -->
+                        <?php if (isset($faqs) && !empty($faqs)): ?>
+                            <?= $this->include('landing/program-detail/faqs') ?>
+                        <?php endif; ?>
+
                         <!-- Program Testimonials -->
                         <?php if (isset($testimonials) && !empty($testimonials)): ?>
                             <?= $this->include('landing/program-detail/testimonials') ?>

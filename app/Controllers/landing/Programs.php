@@ -49,6 +49,10 @@ class Programs extends BaseController
 
         // get program schedules by program id
         $program_schedules = $this->makeGetRequest('/program-schedules/program/' . $program['id']); // Fetch program schedules related to the program
+       
+        // get program faqs by program id
+        $program_faqs = $this->makeGetRequest('/program-faqs/program/' . $program['id']); // Fetch program faqs related to the program
+
         $data = [
             'title' => $program['name'] ?? 'Program Detail',
             'program' => $program,
@@ -56,10 +60,9 @@ class Programs extends BaseController
             'photos' => $photos,
             'participant_photos' => $participant_photos,
             'schedules' => $program_schedules,
-            // Add more program-related data as needed
+            'faqs' => $program_faqs,
         ];
         
-
         return $this->render('landing/program-detail', $data);
     }
 }

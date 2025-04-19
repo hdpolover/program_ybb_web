@@ -55,6 +55,7 @@ $routes->get('programs/(:any)/details', 'landing\Programs::detail/$1');
 $routes->get('insights', 'landing\Insights::index');
 $routes->get('partners-sponsors', 'landing\PartnersSponsors::index');
 $routes->get('announcements', 'landing\Announcements::index');
+$routes->get('announcements/(:any)', 'landing\Announcements::detail/$1');
 
 // Legacy routes - can be removed if not needed
 // $routes->get('faqs', 'Faqs::index');
@@ -84,9 +85,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('dashboard', 'dashboard\Dashboard::index');
 
     // announcements
-    $routes->get('announcements', 'dashboard\Announcements::index');
-    $routes->get('announcements/(:num)', 'dashboard\Announcements::details/$1');
-    $routes->get('announcements/(:num)/details', 'dashboard\Announcements::details/$1');
+    $routes->get('dashboard-announcements', 'dashboard\Announcements::index');
+    $routes->get('dashboard-announcements/(:num)', 'dashboard\Announcements::details/$1');
+    $routes->get('dashboard-announcements/(:num)/details', 'dashboard\Announcements::details/$1');
 
     // settings
     $routes->get('settings', 'dashboard\Settings::index');
@@ -132,6 +133,9 @@ $routes->get('topbar/getTopbarData', 'TopbarController::getTopbarData');
 $routes->get('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 $routes->post('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 $routes->post('topbar/(:num)/create', 'TopbarController::registerForProgram/$1');
+
+// Popup notification route for registration toasts
+$routes->get('popup-notification/getRecentRegistrations', 'PopupNotification::getRecentRegistrations');
 $routes->post('topbar/updateParticipantSession', 'TopbarController::updateParticipantSession');
 
 // Public receipt download route (no authentication required)

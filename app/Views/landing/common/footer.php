@@ -141,6 +141,9 @@
     <i class="ri-arrow-up-line"></i>
 </button>
 
+<!-- Toast Notification Container -->
+<div id="toast-container"></div>
+
 <style>
 /* Footer custom styling */
 .custom-footer {
@@ -202,6 +205,55 @@
         transform: translateY(-5px);
     }
 }
+
+/* Custom toast styling */
+.toastify.notification-toast {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    border-left: 4px solid #1e40af;
+    padding: 12px 20px;
+    color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.25);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toastify.notification-toast:hover {
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35);
+    transform: translateY(-2px);
+}
+
+.toastify.notification-toast .toast-content {
+    display: flex;
+    align-items: center;
+}
+
+.toastify.notification-toast .toast-icon {
+    margin-right: 16px;
+    background-color: rgba(255, 255, 255, 0.25);
+    height: 34px;
+    width: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.toastify.notification-toast .toast-icon i {
+    font-size: 18px;
+}
+
+.toastify.notification-toast .toast-message {
+    flex-grow: 1;
+    line-height: 1.4;
+}
+
+.toastify.notification-toast .notification-message {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
 </style>
 
 <script>
@@ -240,6 +292,51 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.querySelector('input[type="email"]').value = '';
             }, 3000);
         });
+    }    // Registration Toast Notifications
+    function showRegistrationToast() {
+        // Fetch recent registration data
+        fetch('<?= base_url('popup-notification/getRecentRegistrations') ?>')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.notif) {
+                    const notifMessage = data.data.notif;
+                    
+                    // Create toast content with HTML - simple message display
+                    const toastContent = `
+                        <div class="toast-content">
+                            <div class="toast-icon">
+                                <i class="ri-notification-line"></i>
+                            </div>
+                            <div class="toast-message">
+                                <span class="notification-message">${notifMessage}</span>
+                            </div>
+                        </div>
+                    `;
+                      // Show toast notification
+                    Toastify({
+                        node: (() => {
+                            const div = document.createElement("div");
+                            div.innerHTML = toastContent;
+                            return div;
+                        })(),
+                        className: "notification-toast",
+                        gravity: "bottom",
+                        position: "left",
+                        duration: 5000,
+                        close: false, // Remove close button
+                        stopOnFocus: true,
+                      
+                    }).showToast();
+                }
+            })
+            .catch(error => console.error('Error fetching notification data:', error));
+        
+        // Schedule next toast with random interval between 30 seconds and 1 minute
+        const nextInterval = Math.floor(Math.random() * (60000 - 30000 + 1)) + 30000;
+        setTimeout(showRegistrationToast, nextInterval);
     }
+    
+    // Start showing registration toasts after a short delay
+    setTimeout(showRegistrationToast, 3000);
 });
 </script>
