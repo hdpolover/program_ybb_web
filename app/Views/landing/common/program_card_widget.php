@@ -42,6 +42,13 @@ if (!empty($start_date) && !empty($end_date)) {
     $interval = $start_date_obj->diff($end_date_obj);
     $duration = $interval->days;
 
+    // include the start date in the duration calculation
+    if ($start_date_obj->format('Y-m-d') == $end_date_obj->format('Y-m-d')) {
+        $duration = 0; // Same day program
+    } else {
+        $duration = $interval->days + 1; // Include the start date in the duration
+    }
+
     // Format duration for display
     if ($duration == 0) {
         $duration = "1 day"; // Same day program

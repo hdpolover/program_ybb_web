@@ -113,12 +113,20 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('documents/certificates', 'dashboard\Documents::certificates');
     // generate loa
     $routes->get('documents/generate-loa/(:num)/(:num)', 'dashboard\Documents::generateLoa/$1/$2');
+    
     // ambassadors
     $routes->group('ambassadors', function ($routes) {
         $routes->get('sign-in', 'Auth::ambassadorSignIn', ['filter' => 'noauth']);
         $routes->get('referrals', 'dashboard\Ambassadors::referrals');
         $routes->get('resources', 'dashboard\Ambassadors::resources');
         $routes->post('generate-link', 'dashboard\Ambassadors::generateReferralLink');
+
+        $routes->post('authorize', 'Auth::authorizeAmbassador', ['filter' => 'noauth']);
+        
+        // dashboard ambassador routes
+        $routes->get('dashboard', 'ambassador\Dashboard::index');
+        $routes->get('referred-participants', 'ambassador\ReferredParticipants::index');
+        $routes->get('profile', 'ambassador\Profile::index');
     });
 });
 

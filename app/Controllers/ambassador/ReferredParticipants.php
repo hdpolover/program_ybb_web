@@ -3,7 +3,7 @@
 namespace App\Controllers\ambassador;
 use App\Controllers\BaseController;
 
-class Dashboard extends BaseController
+class ReferredParticipants extends BaseController
 {
     public function index()
     {
@@ -22,16 +22,18 @@ class Dashboard extends BaseController
         } else {
             return redirect()->to('/ambassadors/dashboard')->with('error', 'Program ID not found in session');
         }
-
+        
+        // Fetch referred participants data from API (this is a placeholder, implement the actual API call)
+        $referredParticipants = $this->makeGetRequest('/ambassadors/' . $ambassador['id'] . '/referrals', [], false);
+        
         $data = [
-            'title' => 'Dashboard',
+            'title' => 'Referred Participants',
             'ambassador' => $ambassador,
             'currentProgram' => $ambassador['program'],
+            'referredParticipants' => $referredParticipants['referrals'], // Update with actual participants data
         ];
 
-        // 
-
-        return $this->render('ambassador/dashboard', $data);
+        return $this->render('ambassador/referred-participants', $data);
     }
 
 }

@@ -56,10 +56,7 @@
                                         <?php endif; ?>
 
                                         <div class="mt-4">
-                                            <form action="<?= base_url('authorize') ?>" method="post" id="ambassador-login-form">
-                                                <!-- Hidden field for user type (3=ambassador) -->
-                                                <input type="hidden" name="type" value="3">
-
+                                            <form action="<?= base_url('ambassadors/authorize') ?>" method="post" id="ambassador-login-form">
                                                 <div class="mb-3">
                                                     <label for="email" class="form-label">Email</label>
                                                     <input type="text" class="form-control" id="email" name="email" placeholder="Enter email" required>

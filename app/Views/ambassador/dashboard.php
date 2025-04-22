@@ -12,7 +12,7 @@ if (($hour >= 0 && $hour < 5) || ($hour >= 5 && $hour < 12)) {
     $greetingText = "Good Evening";
 }
 
-$full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full_name'] : 'Participant';
+$full_name = $ambassador['name'];
 ?>
 
 <?= $this->include('partials/main') ?>
@@ -36,7 +36,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
     <!-- Begin page -->
     <div id="layout-wrapper">
 
-        <?= $this->include('partials/menu') ?>
+        <?= $this->include('partials/ambassador-menu') ?>
 
         <!-- ============================================================== -->
         <!-- Start right Content here -->
@@ -63,15 +63,38 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                                 </div>
                                 <!--end row-->
 
+                                <!-- Information Card -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header border-bottom-dashed">
+                                                <h4 class="card-title mb-0">Development Notice</h4>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i class="ri-information-line text-primary fs-2"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h5 class="mb-2">Features Still in Development</h5>
+                                                        <p class="text-muted mb-3">
+                                                            Thank you for your participation in our ambassador program. 
+                                                            Some features are still under development, but you can currently view your referred participants and basic details on this ambassador dashboard.
+                                                            Please wait as we continue to enhance your experience with additional features.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- End Information Card -->
 
                             </div> <!-- end .h-100-->
 
                         </div> <!-- end col -->
 
                     </div>
-
-                    <?= $this->include('landing/program-detail/registration-cta') ?>
-
                 </div>
                 <!-- container-fluid -->
             </div>

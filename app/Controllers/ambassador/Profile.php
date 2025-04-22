@@ -3,7 +3,7 @@
 namespace App\Controllers\ambassador;
 use App\Controllers\BaseController;
 
-class Dashboard extends BaseController
+class Profile extends BaseController
 {
     public function index()
     {
@@ -23,15 +23,25 @@ class Dashboard extends BaseController
             return redirect()->to('/ambassadors/dashboard')->with('error', 'Program ID not found in session');
         }
 
+        $ambassadorDetails = $this->makeGetRequest('/ambassadors/' . $ambassador['id'], [], false);
+
+        if (isset($ambassadorDetails['id'])) {
+            $ambassador['details'] = $ambassadorDetails;
+        } else {
+            return redirect()->to('/ambassadors/dashboard')->with('error', 'Ambassador details not found');
+        }
+
+        // generated link
+        $generatedLink = $this->makeGetRequest('/ambassadors/' . $ambassador['id'] . '/generate-link', [], false);
+
         $data = [
             'title' => 'Dashboard',
             'ambassador' => $ambassador,
             'currentProgram' => $ambassador['program'],
+            'generatedLink' => $generatedLink['referral_link'],
         ];
 
-        // 
-
-        return $this->render('ambassador/dashboard', $data);
+        return $this->render('ambassador/profile', $data);
     }
 
 }

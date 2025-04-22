@@ -161,7 +161,9 @@
     <script src="/assets/js/pages/passowrd-create.init.js"></script>
 
     <!-- Add SweetAlert2 library for better user notifications -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    <!-- Custom script for password confirmation validation -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    
+    
+    <!-- Custom script for password confirmation validation -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const passwordInput = document.getElementById('password-input');

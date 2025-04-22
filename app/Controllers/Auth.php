@@ -27,34 +27,66 @@ class Auth extends BaseController
 
         // get q from query parameter
         $q = $this->request->getGet('q');
+        log_message('debug', '===== SIGNUP PROCESS STARTED =====');
+        log_message('debug', 'Query parameter q: ' . ($q ?? 'not provided'));
 
         if ($q) {
-            // check query value
-            $queryData = $this->makePostRequest('/ambassadors/check-query/', ['encrypted_query' => $q], [], false, false);
+            // Log the ambassador query parameter that we're about to validate
+            log_message('debug', 'Attempting to validate ambassador query: ' . $q);
 
-            if ($queryData) {
-                // check if query is valid
-                if (isset($queryData['is_valid']) && $queryData['is_valid'] == false) {
-                    return redirect()->to('sign-in')->with('error', 'Invalid query. Please contact support.');
+            try {
+                // check query value
+                log_message('debug', 'Making API request to /ambassadors/check-query/ with query: ' . $q);
+                $queryData = $this->makePostRequest('/ambassadors/check-query/', ['encrypted_query' => $q], [], false, false);
+
+                // Log the response data
+                log_message('debug', 'Ambassador query check response: ' . json_encode($queryData));
+
+                if ($queryData) {
+                    log_message('debug', 'Query validation returned data: ' . json_encode($queryData));
+
+                    // check if query is valid
+                    if (isset($queryData['is_valid']) && $queryData['is_valid'] == false) {
+                        log_message('error', 'Query validation failed - query is marked as invalid by API');
+                        return redirect()->to('sign-in')->with('error', 'Invalid query. Please contact support.');
+                    }
+
+                    log_message('debug', 'Query validation successful');
+                } else {
+                    log_message('error', 'Query validation failed - API returned empty response');
+                    log_message('error', 'URL: ' . $this->apiBaseUrl . '/ambassadors/check-query/');
+                    log_message('error', 'POST data: ' . json_encode(['encrypted_query' => $q]));
+
+                    // Continue with signup without ambassador reference instead of showing error
+                    log_message('debug', 'Continuing signup process without ambassador reference');
+                    return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
                 }
-            } else {
-                return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
+            } catch (\Exception $e) {
+                log_message('error', 'Exception during query validation: ' . $e->getMessage());
+                log_message('error', 'Exception trace: ' . $e->getTraceAsString());
+                // Continue with signup without ambassador reference
+                return redirect()->to('sign-in')->with('error', 'Failed to validate ambassador reference: ' . $e->getMessage());
             }
         }
 
         // Get program slug from query parameter
         $programSlug = $this->request->getGet('program');
+        log_message('debug', 'Program slug from query: ' . ($programSlug ?? 'not provided'));
         $programData = null;
 
         // If program slug is provided, fetch program data
         if ($programSlug) {
+            log_message('debug', 'Attempting to fetch program data for slug: ' . $programSlug);
             try {
                 $programData = $this->makeGetRequest('/programs/slug/' . $programSlug, [], true);
                 if (!$programData) {
                     log_message('error', 'Failed to fetch program data for slug: ' . $programSlug);
+                } else {
+                    log_message('debug', 'Successfully fetched program data with ID: ' . ($programData['id'] ?? 'unknown'));
                 }
             } catch (\Exception $e) {
                 log_message('error', 'Error fetching program data: ' . $e->getMessage());
+                log_message('error', 'Exception trace: ' . $e->getTraceAsString());
             }
         }
 
@@ -62,6 +94,7 @@ class Auth extends BaseController
         if (!$programSlug) {
             // get category id from web settings (access from controller data)
             $categoryId = $this->data['webSettings']['program_category_id'] ?? null;
+            log_message('debug', 'No program slug provided, using category ID from settings: ' . ($categoryId ?? 'not found'));
 
             if (!$categoryId) {
                 log_message('error', 'No category ID found in web settings');
@@ -69,11 +102,14 @@ class Auth extends BaseController
             }
 
             if ($categoryId) {
+                log_message('debug', 'Fetching programs for category ID: ' . $categoryId);
                 try {
                     $programs = $this->makeGetRequest('/programs/category/' . $categoryId, [], true);
 
                     if (!$programs) {
                         log_message('error', 'Failed to fetch programs for category ID: ' . $categoryId);
+                    } else {
+                        log_message('debug', 'Found ' . count($programs) . ' programs for category ID: ' . $categoryId);
                     }
 
                     // get the first program from the list which is active
@@ -82,17 +118,24 @@ class Auth extends BaseController
                     foreach ($programs as $program) {
                         if (isset($program['is_active']) && $program['is_active'] == '1') {
                             $programData = $program;
+                            log_message('debug', 'Selected active program ID: ' . ($program['id'] ?? 'unknown'));
                             break; // Exit loop after finding the first active program
                         }
                     }
+
+                    if (!$programData) {
+                        log_message('warning', 'No active programs found for category ID: ' . $categoryId);
+                    }
                 } catch (\Exception $e) {
                     log_message('error', 'Error fetching programs by category: ' . $e->getMessage());
+                    log_message('error', 'Exception trace: ' . $e->getTraceAsString());
                 }
             }
         }
 
         // If program data is not found, redirect to sign-in page with error message
         if ($programSlug && !$programData) {
+            log_message('error', 'Program not found for slug: ' . $programSlug);
             return redirect()->to('sign-in')->with('error', 'Program not found. Please check the link or contact support.');
         }
 
@@ -106,8 +149,10 @@ class Auth extends BaseController
         if (isset($queryData['ambassador']['id'])) {
             // check if ref_code is valid
             $ambassadorId = $queryData['ambassador']['id'];
+            log_message('debug', 'Using ambassador ID: ' . $ambassadorId);
         } else {
             $ambassadorId = null;
+            log_message('debug', 'No ambassador ID available');
         }
 
         // Prepare data for the view
@@ -118,11 +163,18 @@ class Auth extends BaseController
             'ambassadorId' => $ambassadorId,
         ];
 
+        log_message('debug', '===== SIGNUP PREPARATION COMPLETED =====');
         return $this->render('auth/sign-up-participant', $data);
     }
 
     public function signOut()
     {
+        $user = session()->get('user');
+
+        // get user type
+        $userType = $user['type'] ?? null;
+
+
         $session = session();
         $session->remove('jwt_token');
         $session->remove('user');
@@ -132,6 +184,11 @@ class Auth extends BaseController
         $data = [
             'title' => 'Sign Out',
         ];
+
+        if ($userType == 3) {
+            $session->remove('isAmbassador');
+            return redirect()->to('ambassadors/sign-in')->with('success', 'You have been signed out successfully');
+        }
 
         return redirect()->to('sign-in')->with('success', 'You have been signed out successfully');
     }
@@ -291,7 +348,7 @@ class Auth extends BaseController
             $authData = [
                 'email' => $email,
                 'password' => $password,
-                'type' => '2', // 2 = participant (as defined in the API)
+                'type' => 2, // 2 = participant (as defined in the API)
             ];
 
             // Add web_url if available
@@ -438,7 +495,6 @@ class Auth extends BaseController
         $programCategoryId = $this->request->getPost('program_category_id'); // Get program category ID from form data
         $ambassadorId = $this->request->getPost('ambassador_id');
 
-
         // Validate input
         if (!$fullname || !$email || !$password) {
             return redirect()->back()->withInput()->with('error', 'All fields are required');
@@ -462,6 +518,8 @@ class Auth extends BaseController
         if ($ambassadorId) {
             $registerData['ambassador_id'] = $ambassadorId;
         }
+
+        // var_dump($registerData); // Debugging line to check the data being sent
 
         try {
             // Make API call to register endpoint - use form data instead of JSON
@@ -550,9 +608,10 @@ class Auth extends BaseController
     public function authorizeAmbassador()
     {
         $email = trim($this->request->getPost('email'));
-        $referralCode = trim($this->request->getPost('referral_code'));
+        $refCode = trim($this->request->getPost('referral_code'));
 
-        if (!$email || !$referralCode) {
+
+        if (!$email || !$refCode) {
             return redirect()->back()->with('error', 'Please provide both email, referral code');
         }
 
@@ -560,13 +619,16 @@ class Auth extends BaseController
             // Prepare the data for ambassador authentication
             $authData = [
                 'email' => $email,
-                'ref_code' => $referralCode,
+                'ref_code' => $refCode,
+                'type' => 3, // 3 = ambassador (as defined in the API)
             ];
 
             // Add web_url if available
             if (isset($this->currentUrl)) {
                 $authData['web_url'] = $this->currentUrl;
             }
+
+            // var_dump($authData); // Debugging line to check the data being sent
 
             // Log request for debugging
             log_message('debug', 'Ambassador auth request data: ' . json_encode($authData));
@@ -595,7 +657,7 @@ class Auth extends BaseController
                 $session->set('isLoggedIn', true);
                 log_message('info', 'Ambassador logged in successfully: ' . $response['user']['id']);
 
-                return redirect()->to('/ambassador/dashboard');
+                return redirect()->to('ambassadors/dashboard');
             } else {
                 // Handle specific error messages from the API
                 $errorMessage = isset($response['message'])
