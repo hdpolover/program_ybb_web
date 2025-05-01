@@ -83,7 +83,18 @@
                                         </div>
 
                                         <div class="mt-5 text-center">
-                                            <p class="mb-0">Don't have an account? <a href="<?= site_url('sign-up') ?>" class="fw-semibold text-primary text-decoration-underline"> Sign up now!</a> </p>
+                                            <?php if (isset($isRegistrationOpen) && $isRegistrationOpen): ?>
+                                                <div class="registration-open">
+                                                    <p class="mb-0">Don't have an account? <a href="<?= site_url('sign-up') ?>" class="fw-semibold text-primary text-decoration-underline"> Sign up now! <i class="ri-arrow-right-line align-middle"></i></a></p>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="alert alert-warning registration-closed py-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="ri-information-line fs-4 me-2"></i>
+                                                        <p class="mb-0">Registration for new accounts is currently closed. If you're a previous participant or already have an account, you can still sign in to access your details and documents.</p>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
                                             <p class="mt-3 mb-0">Part of our program ambassadors? <a href="<?= site_url('ambassadors/sign-in') ?>" class="fw-semibold text-primary text-decoration-underline">Sign in here!</a></p>
                                         </div>
                                     </div>
@@ -128,8 +139,8 @@
     <!-- password-addon init -->
     <script src="/assets/js/pages/password-addon.init.js"></script>
 
-     <!-- Add SweetAlert2 library for better user notifications -->
-     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    <!-- SweetAlert loading animation -->
+    <!-- Add SweetAlert2 library for better user notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- SweetAlert loading animation -->
     <script>
         document.getElementById('login-form').addEventListener('submit', function() {
             Swal.fire({
@@ -150,7 +161,7 @@
             });
         });
     </script>
-    
+
     <!-- Custom styles for SweetAlert loading -->
     <style>
         .animated-popup {
@@ -158,16 +169,16 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
             border: 1px solid rgba(0, 128, 0, 0.1) !important;
         }
-        
+
         .swal-title {
             font-weight: 600 !important;
             color: #2f55d4 !important;
         }
-        
+
         .swal-icon {
             border-color: #2f55d4 !important;
         }
-        
+
         .swal2-loader {
             border-color: #2f55d4 transparent #2f55d4 transparent !important;
         }

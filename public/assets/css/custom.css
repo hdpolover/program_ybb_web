@@ -5,3 +5,126 @@ Website: https://themesbrand.com/
 Contact: support@themesbrand.com
 File: Custom Css File
 */
+
+/* Video Card Enhancements */
+.video-card {
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+}
+
+.video-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.video-card .card-header {
+    background-color: var(--vz-primary, #405189);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.video-card .card-header h3 {
+    color: #ffffff;
+    font-size: 1.1rem;
+}
+
+.video-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+
+.video-container {
+    overflow: hidden;
+}
+
+.video-frame {
+    border: none;
+    display: block;
+}
+
+.video-info {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.video-wrapper {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.4));
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.video-overlay:hover {
+    background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+}
+
+.play-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.play-button .ri-play-circle-fill {
+    font-size: 3rem;
+    color: #ffffff;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: all 0.3s ease;
+}
+
+.play-button:hover {
+    transform: scale(1.1);
+    background-color: var(--vz-primary, #405189);
+}
+
+.play-button:hover .ri-play-circle-fill {
+    color: #ffffff;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+.video-frame {
+    position: relative;
+    z-index: 0;
+}
+
+.video-info {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}

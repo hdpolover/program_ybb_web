@@ -2,6 +2,7 @@
 // Extract the current active program (usually the latest one)
 $program_info = !empty($programs) ? $programs[0] : [];
 $program_testimonies = $testimonies ?? [];
+
 ?>
 
 <?= $this->include('partials/main') ?>
@@ -33,7 +34,9 @@ $program_testimonies = $testimonies ?? [];
         <?= $this->include('landing/home/program_details') ?>
 
         <!-- Video Section -->
-        <?= $this->include('landing/home/video_section') ?>
+        <?php if (!empty($category['main_video_url'] ?? null)): ?>
+            <?= $this->include('landing/home/video_section') ?>
+        <?php endif; ?>
 
         <!-- Gallery Section -->
         <?= $this->include('landing/home/program-gallery') ?>

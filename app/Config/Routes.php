@@ -43,6 +43,9 @@ $routes->setAutoRoute(false);
 // Maintenance route
 $routes->get('maintenance', 'landing\Maintenance::index');
 
+// Sitemap route
+$routes->get('sitemap.xml', 'SitemapController::index');
+
 // AJAX Error Handler routes
 $routes->get('ajax/timeout', 'AjaxHandler::timeout');
 $routes->get('ajax/error/(:num)', 'AjaxHandler::error/$1');
@@ -56,6 +59,8 @@ $routes->get('insights', 'landing\Insights::index');
 $routes->get('partners-sponsors', 'landing\PartnersSponsors::index');
 $routes->get('announcements', 'landing\Announcements::index');
 $routes->get('announcements/(:any)', 'landing\Announcements::detail/$1');
+$routes->get('contact', 'landing\Contact::index');
+$routes->post('contact', 'landing\Contact::submit');
 
 // Legacy routes - can be removed if not needed
 // $routes->get('faqs', 'Faqs::index');
@@ -126,11 +131,10 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         // dashboard ambassador routes
         $routes->get('dashboard', 'ambassador\Dashboard::index');
         $routes->get('referred-participants', 'ambassador\ReferredParticipants::index');
-        $routes->get('profile', 'ambassador\Profile::index');
-    });
+        $routes->get('profile', 'ambassador\Profile::index');    });
 });
 
-$routes->get('sitemap.xml', 'Sitemap::index');
+// $routes->get('sitemap.xml', 'Sitemap::index'); // Removed duplicate route
 $routes->get('sitemap', 'landing\Sitemap::sitemap'); // HTML sitemap for users
 
 // Add this route to serve cached images

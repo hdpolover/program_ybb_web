@@ -10,19 +10,19 @@
                 <div class="navbar-brand-box horizontal-logo">
                     <a href="/" class="logo logo-dark">
                         <span class="logo-sm">
-                            <img src="<?= isset($websetting['logo_url']) ? $websetting['logo_url'] : '/assets/images/logo-sm.png' ?>" alt="" height="22">
+                            <img src="<?= isset($siteLogoUrl) ? $siteLogoUrl : '/assets/images/logo-sm.png' ?>" alt="" height="22">
                         </span>
                         <span class="logo-lg">
-                            <img src="<?= isset($websetting['logo_url']) ? $websetting['logo_url'] : '/assets/images/logo-dark.png' ?>" alt="" height="17">
+                            <img src="<?= isset($siteLogoUrl) ? $siteLogoUrl : '/assets/images/logo-dark.png' ?>" alt="" height="17">
                         </span>
                     </a>
 
                     <a href="/" class="logo logo-light">
                         <span class="logo-sm">
-                            <img src="<?= isset($websetting['logo_url']) ? $websetting['logo_url'] : '/assets/images/logo-sm.png' ?>" alt="" height="22">
+                            <img src="<?= isset($siteLogoUrl) ? $siteLogoUrl : '/assets/images/logo-sm.png' ?>" alt="" height="22">
                         </span>
                         <span class="logo-lg">
-                            <img src="<?= isset($websetting['logo_url']) ? $websetting['logo_url'] : '/assets/images/logo-light.png' ?>" alt="" height="17">
+                            <img src="<?= isset($siteLogoUrl) ? $siteLogoUrl : '/assets/images/logo-light.png' ?>" alt="" height="17">
                         </span>
                     </a>
                 </div>
@@ -104,7 +104,8 @@
                                     <div class="dropdown-item py-3 text-center">No programs available</div>
                                 <?php endif; ?>
                             </div>
-                        </div>                    </div>
+                        </div>
+                    </div>
                     <div class="dropdown ms-sm-3 header-item topbar-user">
                         <button type="button" class="btn btn-soft-primary rounded-pill px-3" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-user-id="<?= session()->get('user')['id'] ?? '' ?>">
                             <span class="d-flex align-items-center">

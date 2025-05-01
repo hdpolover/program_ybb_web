@@ -11,8 +11,30 @@ class Auth extends BaseController
             return redirect()->to('/dashboard');
         }
 
+        // get program category id from web settings (access from controller data)
+        $categoryId = $this->data['webSettings']['program_category_id'] ?? null;
+        log_message('debug', 'No program slug provided, using category ID from settings: ' . ($categoryId ?? 'not found'));
+
+        // get programs by category id
+        $programs = $this->makeGetRequest('/programs/category/' . $categoryId, [], true);
+
+        // check if any program is_registration_open = 1 
+        $isRegistrationOpen = false;
+
+        // loop through programs to check if any program is open for registration
+        foreach ($programs as $program) {
+            if (isset($program['is_registration_open']) && $program['is_registration_open'] == '1') {
+                $isRegistrationOpen = true;
+                break; // Exit loop if any program is open for registration
+            }
+        }
+
+        // log the result
+        log_message('debug', 'Is registration open: ' . ($isRegistrationOpen ? 'Yes' : 'No'));
+
         $data = [
             'title' => 'Sign In',
+            'isRegistrationOpen' => $isRegistrationOpen,
         ];
 
         return $this->render('auth/sign-in', $data);

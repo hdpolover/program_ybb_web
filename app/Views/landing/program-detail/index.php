@@ -27,6 +27,11 @@
                     <div class="col-lg-8">
                         <!-- Program Overview -->
                         <?= $this->include('landing/program-detail/overview') ?>
+                        
+                        <!-- Program Rundowns -->
+                        <?php if (isset($rundowns) && !empty($rundowns)) : ?>
+                            <?= $this->include('landing/program-detail/components/program-rundowns') ?>
+                        <?php endif; ?>
 
                         <!-- Program Timeline -->
                         <?php if (isset($schedules) && !empty($schedules)) : ?>

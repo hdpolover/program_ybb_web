@@ -8,7 +8,119 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
 
 <head>
     <?php echo view('partials/title-meta', array('title' => 'Payments')); ?>
-    <?= $this->include('partials/head-css') ?>
+
+    <?= $this->include('partials/head-css') ?> <!--datatable css-->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" />
+    <!--datatable responsive css-->
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap.min.css" />
+    <style>
+        /* Custom styles for DataTables responsiveness */
+        .dtr-bs-modal .modal-body {
+            padding: 0;
+        }
+
+        .dtr-bs-modal .table.dtr-details {
+            margin-bottom: 0;
+        }
+
+        .dtr-bs-modal .table.dtr-details tr td,
+        .dtr-bs-modal .table.dtr-details tr th {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+
+        table.dataTable>tbody>tr.child ul.dtr-details>li {
+            border-bottom: 1px solid #efefef;
+            padding: 0.75em 0;
+        }
+
+        /* Make sure datatable adjusts to different screen sizes */
+        .dataTables_wrapper {
+            width: 100% !important;
+        }
+
+        .dataTables_wrapper .row {
+            width: 100%;
+            margin: 0;
+        }
+
+        /* Ensure the table stays within its container */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Fix table width issues */
+        table.dataTable {
+            width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+
+        @media (max-width: 767.98px) {
+
+            div.dataTables_wrapper div.dataTables_paginate,
+            div.dataTables_wrapper div.dataTables_info,
+            div.dataTables_wrapper div.dataTables_length,
+            div.dataTables_wrapper div.dataTables_filter {
+                text-align: center;
+                margin-bottom: 10px;
+            }            /* Mobile scroll warning styles */
+            #mobileScrollWarning {
+                border-left: 4px solid #0dcaf0;
+                animation: pulse 2s infinite;
+                margin-bottom: 15px;
+                background-color: rgba(13, 202, 240, 0.15);
+                border-radius: 6px;
+            }
+
+            #mobileScrollWarning .ri-arrow-left-right-fill {
+                animation: leftRight 1.5s infinite;
+                display: inline-block;
+            }
+            
+            @keyframes leftRight {
+                0% {
+                    transform: translateX(-3px);
+                }
+                50% {
+                    transform: translateX(3px);
+                }
+                100% {
+                    transform: translateX(-3px);
+                }
+            }
+
+            @keyframes pulse {
+                0% {
+                    opacity: 1;
+                }
+
+                50% {
+                    opacity: 0.9;
+                }
+
+                100% {
+                    opacity: 1;
+                }
+            }
+
+            /* Show horizontal scroll indicator on mobile */
+            .table-responsive:after {
+                content: "← Swipe to see more →";
+                display: block;
+                text-align: center;
+                font-size: 12px;
+                color: #6c757d;
+                padding: 5px 0;
+                margin-top: 5px;
+            }
+        }
+    </style>
+
+
 </head>
 
 <body>
@@ -227,20 +339,37 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>                                    <!-- Mobile scroll warning - only visible on small screens -->
+                                    <div class="alert alert-info d-block d-md-none mb-3" id="mobileScrollWarning">
+                                        <div class="d-flex align-items-center">
+                                            <i class="ri-information-line me-2 fs-16"></i>
+                                            <div>
+                                                <strong>Mobile Users:</strong> Please scroll horizontally to see all payment details and action buttons.
+                                                <div class="mt-2 d-flex align-items-center justify-content-start">
+                                                    <i class="ri-arrow-left-right-fill me-1 fs-16"></i> 
+                                                    <span class="fw-bold">Swipe right to see payment buttons</span>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <span class="badge bg-primary-subtle text-primary">
+                                                        <i class="ri-hand-coin-line me-1"></i> Payment buttons are on the right
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="table-responsive">
-                                        <table class="table align-middle table-nowrap mb-0">
+                                        <table id="paymentDatatable" class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
                                             <thead class="table-light">
                                                 <tr>
-                                                    <th scope="col" style="width: 50px;">
+                                                    <th scope="col" style="width: 50px;" data-priority="1">
                                                         #
                                                     </th>
-                                                    <th scope="col">Payment Information</th>
-                                                    <th scope="col">Period</th>
-                                                    <th scope="col">Amount</th>
-                                                    <th scope="col">Payment Status</th>
-                                                    <th scope="col">Actions</th>
+                                                    <th scope="col" data-priority="1">Payment Information</th>
+                                                    <th scope="col" data-priority="3">Period</th>
+                                                    <th scope="col" data-priority="2">Amount</th>
+                                                    <th scope="col" data-priority="2">Payment Status</th>
+                                                    <th scope="col" data-priority="1">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -463,197 +592,318 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Include Payment Modal Widget -->
+                        <?php echo view('participant/payment/widgets/payment_modal', [
+                            'paymentMethods' => $paymentMethods ?? null,
+                            'selectedProgramPayment' => $selectedProgramPayment ?? null,
+                        ]); ?>
+
                     </div>
-
-                    <!-- Include Payment Modal Widget -->
-                    <?php echo view('participant/payment/widgets/payment_modal', [
-                        'paymentMethods' => $paymentMethods ?? null,
-                        'selectedProgramPayment' => $selectedProgramPayment ?? null,
-                    ]); ?>
-
+                    <!-- container-fluid -->
                 </div>
-                <!-- container-fluid -->
+                <!-- End Page-content -->
+
+                <?= $this->include('partials/footer') ?>
             </div>
-            <!-- End Page-content -->
-
-            <?= $this->include('partials/footer') ?>
+            <!-- end main content-->
         </div>
-        <!-- end main content-->
-    </div>
-    <!-- END layout-wrapper -->
+        <!-- END layout-wrapper -->
 
-    <?= $this->include('partials/vendor-scripts') ?>
+        <?= $this->include('partials/vendor-scripts') ?>
 
-    <!-- App js -->
-    <script src="/assets/js/app.js"></script>
-    <!-- Add SweetAlert2 library for better user notifications -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <!-- App js -->
+        <script src="/assets/js/app.js"></script>
+        <!-- Add SweetAlert2 library for better user notifications -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <script>
-        // Store program payments in a JavaScript variable for access in client-side code
-        const programPayments = <?= json_encode($programPayments ?? []); ?>;
-        const paymentMethods = <?= json_encode($paymentMethods ?? []); ?>;
+        <!--datatable js-->
+        <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if there are any flash messages set in session
-            <?php if (session()->has('swal')): ?>
-                // Parse the JSON flash data
-                const swalData = JSON.parse('<?= session()->getFlashdata('swal') ?>');
+        <!-- Note: We're not using the global datatables.init.js as we need custom initialization -->
+        <!-- <script src="/assets/js/pages/datatables.init.js"></script> -->
 
-                // Display SweetAlert2 notification
-                Swal.fire({
-                    title: swalData.title || '',
-                    text: swalData.text || '',
-                    icon: swalData.icon || 'info',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    position: 'center',
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer)
-                        toast.addEventListener('mouseleave', Swal.resumeTimer)
-                    }
-                });
-            <?php endif; ?>
 
-            // Add click handler for receipt download buttons
-            const receiptButtons = document.querySelectorAll('.receipt-button');
-            receiptButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault(); // Prevent default to handle the navigation manually
+        <script>
+            // Store program payments in a JavaScript variable for access in client-side code
+            const programPayments = <?= json_encode($programPayments ?? []); ?>;
+            const paymentMethods = <?= json_encode($paymentMethods ?? []); ?>;
 
-                    // Get the original href
-                    const downloadUrl = this.getAttribute('href');
-
-                    // Show loading notification
-                    Swal.fire({
-                        title: 'Generating Receipt',
-                        html: 'Please wait while we generate your receipt...',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    // Use fetch to request the receipt generation
-                    fetch(downloadUrl)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Failed to generate receipt');
-                            }
-                            return response.blob();
-                        })
-                        .then(blob => {
-                            // Create blob URL
-                            const blobUrl = URL.createObjectURL(blob);
-
-                            // Close the loading modal
-                            Swal.close();
-
-                            // Show success message with option to open/download
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Receipt Ready',
-                                text: 'Your receipt has been generated successfully!',
-                                footer: '<small>You can view or save the receipt using the buttons below.</small>',
-                                showCancelButton: true,
-                                confirmButtonText: 'View Receipt',
-                                cancelButtonText: 'Download Receipt',
-                                showCloseButton: true,
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    // Open in new tab
-                                    window.open(blobUrl, '_blank');
-                                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                                    // Create temporary link for download
-                                    const a = document.createElement('a');
-                                    a.href = blobUrl;
-                                    a.download = 'receipt_' + Date.now() + '.pdf';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                }
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error generating receipt:', error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error Generating Receipt',
-                                text: 'There was a problem generating your receipt. Please try again later.',
-                                showCloseButton: true
-                            });
-                        });
-                });
-            });
-
-            // Payment modal data
-            const makePaymentModal = document.getElementById('makePaymentModal');
-            if (makePaymentModal) {
-                makePaymentModal.addEventListener('show.bs.modal', function(event) {
-                    const button = event.relatedTarget;
-                    const paymentId = button.getAttribute('data-payment-id');
-                    const paymentIndex = button.getAttribute('data-payment-index');
-
-                    // Get the full program payment object using the index
-                    const selectedPayment = programPayments[paymentIndex] || null;
-                    if (selectedPayment) {
-                        // Set the selected program payment data to hidden input to be sent to the server
-                        document.getElementById('program_payment_id').value = selectedPayment.id;
-                        document.getElementById('payment_amount').value = selectedPayment.usd_amount;
-
-                        // Update display elements
-                        if (document.getElementById('payment_description')) {
-                            document.getElementById('payment_description').textContent = selectedPayment.name || 'Program Payment';
-                        }
-
-                        if (document.getElementById('payment_amount_display')) {
-                            document.getElementById('payment_amount_display').textContent = '$' + parseFloat(selectedPayment.usd_amount).toFixed(2);
-                        }
-
-                        if (document.getElementById('payment_reference')) {
-                            document.getElementById('payment_reference').textContent = 'YBB-' + selectedPayment.id;
-                        }
-
-                        // Set hidden form field with the complete payment object
-                        const paymentDataField = document.createElement('input');
-                        paymentDataField.type = 'hidden';
-                        paymentDataField.name = 'selectedProgramPayment';
-                        paymentDataField.value = JSON.stringify(selectedPayment);
-
-                        // Replace existing field if it exists, or add a new one
-                        const existingField = document.querySelector('input[name="selectedProgramPayment"]');
-                        if (existingField) {
-                            existingField.value = JSON.stringify(selectedPayment);
+            document.addEventListener('DOMContentLoaded', function() {
+                $(document).ready(function() {                    // Check if we're on a mobile device and make sure warning is visible
+                    function checkMobileView() {
+                        if (window.innerWidth < 768) {
+                            $('#mobileScrollWarning').addClass('d-block').removeClass('d-none');
                         } else {
-                            document.getElementById('paymentForm').appendChild(paymentDataField);
+                            $('#mobileScrollWarning').removeClass('d-block').addClass('d-none d-md-none');
                         }
                     }
-                });
-            }
+                    
+                    // Run check on page load
+                    checkMobileView();
+                    
+                    // Check on window resize
+                    $(window).on('resize', function() {
+                        checkMobileView();
+                    });
+                    
+                    // Initialize the DataTable with proper responsive settings
+                    var paymentTable = $('#paymentDatatable').DataTable({
+                        responsive: {
+                            details: {
+                                type: 'column',
+                                target: 'tr',
+                                renderer: function(api, rowIdx, columns) {
+                                    var data = $.map(columns, function(col, i) {
+                                        return col.hidden ?
+                                            '<tr data-dt-row="' + col.rowIndex + '" data-dt-column="' + col.columnIndex + '">' +
+                                            '<td class="fw-medium">' + col.title + ':</td> ' +
+                                            '<td>' + col.data + '</td>' +
+                                            '</tr>' :
+                                            '';
+                                    }).join('');
 
-            // Payment method fields toggle
-            const paymentMethodSelect = document.getElementById('paymentMethod');
-            if (paymentMethodSelect) {
-                paymentMethodSelect.addEventListener('change', function() {
-                    // Hide all programPayment method fields
-                    document.querySelectorAll('.programPayment-method-fields').forEach(function(field) {
-                        field.style.display = 'none';
+                                    return data ? $('<table class="table table-sm m-0"></table>').append(data) : false;
+                                }
+                            }
+                        },
+                        columnDefs: [{
+                                responsivePriority: 1,
+                                targets: [0, 1, 5]
+                            }, // Always visible
+                            {
+                                responsivePriority: 2,
+                                targets: [3, 4]
+                            }, // Next priority
+                            {
+                                responsivePriority: 3,
+                                targets: 2
+                            }, // Lowest priority
+                            // Set width for specific columns
+                            {
+                                width: "50px",
+                                targets: 0
+                            }, // # column
+                            {
+                                width: "30%",
+                                targets: 1
+                            }, // Payment Info column
+                            {
+                                width: "15%",
+                                targets: 2
+                            } // Period column
+                        ],
+                        paging: true,
+                        searching: true,
+                        ordering: true,
+                        info: true,
+                        autoWidth: false,
+                        scrollX: true,
+                        scrollCollapse: true,
+                        language: {
+                            paginate: {
+                                previous: "<i class='mdi mdi-chevron-left'>",
+                                next: "<i class='mdi mdi-chevron-right'>"
+                            },
+                            search: "<i class='ri-search-line me-1'></i> Search:",
+                            lengthMenu: "Show _MENU_ entries"
+                        },
+                        lengthMenu: [
+                            [10, 25, 50, -1],
+                            [10, 25, 50, "All"]
+                        ],
+                        drawCallback: function() {
+                            $('[data-bs-toggle="tooltip"]').tooltip();
+                            // Force the table to recalculate its layout
+                            $(window).trigger('resize');
+                            // Reinitialize any components that might be in the table
+                            if (typeof initComponents === 'function') {
+                                initComponents();
+                            }
+                        }
                     });
 
-                    // Show selected programPayment method fields
-                    if (this.value === 'credit_card' || this.value === 'debit_card') {
-                        document.getElementById('creditCardFields').style.display = 'block';
-                    } else if (this.value === 'bank_transfer') {
-                        document.getElementById('bankTransferFields').style.display = 'block';
-                    }
-                });
-            }
-        });
-    </script>
+                    // Handle window resize to properly adjust the table
+                    $(window).on('resize', function() {
+                        // Adjust column widths and recalculate responsive layout
+                        paymentTable.columns.adjust().responsive.recalc();
+                    });
 
-    <script src="/assets/js/pages/payment-gateway-handler.js"></script>
+                    // Initial adjustment
+                    setTimeout(function() {
+                        paymentTable.columns.adjust().responsive.recalc();
+                    }, 100);
+                });
+
+                // Check if there are any flash messages set in session
+                <?php if (session()->has('swal')): ?>
+                    // Parse the JSON flash data
+                    const swalData = JSON.parse('<?= session()->getFlashdata('swal') ?>');
+
+                    // Display SweetAlert2 notification
+                    Swal.fire({
+                        title: swalData.title || '',
+                        text: swalData.text || '',
+                        icon: swalData.icon || 'info',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        position: 'center',
+                        didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer)
+                            toast.addEventListener('mouseleave', Swal.resumeTimer)
+                        }
+                    });
+                <?php endif; ?>
+
+                // Add click handler for receipt download buttons
+                const receiptButtons = document.querySelectorAll('.receipt-button');
+                receiptButtons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault(); // Prevent default to handle the navigation manually
+
+                        // Get the original href
+                        const downloadUrl = this.getAttribute('href');
+
+                        // Show loading notification
+                        Swal.fire({
+                            title: 'Generating Receipt',
+                            html: 'Please wait while we generate your receipt...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Use fetch to request the receipt generation
+                        fetch(downloadUrl)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to generate receipt');
+                                }
+                                return response.blob();
+                            })
+                            .then(blob => {
+                                // Create blob URL
+                                const blobUrl = URL.createObjectURL(blob);
+
+                                // Close the loading modal
+                                Swal.close();
+
+                                // Show success message with option to open/download
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Receipt Ready',
+                                    text: 'Your receipt has been generated successfully!',
+                                    footer: '<small>You can view or save the receipt using the buttons below.</small>',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'View Receipt',
+                                    cancelButtonText: 'Download Receipt',
+                                    showCloseButton: true,
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // Open in new tab
+                                        window.open(blobUrl, '_blank');
+                                    } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                        // Create temporary link for download
+                                        const a = document.createElement('a');
+                                        a.href = blobUrl;
+                                        a.download = 'receipt_' + Date.now() + '.pdf';
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                    }
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error generating receipt:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error Generating Receipt',
+                                    text: 'There was a problem generating your receipt. Please try again later.',
+                                    showCloseButton: true
+                                });
+                            });
+                    });
+                });
+
+                // Payment modal data
+                const makePaymentModal = document.getElementById('makePaymentModal');
+                if (makePaymentModal) {
+                    makePaymentModal.addEventListener('show.bs.modal', function(event) {
+                        const button = event.relatedTarget;
+                        const paymentId = button.getAttribute('data-payment-id');
+                        const paymentIndex = button.getAttribute('data-payment-index');
+
+                        // Get the full program payment object using the index
+                        const selectedPayment = programPayments[paymentIndex] || null;
+                        if (selectedPayment) {
+                            // Set the selected program payment data to hidden input to be sent to the server
+                            document.getElementById('program_payment_id').value = selectedPayment.id;
+                            document.getElementById('payment_amount').value = selectedPayment.usd_amount;
+
+                            // Update display elements
+                            if (document.getElementById('payment_description')) {
+                                document.getElementById('payment_description').textContent = selectedPayment.name || 'Program Payment';
+                            }
+
+                            if (document.getElementById('payment_amount_display')) {
+                                document.getElementById('payment_amount_display').textContent = '$' + parseFloat(selectedPayment.usd_amount).toFixed(2);
+                            }
+
+                            if (document.getElementById('payment_reference')) {
+                                document.getElementById('payment_reference').textContent = 'YBB-' + selectedPayment.id;
+                            }
+
+                            // Set hidden form field with the complete payment object
+                            const paymentDataField = document.createElement('input');
+                            paymentDataField.type = 'hidden';
+                            paymentDataField.name = 'selectedProgramPayment';
+                            paymentDataField.value = JSON.stringify(selectedPayment);
+
+                            // Replace existing field if it exists, or add a new one
+                            const existingField = document.querySelector('input[name="selectedProgramPayment"]');
+                            if (existingField) {
+                                existingField.value = JSON.stringify(selectedPayment);
+                            } else {
+                                document.getElementById('paymentForm').appendChild(paymentDataField);
+                            }
+                        }
+                    });
+                }
+
+                // Payment method fields toggle
+                const paymentMethodSelect = document.getElementById('paymentMethod');
+                if (paymentMethodSelect) {
+                    paymentMethodSelect.addEventListener('change', function() {
+                        // Hide all programPayment method fields
+                        document.querySelectorAll('.programPayment-method-fields').forEach(function(field) {
+                            field.style.display = 'none';
+                        });
+
+                        // Show selected programPayment method fields
+                        if (this.value === 'credit_card' || this.value === 'debit_card') {
+                            document.getElementById('creditCardFields').style.display = 'block';
+                        } else if (this.value === 'bank_transfer') {
+                            document.getElementById('bankTransferFields').style.display = 'block';
+                        }
+                    });
+                }
+            });
+        </script>
+
+        <script src="/assets/js/pages/payment-gateway-handler.js"></script>
+
 
 </body>
 

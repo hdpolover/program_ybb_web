@@ -90,6 +90,12 @@
         "countryCode": "+358"
     },
     {
+        "id": 259,
+        "flagImg": "assets/images/flags/az.svg",
+        "countryName": "Azerbaijan",
+        "countryCode": "+994"
+    },
+    {
         "id": 16,
         "flagImg": "assets/images/flags/ba.svg",
         "countryName": "Bosnia and Herzegovina",

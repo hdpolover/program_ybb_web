@@ -53,6 +53,9 @@ class Programs extends BaseController
         // get program faqs by program id
         $program_faqs = $this->makeGetRequest('/program-faqs/program/' . $program['id']); // Fetch program faqs related to the program
 
+        // get program rundowns by program id
+        $program_rundowns = $this->makeGetRequest('/program-rundowns/program/' . $program['id']); // Fetch program rundowns related to the program
+
         $data = [
             'title' => $program['name'] ?? 'Program Detail',
             'program' => $program,
@@ -61,7 +64,10 @@ class Programs extends BaseController
             'participant_photos' => $participant_photos,
             'schedules' => $program_schedules,
             'faqs' => $program_faqs,
+            'rundowns' => $program_rundowns,
         ];
+
+        // var_dump($program_rundowns); // Debugging line to check the data being passed to the view
         
         return $this->render('landing/program-detail', $data);
     }

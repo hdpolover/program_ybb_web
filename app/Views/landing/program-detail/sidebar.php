@@ -1,13 +1,54 @@
 <!-- Program Sidebar -->
+
 <!-- Application CTA Card -->
-<?php 
+<?php
 // Use the application CTA component with the card style
 echo $this->include('landing/program-detail/components/application-cta', [
-    'program' => $program, 
+    'program' => $program,
     'style' => 'card',
     'buttonText' => 'Register Now'
 ]);
 ?>
+
+<!-- Program Video Card -->
+<?php if (!empty($program['registration_video_url'])): ?>
+    <div class="card mb-4 video-card shadow-sm border-0 rounded-3 overflow-hidden">
+        <div class="card-header bg-primary text-white py-3">
+            <h3 class="card-title mb-0 fw-semibold">
+                <i class="ri-video-line me-2"></i>Registration Video
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="ratio ratio-16x9 video-wrapper">
+                <?php 
+                $videoUrl = esc($program['registration_video_url']);
+                // Check if video URL is from YouTube or Vimeo and add parameters
+                if (strpos($videoUrl, 'youtube.com') !== false || strpos($videoUrl, 'youtu.be') !== false) {
+                    $videoUrl .= (strpos($videoUrl, '?') !== false ? '&' : '?') . 'rel=0&modestbranding=1';
+                } elseif (strpos($videoUrl, 'vimeo.com') !== false) {
+                    $videoUrl .= (strpos($videoUrl, '?') !== false ? '&' : '?') . 'title=0&byline=0';
+                }
+                ?>
+                <iframe 
+                    src="<?= $videoUrl ?>"
+                    title="Program Registration Instructions"
+                    class="w-100 video-frame"
+                    frameborder="0"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    aria-label="Video showing how to register for this program"
+                ></iframe>
+            </div>
+            <div class="video-info p-3 bg-light">
+                <p class="text-dark mb-0 small">
+                    <i class="ri-information-line me-1 text-primary"></i> 
+                    <strong>Important:</strong> Please watch this video for complete registration instructions and requirements.
+                </p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <!-- Share Card -->
 <div class="card mb-4">

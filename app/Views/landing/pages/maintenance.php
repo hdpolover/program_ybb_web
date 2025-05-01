@@ -1,6 +1,9 @@
 <?= $this->include('partials/main') ?>
 
 <head>
+      <!-- Title Meta -->
+    <?= $this->include('partials/title-meta', ['meta_title' => "Maintenance"]) ?>
+
     <?= $this->include('partials/head-css') ?>
     <style>
         /* Custom styles for maintenance page */

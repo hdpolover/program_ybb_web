@@ -98,7 +98,7 @@ abstract class BaseController extends Controller
         $baseDomain = getBaseDomain();
 
         if ($baseDomain === "://localhost:8081") {
-            $this->currentUrl = "https://worldyouthfest.com";
+            $this->currentUrl = "https://istanbulyouthsummit.com";
         } else {
             $this->currentUrl = $baseDomain;
         }
@@ -108,6 +108,7 @@ abstract class BaseController extends Controller
 
         $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
 
+        $siteLogoUrl = $webSettingData['logo_url'] ?? null;
         // Debug log for web settings data
         log_message('debug', 'BaseController - Web settings retrieved: ' . json_encode($webSettingData));
 
@@ -118,6 +119,7 @@ abstract class BaseController extends Controller
             log_message('warning', 'BaseController - No web settings found');
         } else {
             $this->data['webSettings'] = $webSettingData;
+            $this->data['siteLogoUrl'] = $siteLogoUrl;
 
             // Store maintenance mode status in session for filter to access
             if (isset($webSettingData['is_maintenance_mode'])) {

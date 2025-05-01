@@ -7,19 +7,31 @@
 <!-- Gallery Modal init -->
 <script src="/assets/js/pages/gallery-modal.init.js"></script>
 
-<script>
-    // Initialize Swiper for testimonials
+<script>    // Initialize Swiper for testimonials
     var testimonialSwiper = new Swiper(".testimonial-swiper", {
         spaceBetween: 30,
         loop: true,
+        slidesPerView: 1,
+        centeredSlides: true,
+        effect: "fade",
+        fadeEffect: {
+            crossFade: true
+        },
+        grabCursor: true,
+        autoHeight: true,
         autoplay: {
-            delay: 3000,
+            delay: 6000,
             disableOnInteraction: false,
+        },
+        navigation: {
+            nextEl: ".testimonial-next-btn",
+            prevEl: ".testimonial-prev-btn",
         },
         pagination: {
             el: ".swiper-pagination",
             clickable: true,
-        },
+            dynamicBullets: true,
+        }
     });
 
     // Initialize Swiper for programs horizontal list
