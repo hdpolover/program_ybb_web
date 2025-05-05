@@ -316,9 +316,7 @@ class Submission extends BaseController
         // Check if request is AJAX
         if (!$this->request->isAJAX()) {
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid request method']);
-        }
-
-        // Get JSON data from request
+        }        // Get JSON data from request
         $requestData = $this->request->getJSON(true);
 
         // Get participant ID and program ID from session
@@ -332,6 +330,16 @@ class Submission extends BaseController
             ]);
         }
 
+        // If request data is null or empty, assume the user didn't edit anything
+        // and return success without making any API calls
+        if (empty($requestData)) {
+            log_message('info', 'updateEntry - No request data provided, assuming no changes needed');
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'No changes were made to entry information'
+            ]);
+        }
+
         // Prepare data for updating participant
         $participantData = [
             'competition_category_id' => $requestData['competition_category_id'] ?? null,
@@ -339,30 +347,102 @@ class Submission extends BaseController
             'essays' => $requestData['essays'] ?? null,
         ];
 
-        // Log the participant data
-        log_message('debug', 'updateEntry - Participant Data: ' . json_encode($participantData));
-
-        // Update participant first
-        $participantResponse = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $participantData);
-
-        // Log the API response
-        log_message('debug', 'updateEntry - Participant Update Response: ' . json_encode($participantResponse));
-
-        if (isset($participantResponse['essays']) && isset($participantResponse['competition_category_id']) && isset($participantResponse['program_subtheme_id'])) {
-            // Update session data
-            $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
-
-            // log updated participant data
-            log_message('debug', 'updateEntry - Updated Participant Data: ' . json_encode($updatedParticipant));
-
-            if ($updatedParticipant) {
-                session()->set('current_participant', $updatedParticipant);
-            }
-
+        // Check if essays array is valid - if essays is provided but empty or invalid, that's an error
+        // Only validate essays if they're present in the request data
+        if (isset($requestData['essays']) && (empty($participantData['essays']) || !is_array($participantData['essays']))) {
+            log_message('error', 'updateEntry - Invalid essays data: ' . json_encode($participantData['essays']));
             return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Entry information updated successfully'
+                'success' => false,
+                'message' => 'No essay data was provided or data format is invalid.'
             ]);
+        }        // Validate the essays structure if essays are present
+        if (isset($requestData['essays']) && is_array($requestData['essays'])) {
+            foreach ($participantData['essays'] as $essay) {
+                if (!isset($essay['program_essay_id']) || !isset($essay['answer'])) {
+                    log_message('error', 'updateEntry - Invalid essay structure: ' . json_encode($essay));
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'One or more essays have an invalid format.'
+                    ]);
+                }
+
+                // Log each essay to be saved
+                log_message('debug', 'updateEntry - Essay to be saved - ID: ' . $essay['program_essay_id'] . ', Content length: ' . strlen($essay['answer']) . ' characters');
+            }
+        }
+
+        // Log the participant data
+        log_message('debug', 'updateEntry - Participant Data: ' . json_encode($participantData));        // Update participant first
+        $participantResponse = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $participantData);        // Log the API response
+        log_message('debug', 'updateEntry - Participant Update Response: ' . json_encode($participantResponse));        // Check if we received any error response from the API
+        if (isset($participantResponse['error']) || (isset($participantResponse['message']) && !isset($participantResponse['essays']))) {
+            log_message('error', 'Error saving entry data: ' . ($participantResponse['message'] ?? 'Unknown error'));
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $participantResponse['message'] ?? 'Failed to save entry information'
+            ]);
+        }
+
+        // Verify that essays were properly saved - only if essays were included in the request
+        $essaysNeeded = isset($requestData['essays']) && is_array($requestData['essays']) && !empty($requestData['essays']);
+        $essaysSaved = isset($participantResponse['essays']) && is_array($participantResponse['essays']) && !empty($participantResponse['essays']);
+
+        // Log essay validation results for debugging
+        log_message('debug', 'updateEntry - Essays validation: needed=' . ($essaysNeeded ? 'true' : 'false') .
+            ', saved=' . ($essaysSaved ? 'true' : 'false'));
+
+        if ($essaysNeeded && !$essaysSaved) {
+            log_message('error', 'Essay data was not saved properly');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Essay data was not saved properly. Please try again.'
+            ]);
+        }
+
+        // Verify that competition_category and program_subtheme were properly saved
+        // Only if they were included in the request
+        // Check if category was saved successfully (structure is nested in participant_competition_category)
+        $categorySaved = isset($participantResponse['participant_competition_category']) &&
+            isset($participantResponse['participant_competition_category']['competition_category_id']) &&
+            $participantResponse['participant_competition_category']['competition_category_id'] == $requestData['competition_category_id'];
+
+        // Check if subtheme was saved successfully (structure is nested in participant_subtheme)
+        $subthemeSaved = isset($participantResponse['participant_subtheme']) &&
+            isset($participantResponse['participant_subtheme']['program_subtheme_id']) &&
+            $participantResponse['participant_subtheme']['program_subtheme_id'] == $requestData['program_subtheme_id'];
+
+        // Only validate if they were provided in the request
+        $categoryNeeded = isset($requestData['competition_category_id']) && !empty($requestData['competition_category_id']);
+        $subthemeNeeded = isset($requestData['program_subtheme_id']) && !empty($requestData['program_subtheme_id']);
+
+        // Log response structure for debugging
+        log_message('debug', 'updateEntry - Category validation: needed=' . ($categoryNeeded ? 'true' : 'false') .
+            ', saved=' . ($categorySaved ? 'true' : 'false'));
+        log_message('debug', 'updateEntry - Subtheme validation: needed=' . ($subthemeNeeded ? 'true' : 'false') .
+            ', saved=' . ($subthemeSaved ? 'true' : 'false'));
+
+        // Check if validation fails
+        if (($categoryNeeded && !$categorySaved) || ($subthemeNeeded && !$subthemeSaved)) {
+            log_message('error', 'Category or subtheme data was not saved properly');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Category or subtheme data was not saved properly. Please try again.'
+            ]);
+        }
+
+        // Update session data
+        $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
+
+        // log updated participant data
+        log_message('debug', 'updateEntry - Updated Participant Data: ' . json_encode($updatedParticipant));
+
+        if ($updatedParticipant) {
+            // Make sure we update the participant data in the session
+            session()->set('current_participant', $updatedParticipant);
+
+            // Log success message with details
+            log_message('info', 'updateEntry - Successfully saved entry data for participant ' . $participantId .
+                ' with ' . (isset($participantResponse['essays']) ? count($participantResponse['essays']) : 0) . ' essays');
         }
 
         // Everything was successful

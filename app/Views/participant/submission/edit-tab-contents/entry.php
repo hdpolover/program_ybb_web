@@ -75,10 +75,10 @@
                             <h5 class="mb-2 fw-semibold">Essay Guidelines</h5>
                             <p class="mb-3 text-dark">Please carefully review the essay guidelines before preparing your submission. The guidelines contain important information about formatting requirements, word limits, evaluation criteria, and other essential details.</p>
                             <p class="mb-3 text-dark"><strong>Note:</strong> Submissions that do not follow the guidelines may receive lower credit scores which can lower the possibility to be selected as a fully funded participant.</p>
-                            <a href="<?= htmlspecialchars($currentProgram['essay_guideline_url']) ?>" 
-                               class="btn btn-warning" 
-                               target="_blank" 
-                               rel="noopener noreferrer">
+                            <a href="<?= htmlspecialchars($currentProgram['essay_guideline_url']) ?>"
+                                class="btn btn-warning"
+                                target="_blank"
+                                rel="noopener noreferrer">
                                 <i class="ri-file-text-line me-1"></i> View Document
                             </a>
                         </div>
@@ -254,34 +254,91 @@
                     }
                 }
             }
-        });
-
-        // Add save button functionality
+        });        // Add save button functionality
         const saveButton = document.getElementById('save-entry-btn');
 
         saveButton.addEventListener('click', function() {
+            // Basic form validation
+            const categorySelect = document.getElementById('entry-competition-category');
+            const subthemeSelect = document.getElementById('entry-subtheme');
+            const essayTextareas = document.querySelectorAll('.essay-textarea');
+            
+            let formValid = true;
+            let errorMessage = '';
+            
+            // Validate category selection
+            if (!categorySelect.value) {
+                formValid = false;
+                errorMessage = 'Please select a participation category.';
+                categorySelect.classList.add('is-invalid');
+            } else {
+                categorySelect.classList.remove('is-invalid');
+            }
+            
+            // Validate subtheme selection
+            if (!subthemeSelect.value) {
+                formValid = false;
+                errorMessage = errorMessage || 'Please select a program subtheme.';
+                subthemeSelect.classList.add('is-invalid');
+            } else {
+                subthemeSelect.classList.remove('is-invalid');
+            }
+            
+            // Validate essay answers
+            essayTextareas.forEach(function(textarea) {
+                if (!textarea.value.trim()) {
+                    formValid = false;
+                    errorMessage = errorMessage || 'Please answer all essay questions.';
+                    textarea.classList.add('is-invalid');
+                } else {
+                    textarea.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!formValid) {
+                YBBAlerts.error('Validation Error', errorMessage);
+                return;
+            }
+            
             // Show loading state
             const spinner = this.querySelector('.loading-spinner');
             spinner.classList.remove('d-none');
-            this.disabled = true; // Collect essay data
+            this.disabled = true;
+            
+            // Collect essay data
             let essays = [];
             document.querySelectorAll('.essay-textarea').forEach(function(textarea) {
                 const essayId = textarea.name.match(/\[(\d+)\]/)[1];
+                const answer = textarea.value.trim();
+                
+                // Skip empty answers (though we've already validated above)
+                if (!answer) return;
+                
                 essays.push({
                     program_essay_id: essayId,
-                    answer: textarea.value
+                    answer: answer
                 });
             });
+            
+            // Check if we have any essays to submit
+            if (essays.length === 0 && document.querySelectorAll('.essay-textarea').length > 0) {
+                YBBAlerts.error('Error', 'No essay answers provided. Please enter your essay responses.');
+                spinner.classList.add('d-none');
+                this.disabled = false;
+                return;
+            }
 
             // Collect form data
             const formData = {
                 essays: essays,
-                competition_category_id: document.getElementById('entry-competition-category').value,
-                program_subtheme_id: document.getElementById('entry-subtheme').value
+                competition_category_id: categorySelect.value,
+                program_subtheme_id: subthemeSelect.value
             };
 
             // Get participant ID from session
             const participant_id = <?= $currentParticipant['id'] ?>;
+
+            console.log('Submitting entry data:', formData);
 
             // Send API request
             fetch(`/submission/entry/${participant_id}/update`, {
@@ -292,14 +349,18 @@
                     },
                     body: JSON.stringify(formData)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         // Show success message with callback to navigate to next tab
                         YBBAlerts.success('Data Saved', 'Your entry information has been saved successfully.', function() {
                             document.getElementById('steparrow-misc-tab').click();
-                        });
-                    } else {
+                        });                    } else {
                         // Show error with details from the server
                         const errorMessage = data.message || 'There was a problem saving your entry information.';
                         YBBAlerts.error('Error Saving Data', errorMessage);
@@ -308,6 +369,9 @@
                 .catch(error => {
                     console.error('Error saving data:', error);
                     YBBAlerts.error('Error Saving Data', 'An unexpected error occurred while saving your data. Please try again later.');
+                    
+                    // Log additional debug information
+                    console.log('Form data that failed to submit:', formData);
                 })
                 .finally(() => {
                     // Hide loading state

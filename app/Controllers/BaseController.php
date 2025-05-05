@@ -98,7 +98,7 @@ abstract class BaseController extends Controller
         $baseDomain = getBaseDomain();
 
         if ($baseDomain === "://localhost:8081") {
-            $this->currentUrl = "https://istanbulyouthsummit.com";
+            $this->currentUrl = "https://japanyouthsummit.com";
         } else {
             $this->currentUrl = $baseDomain;
         }
@@ -112,6 +112,40 @@ abstract class BaseController extends Controller
         // Debug log for web settings data
         log_message('debug', 'BaseController - Web settings retrieved: ' . json_encode($webSettingData));
 
+        // Get program_category_id from web settings
+        $programCategoryId = $webSettingData['program_category_id'] ?? null;
+
+        // Log the program category ID for debugging
+        log_message('debug', 'BaseController - Program Category ID: ' . $programCategoryId);
+
+        // Get the latest program dates if program_category_id exists
+        if ($programCategoryId) {
+            // Make API request to get programs for this category
+            $programs = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
+
+            // Log the programs data for debugging
+            log_message('debug', 'BaseController - Programs retrieved: ' . json_encode($programs));
+
+            // Sort programs by start_date (descending) to get the latest one
+            if (!empty($programs) && is_array($programs)) {
+                usort($programs, function ($a, $b) {
+                    return strtotime($b['start_date'] ?? '0') - strtotime($a['start_date'] ?? '0');
+                });
+
+                // Get start_date and end_date from the latest program
+                $latestProgram = $programs[0] ?? null;
+                if ($latestProgram && isset($latestProgram['start_date']) && isset($latestProgram['end_date'])) {
+                    // Add these dates to the webSettings array
+                    $webSettingData['event_start_date'] = $latestProgram['start_date'];
+                    $webSettingData['event_end_date'] = $latestProgram['end_date'];
+
+                    log_message('debug', 'BaseController - Latest program dates set: ' .
+                        $latestProgram['start_date'] . ' to ' . $latestProgram['end_date']);
+                }
+            } else {
+                log_message('warning', 'BaseController - No programs found for category ID: ' . $programCategoryId);
+            }
+        }
         // Check if the web settings data is empty and handle accordingly
         if (empty($webSettingData)) {
             // Just store null settings instead of redirecting here

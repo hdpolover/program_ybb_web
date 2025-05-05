@@ -28,15 +28,39 @@
                 <?php endforeach; ?>
             </div>
         <?php else: ?>
-            <div class="text-center p-4 rounded-3 bg-light border">
-                <div class="avatar-lg mx-auto mb-3">
-                    <div class="avatar-title bg-soft-primary text-primary display-5 rounded-circle">
+            <div class="text-center p-5 rounded-4 bg-light border shadow-sm">
+                <div class="avatar-lg mx-auto mb-4">
+                    <div class="avatar-title bg-soft-info text-info display-4 rounded-circle shadow-sm pulse-animation">
                         <i class="ri-calendar-event-line"></i>
                     </div>
                 </div>
-                <h5>No Upcoming Programs</h5>
-                <p class="text-muted">Check back soon for upcoming programs and initiatives.</p>
+                <h4 class="fw-semibold text-primary mb-3">No Upcoming Programs</h4>
+                <p class="text-muted mb-4">We're preparing exciting new initiatives for you. Check back soon!</p>
+                <div class="d-inline-block bg-soft-warning px-3 py-1 rounded-pill">
+                    <i class="ri-notification-3-line me-1"></i>
+                    <span class="small">Stay tuned for updates</span>
+                </div>
             </div>
+
+            <style>
+                .pulse-animation {
+                    animation: pulse-effect 2s infinite;
+                }
+
+                @keyframes pulse-effect {
+                    0% {
+                        transform: scale(1);
+                    }
+
+                    50% {
+                        transform: scale(1.08);
+                    }
+
+                    100% {
+                        transform: scale(1);
+                    }
+                }
+            </style>
         <?php endif; ?>
 
         <!-- Button for Previous Programs -->

@@ -90,7 +90,7 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                 <span class="ribbon-three ribbon-three-danger"><span><?= esc($status) ?></span></span>
 
                 <h2 class="mb-2"><?= esc($title) ?></h2>
-                
+
                 <!-- Program details with enhanced styling -->
                 <div class="mt-3 pt-2 border-top">
                     <div class="row">
@@ -163,9 +163,11 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                     <a href="<?= esc($details_url) ?>" class="btn btn-primary">
                         <i class="ri-information-line me-1"></i> Learn More
                     </a>
-                    <a href="<?= esc($apply_url) ?>" class="btn btn-success">
-                        <i class="ri-user-add-line me-1"></i> Apply Now
-                    </a>
+                    <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] != 0): ?>
+                        <a href="<?= esc($apply_url) ?>" class="btn btn-success">
+                            <i class="ri-user-add-line me-1"></i> Apply Now
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -173,17 +175,17 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
         <!-- Right column: Image -->
         <div class="col-md-4 position-relative h-100">
             <?php if (!empty($image)): ?>
-            <div class="h-100 w-100 overflow-hidden" style="border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;">
-                <img src="<?= esc($image) ?>" alt="<?= esc($title) ?>"
-                class="img-fluid w-100 h-100 program-img"
-                style="object-fit: containe; object-position: center;"
-                loading="lazy">
-            </div>
+                <div class="h-100 w-100 overflow-hidden" style="border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;">
+                    <img src="<?= esc($image) ?>" alt="<?= esc($title) ?>"
+                        class="img-fluid w-100 h-100 program-img"
+                        style="object-fit: containe; object-position: center;"
+                        loading="lazy">
+                </div>
             <?php else: ?>
-            <div class="d-flex align-items-center justify-content-center h-100 bg-light"
-                 style="border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;">
-                <i class="ri-image-line display-4 text-muted"></i>
-            </div>
+                <div class="d-flex align-items-center justify-content-center h-100 bg-light"
+                    style="border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem;">
+                    <i class="ri-image-line display-4 text-muted"></i>
+                </div>
             <?php endif; ?>
         </div>
     </div>

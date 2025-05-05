@@ -11,11 +11,20 @@ class Programs extends BaseController
         // Get program data from API
         $programs = $this->makeGetRequest('/landing/programs?web_url=' . $this->currentUrl);
 
+        $otherPrograms = $programs['otherPrograms'] ?? [];
+
+        // remove programs if is_registration_open is 0
+        foreach ($otherPrograms as $key => $program) {
+            if ($program['is_registration_open'] == 0) {
+                unset($otherPrograms[$key]);
+            }
+        }
+
         $data = [
             'title' => 'Programs',
             'category' => $programs['category'] ?? [],
             'programs' => $programs['programs'] ?? [],
-            'otherPrograms' => $programs['otherPrograms'] ?? [],
+            'otherPrograms' => $otherPrograms,
         ];
 
         return $this->render('landing/programs', $data);

@@ -58,24 +58,79 @@
                             <?php } ?>
                         <?php } ?>
                     <?php } else { ?>
-                        <div class="col-12 text-center">
-                            <p class="text-muted fs-16">No programs are available at this time. Please check back later.</p>
+                        <div class="col-12 text-center py-5">
+                            <div class="empty-state-container">
+                                <i class="ri-calendar-event-line empty-state-icon mb-4" style="font-size: 4rem; color: #adb5bd;"></i>
+                                <h4 class="fw-semibold text-muted mb-3">No Programs Available</h4>
+                                <p class="text-muted fs-16 mb-4">We're currently working on exciting new programs for you.</p>
+                                <p class="text-muted">Please check back later or contact us for more information.</p>
+                            </div>
                         </div>
                     <?php
                     }
                     ?>
                 </div>
 
-                <!-- <div class="row justify-content-center mt-5 mb-4">
-                    <div class="col-lg-8">
-                        <div class="text-center mb-5">
-                            <h2 class="mb-3 fw-semibold">Our Other Programs</h2>
-                            <p class="text-muted">Explore other programs initiated by Youth Break the Boundaries Foundation</p>
+                <!-- Other Programs Section -->
+                <div class="row mt-5 mb-4">
+                    <div class="col-12 mb-3">
+                        <div class="text-center">
+                            <h2 class="fw-semibold">Our Additional Programs</h2>
+                            <p class="text-muted">Discover more educational opportunities we offer to develop future leaders</p>
                         </div>
-                    </div>
-                </div> -->
+                    </div> <?php if (isset($otherPrograms) && !empty($otherPrograms)): ?>
+                        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-3">
+                            <?php foreach ($otherPrograms as $program): ?>
+                                <div class="col">
+                                    <div class="card h-100 shadow-sm border-0 overflow-hidden other-program-card">
+                                        <?php if (!empty($program['banner_url'])): ?> <div class="position-relative">
+                                                <img src="<?= esc($program['banner_url']) ?>" class="card-img-top" alt="<?= esc($program['name'] ?? 'Program') ?>" style="height: 120px; object-fit: cover;">
+                                                <?php if (!empty($program['logo_url'])): ?>
+                                                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-n3">
+                                                        <div class="avatar-sm bg-white rounded-circle p-1 shadow">
+                                                            <img src="<?= esc($program['logo_url']) ?>" class="img-fluid rounded-circle" alt="<?= esc($program['name'] ?? 'Logo') ?>">
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="card-body pt-4 pb-2">
+                                            <h5 class="card-title text-center mt-2 mb-2"><?= esc($program['name'] ?? 'Program Name') ?></h5>
 
-                <!-- other program grid -->
+                                            <?php if (!empty($program['start_date']) || !empty($program['end_date'])): ?>
+                                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                                    <i class="ri-calendar-event-line text-primary me-2"></i>
+                                                    <small class="text-muted">
+                                                        <?php if (!empty($program['start_date']) && !empty($program['end_date'])): ?>
+                                                            <?= date('M d, Y', strtotime($program['start_date'])) ?> - <?= date('M d, Y', strtotime($program['end_date'])) ?>
+                                                        <?php elseif (!empty($program['start_date'])): ?>
+                                                            From <?= date('M d, Y', strtotime($program['start_date'])) ?>
+                                                        <?php elseif (!empty($program['end_date'])): ?>
+                                                            Until <?= date('M d, Y', strtotime($program['end_date'])) ?>
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div> <?php endif; ?>
+
+                                            <div class="text-center mt-auto">
+                                                <?php if (!empty($program['web_url'])): ?>
+                                                    <a href="<?= esc($program['web_url']) ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        <i class="ri-external-link-line me-1"></i> Visit Website
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="col-12">
+                            <div class="alert alert-info text-center">
+                                <i class="ri-information-line me-2"></i> No additional programs available at this time.
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
 
                 <?= $this->include('landing/common/contact-widget') ?>
 
@@ -160,6 +215,29 @@
         0% {
             width: 0;
         }
+    }
+
+    /* Other Programs Styles */
+    .other-program-card {
+        transition: all 0.3s ease;
+    }
+
+    .other-program-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .other-program-card .card-img-top {
+        transition: all 0.5s ease;
+    }
+
+    .other-program-card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
     }
 </style>
 

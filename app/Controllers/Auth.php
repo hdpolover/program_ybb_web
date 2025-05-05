@@ -161,6 +161,12 @@ class Auth extends BaseController
             return redirect()->to('sign-in')->with('error', 'Program not found. Please check the link or contact support.');
         }
 
+        // check if program is registration open
+        if (isset($programData['is_registration_open']) && $programData['is_registration_open'] == '0') {
+            log_message('error', 'Program registration is closed for slug: ' . $programSlug);
+            return redirect()->to('sign-in')->with('error', 'Registration is currently closed for this program. Please check back later.');
+        }
+
         // Log the program slug for debugging
         log_message('info', 'Program slug used for sign up: ' . $programSlug);
 

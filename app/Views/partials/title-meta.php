@@ -55,14 +55,27 @@ $fullTitle = $pageTitle . ' | ' . $siteName;
 <meta property="og:image" content="<?= isset($img_url) && !empty($img_url) ? $img_url : ($webSettings['logo_url'] ?? $defaultLogoUrl); ?>" />
 <meta property="og:site_name" content="<?= $webSettings['name'] ?? $defaultSiteName; ?>" />
 <link rel="canonical" href="<?= current_url(); ?>" />
+
 <!-- App favicon -->
-<link rel="shortcut icon" href="<?= $webSettings['logo_url'] ?? $defaultLogoUrl; ?>">
+<?php 
+// Use dynamic logo from web settings if available, otherwise use default favicon
+$dynamicLogoUrl = $webSettings['logo_url'] ?? $siteLogoUrl ?? null;
+
+// Always use the dynamic logo URL which is what we want
+echo '<link rel="shortcut icon" href="' . $dynamicLogoUrl . '">';
+echo '<link rel="icon" type="image/png" href="' . $dynamicLogoUrl . '">';
+?>
+
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "Event",
     "name": "<?= $webSettings['name'] ?? $defaultSiteName; ?>",
     "description": "<?= $webSettings['tagline'] ?? $defaultTagline; ?>",
+    "startDate": "<?= date('c', strtotime($webSettings['event_start_date'] ?? date('Y-m-d'))); ?>",
+    "endDate": "<?= date('c', strtotime($webSettings['event_end_date'] ?? date('Y-m-d', strtotime('+3 days')))); ?>",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
     "location": {
         "@type": "Place",
         "name": "<?= $webSettings['location'] ?? $defaultLocation; ?>",
@@ -73,6 +86,18 @@ $fullTitle = $pageTitle . ' | ' . $siteName;
         "@type": "Organization",
         "name": "Youth Break the Boundaries Foundation",
         "url": "<?= current_url(); ?>"
+    },
+    "performer": {
+        "@type": "Organization",
+        "name": "Youth Break the Boundaries Foundation"
+    },
+    "offers": {
+        "@type": "Offer",
+        "url": "<?= current_url(); ?>",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "validFrom": "<?= date('c', strtotime('-30 days')); ?>"
     }
 }
 </script>

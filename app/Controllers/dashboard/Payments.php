@@ -132,7 +132,7 @@ class Payments extends BaseController
         $programPayments = $this->makeGetRequest('/program-payments/program/' . session()->get('current_program_id'), [], false);
         $participantPayments = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], false);
         $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);        // Safety check - if not participant payments, skip loop
-        
+
         if (empty($participantPayments)) {
             $participantPayments = [];
         } else {
@@ -238,6 +238,35 @@ class Payments extends BaseController
 
         if (empty($participantId)) {
             return redirect()->to(base_url('payments'))->with('error', 'Participant ID not found in session.');
+        }
+
+        // Get the program payment ID to validate amount
+        $programPaymentId = $inputs['program_payment_id'] ?? null;
+        if (empty($programPaymentId)) {
+            return redirect()->to(base_url('payments'))->with('error', 'Program payment ID is required.');
+        }
+
+        // Fetch the program payment to validate its amount
+        $programPayment = $this->makeGetRequest('/program-payments/' . $programPaymentId, [], false);
+        if (!$programPayment) {
+            return redirect()->to(base_url('payments'))->with('error', 'Unable to retrieve payment information.');
+        }
+
+        // Check if the payment amount is 0 or less
+        $paymentAmount = $programPayment['usd_amount'] ?? 0;
+        if ($paymentAmount <= 0) {
+            log_message('warning', 'Payment attempt with zero or negative amount: ' . $paymentAmount . ' for program payment ID: ' . $programPaymentId);
+
+            // Check if this is an AJAX request
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Payment amount  was not retrieved. Please refresh the page and try again.'
+                ])->setStatusCode(400);
+            } else {
+                return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                    ->with('error', 'Payment amount was not retrieved. Please refresh the page and try again.');
+            }
         }
 
         $paymentType = $inputs['paymentType'];

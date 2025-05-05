@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Favicons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .output {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: auto;
+            max-height: 500px;
+        }
+        .btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fix Website Favicons</h1>
+        <p>Click the button below to generate proper favicon files for your website. This will fix the issue with the default CodeIgniter favicon showing in Google search results.</p>
+        
+        <a href="fix-favicon.php" class="btn">Generate Favicons</a>
+        <p>If you prefer to upload a custom logo for your favicon, use the <a href="favicon-generator.php">custom favicon generator</a> instead.</p>
+        
+        <div class="output">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Click the "Generate Favicons" button above to create favicon files from your existing logo.</li>
+                <li>Check that favicon files are created in your website's root and assets/images directories.</li>
+                <li>The favicon markup has already been added to your website's header template.</li>
+                <li>Wait for Google to re-crawl your website (may take a few days).</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
