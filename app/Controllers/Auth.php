@@ -68,7 +68,7 @@ class Auth extends BaseController
                     log_message('debug', 'Query validation returned data: ' . json_encode($queryData));
 
                     // check if query is valid
-                    if (isset($queryData['is_valid']) && $queryData['is_valid'] == false) {
+                    if (!isset($queryData['is_valid']) || $queryData['is_valid'] !== true) {
                         log_message('error', 'Query validation failed - query is marked as invalid by API');
                         return redirect()->to('sign-in')->with('error', 'Invalid query. Please contact support.');
                     }
