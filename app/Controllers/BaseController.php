@@ -201,12 +201,16 @@ abstract class BaseController extends Controller
      */
     protected function setApiBaseUrl()
     {
+        $host = $_SERVER['HTTP_HOST'] ?? 'unknown';
+        
         // Check if we're in development environment
-        if (ENVIRONMENT === 'development' || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false) {
+        if (ENVIRONMENT === 'development' || strpos($host, 'localhost') !== false) {
             $this->apiBaseUrl = DEV_BASE_API_URL;
+            log_message('debug', 'Using DEV_BASE_API_URL: ' . DEV_BASE_API_URL . ' (Environment: ' . ENVIRONMENT . ', Host: ' . $host . ')');
         } else {
             // Use production URL for all other environments
             $this->apiBaseUrl = BASE_API_URL;
+            log_message('debug', 'Using BASE_API_URL: ' . BASE_API_URL . ' (Environment: ' . ENVIRONMENT . ', Host: ' . $host . ')');
         }
     }
 
@@ -375,6 +379,7 @@ abstract class BaseController extends Controller
 
             // Set up additional options
             $options['http_errors'] = false; // Don't throw exceptions for error responses
+            $options['timeout'] = 30; // Set a longer timeout for API calls
 
             // Make the request
             $response = $this->client->request('POST', $url, $options);
@@ -382,6 +387,10 @@ abstract class BaseController extends Controller
             // Get response body
             $responseBody = $response->getBody();
             $bodyDecoded = json_decode($responseBody, true);
+            
+            // Get HTTP status code
+            $statusCode = $response->getStatusCode();
+            log_message('debug', "POST Response Status Code: " . $statusCode);
 
             // Log response body for debugging
             log_message('debug', "POST Response Body: " . json_encode($bodyDecoded));
@@ -395,8 +404,9 @@ abstract class BaseController extends Controller
         } catch (\Exception $e) {
             // Handle Array to string conversion errors more gracefully
             $errorMessage = $e->getMessage();
-
             log_message('error', 'POST Request Error: ' . $errorMessage);
+            log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
+            log_message('error', 'Exception trace: ' . $e->getTraceAsString());
 
             return null;
         }

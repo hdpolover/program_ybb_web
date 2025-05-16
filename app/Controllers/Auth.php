@@ -51,6 +51,9 @@ class Auth extends BaseController
         $q = $this->request->getGet('q');
         log_message('debug', '===== SIGNUP PROCESS STARTED =====');
         log_message('debug', 'Query parameter q: ' . ($q ?? 'not provided'));
+        log_message('debug', 'Current API URL: ' . $this->apiBaseUrl);
+        log_message('debug', 'Environment: ' . ENVIRONMENT);
+        log_message('debug', 'HTTP Host: ' . ($_SERVER['HTTP_HOST'] ?? 'not set'));
 
         if ($q) {
             // Log the ambassador query parameter that we're about to validate
@@ -58,8 +61,11 @@ class Auth extends BaseController
 
             try {
                 // check query value
-                log_message('debug', 'Making API request to /ambassadors/check-query/ with query: ' . $q);
-                $queryData = $this->makePostRequest('/ambassadors/check-query/', ['encrypted_query' => $q], [], false, false);
+                $endpoint = '/ambassadors/check-query/';
+                log_message('debug', 'Making API request to ' . $endpoint . ' with query: ' . $q);
+                log_message('debug', 'Full API URL: ' . $this->apiBaseUrl . $endpoint);
+                
+                $queryData = $this->makePostRequest($endpoint, ['encrypted_query' => $q], [], false, false);
 
                 // Log the response data
                 log_message('debug', 'Ambassador query check response: ' . json_encode($queryData));
@@ -76,7 +82,7 @@ class Auth extends BaseController
                     log_message('debug', 'Query validation successful');
                 } else {
                     log_message('error', 'Query validation failed - API returned empty response');
-                    log_message('error', 'URL: ' . $this->apiBaseUrl . '/ambassadors/check-query/');
+                    log_message('error', 'URL: ' . $this->apiBaseUrl . $endpoint);
                     log_message('error', 'POST data: ' . json_encode(['encrypted_query' => $q]));
 
                     // Continue with signup without ambassador reference instead of showing error
