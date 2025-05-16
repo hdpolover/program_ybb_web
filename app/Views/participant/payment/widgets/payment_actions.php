@@ -174,8 +174,7 @@ $latestPayment = $paymentStatus['latestPayment'];
                         </div>
                     <?php endif; ?>
                 </div>
-            <?php elseif ($latestPayment['status'] == 1 || $latestPayment['status'] == 'pending'): ?>
-                <!-- Payment Processing UI -->
+            <?php elseif ($latestPayment['status'] == 1 || $latestPayment['status'] == 'pending'): ?> <!-- Payment Processing UI -->
                 <div class="mb-4 text-center">
                     <div class="avatar-md mx-auto mb-3">
                         <div class="avatar-title bg-warning-subtle text-warning rounded-circle display-5">
@@ -194,11 +193,28 @@ $latestPayment = $paymentStatus['latestPayment'];
                         </div>
                     </div>
 
-                    <!-- Refresh button -->
-                    <button type="button" class="btn btn-soft-primary" onclick="window.location.reload();">
-                        <i class="ri-refresh-line align-middle me-1"></i> Refresh Status
-                    </button>
-                </div> <?php elseif ($latestPayment['status'] == 3 || $latestPayment['status'] == 'cancelled'): ?>
+                    <!-- Action buttons -->
+                    <div class="d-grid gap-2">
+                        <?php if (!empty($latestPayment['payment_url'])): ?>
+                            <div class="alert alert-info mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="ri-information-line fs-18"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-2">
+                                        <p class="mb-0">Did you close the payment page or need to try again? Click the button below to continue your payment.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-warning" onclick="openPaymentGateway('<?= esc($latestPayment['payment_url']) ?>');">
+                                <i class="ri-bank-card-line align-middle me-1"></i> Continue Payment
+                            </button>
+                        <?php endif; ?>
+                        <button type="button" class="btn btn-soft-primary" onclick="window.location.reload();">
+                            <i class="ri-refresh-line align-middle me-1"></i> Refresh Status
+                        </button>
+                    </div>
+                </div><?php elseif ($latestPayment['status'] == 3 || $latestPayment['status'] == 'cancelled'): ?>
                 <?php
                         // Check if payment is overdue
                         $isOverdue = false;
@@ -269,7 +285,7 @@ $latestPayment = $paymentStatus['latestPayment'];
                                 data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
                                 data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
                                 data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
-                                
+
                                 title="Try Payment Again">
                                 <i class="ri-refresh-line align-middle me-1"></i> Try Again
                             </button>
@@ -488,5 +504,66 @@ if ($isInstallmentPayment && $installmentCount > 0):
             copyLinkBtn.classList.remove("btn-success");
             copyLinkBtn.classList.add("btn-primary");
         }, 2000);
+    }
+
+    // Function to open payment gateway in new tab
+    function openPaymentGateway(url) {
+        if (!url) {
+            Swal.fire({
+                title: 'Error',
+                text: 'Payment URL is not available. Please contact support.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        // Try to open payment URL in new tab
+        const newTab = window.open(url, '_blank', 'noopener');
+
+        // Show message if popup was blocked or failed to open
+        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+            Swal.fire({
+                title: 'Payment Gateway',
+                html: `
+                    <div class="text-center">
+                        <p>Your browser may have blocked the payment gateway from opening.</p>
+                        <p class="mb-3">Please click the button below to open the payment gateway:</p>
+                        <a href="${url}" target="_blank" class="btn btn-primary mb-2">Open Payment Gateway</a>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-secondary copy-payment-url" 
+                                    onclick="copyToClipboard('${url}')">
+                                <i class="ri-clipboard-line"></i> Copy Link
+                            </button>
+                            <span id="copy-success" class="d-none text-success ms-2">
+                                <i class="ri-check-line"></i> Copied!
+                            </span>
+                        </div>
+                        <p class="text-muted small mt-3">For the best experience, we recommend using Google Chrome.</p>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+
+        // Show success message
+        const successMsg = document.getElementById('copy-success');
+        if (successMsg) {
+            successMsg.classList.remove('d-none');
+            setTimeout(() => {
+                successMsg.classList.add('d-none');
+            }, 2000);
+        }
     }
 </script>

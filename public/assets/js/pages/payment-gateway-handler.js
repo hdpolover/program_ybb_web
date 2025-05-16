@@ -211,7 +211,23 @@
                             </div>
                         </div>
                         <p>Your payment is being processed in the other tab.</p>
-                        <p class="mb-0">Please complete the payment process in the gateway tab.</p>
+                        <p class="mb-0">Please complete the payment process in the gateway tab.</p>                        <div id="payment-link-container" class="mt-3 d-none">
+                            <div class="alert alert-warning">
+                                <p><strong>Payment tab not opening?</strong></p>
+                                <p><a href="${redirectUrl}" target="_blank" class="btn btn-sm btn-primary mt-2">Click here to open payment gateway</a></p>
+                                <p class="mt-2">
+                                    <button class="btn btn-sm btn-outline-secondary copy-link-btn" 
+                                            data-url="${redirectUrl}" 
+                                            onclick="copyPaymentLink(this)">
+                                        <i class="bi bi-clipboard"></i> Copy payment link
+                                    </button>
+                                    <span class="copy-success-message d-none text-success ms-2" style="font-size: 0.9em;">
+                                        <i class="bi bi-check-circle"></i> Link copied!
+                                    </span>
+                                </p>
+                                <p class="text-muted small mt-2">For the best experience, we recommend using Google Chrome browser.</p>
+                            </div>
+                        </div>
                         <p class="text-muted small mt-3">You can safely close this message and check your payment status later.</p>
                     </div>
                 `,
@@ -219,23 +235,36 @@
                 showCancelButton: true,
                 confirmButtonText: 'Check Payment Status',
                 cancelButtonText: 'Close',
-                allowOutsideClick: true,
-                didOpen: () => {
+                allowOutsideClick: true, didOpen: () => {
                     // Only open the redirect URL after Swal is shown, and only once                   
                     if (!hasOpenedRedirectTab && redirectUrl) {
                         setTimeout(() => {
                             console.log('Opening new tab with URL:', redirectUrl);
                             try {
                                 const newTab = window.open(redirectUrl, '_blank', 'noopener');
-                                hasOpenedRedirectTab = true;                                // Don't show the popup blocked message at all
+                                hasOpenedRedirectTab = true;
+
                                 // Even if window.open() returns null, modern browsers often
                                 // still open the tab but don't return a reference to it
-                                // So we'll just assume the tab opened successfully and continue                                // Don't show fallback at all - the tab has very likely opened successfully
-                                // Modern browsers either open the tab or they completely block it (showing their own UI)
-                                // Just log that we attempted to open the tab
                                 console.log('Payment gateway tab should be open now');
+
+                                // Show the manual payment link after a short delay in case the tab didn't open
+                                setTimeout(() => {
+                                    // Show the payment link container
+                                    const linkContainer = document.getElementById('payment-link-container');
+                                    if (linkContainer) {
+                                        linkContainer.classList.remove('d-none');
+                                        console.log('Showing manual payment link as fallback');
+                                    }
+                                }, 2000); // Show the link after 2 seconds to give time for the tab to open
                             } catch (e) {
                                 console.error('Error opening payment gateway tab:', e);
+                                // Show the payment link immediately if there's an error
+                                const linkContainer = document.getElementById('payment-link-container');
+                                if (linkContainer) {
+                                    linkContainer.classList.remove('d-none');
+                                    console.log('Showing manual payment link due to error');
+                                }
                             }
                         }, 500);
                     }
@@ -255,10 +284,72 @@
                             icon: 'error'
                         });
                     }
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    // If user clicked the "Close" button, reload the page to refresh the state
+                    console.log('User clicked Close, reloading the page');
+                    window.location.reload();
                 }
             });
-        }
-
-        console.log('Payment Gateway Handler setup completed');
+        }        console.log('Payment Gateway Handler setup completed');
+        
+        // Define copy payment link function in global scope so it can be called from inline onclick
+        window.copyPaymentLink = function(element) {
+            const url = element.getAttribute('data-url');
+            if (!url) {
+                console.error('No URL to copy');
+                return;
+            }
+            
+            // Create a temporary textarea element to copy text to clipboard
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            textarea.style.position = 'fixed'; // Prevent scrolling to the element
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            
+            try {
+                // Execute copy command
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    console.log('Payment URL copied to clipboard');
+                    
+                    // Show success message
+                    const successMsg = element.parentNode.querySelector('.copy-success-message');
+                    if (successMsg) {
+                        successMsg.classList.remove('d-none');
+                        // Hide the message after 3 seconds
+                        setTimeout(() => {
+                            successMsg.classList.add('d-none');
+                        }, 3000);
+                    }
+                } else {
+                    console.error('Copy command failed');
+                }
+            } catch (err) {
+                console.error('Error copying URL to clipboard:', err);
+                
+                // Fallback for modern browsers
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(url).then(() => {
+                        console.log('Payment URL copied to clipboard using Clipboard API');
+                        
+                        // Show success message
+                        const successMsg = element.parentNode.querySelector('.copy-success-message');
+                        if (successMsg) {
+                            successMsg.classList.remove('d-none');
+                            // Hide the message after 3 seconds
+                            setTimeout(() => {
+                                successMsg.classList.add('d-none');
+                            }, 3000);
+                        }
+                    });
+                }
+            }
+            
+            // Remove the temporary textarea
+            document.body.removeChild(textarea);
+        };
     });
 })();
