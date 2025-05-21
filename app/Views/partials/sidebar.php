@@ -1,6 +1,7 @@
 <!-- ========== App Menu ========== -->
 <div class="app-menu navbar-menu">
-    <!-- LOGO -->    <div class="navbar-brand-box">
+    <!-- LOGO -->
+    <div class="navbar-brand-box">
         <!-- Dark Logo-->
         <a href="/" class="logo logo-dark">
             <span class="logo-sm">
@@ -50,6 +51,12 @@
                 </li>
 
                 <li class="nav-item">
+                    <a class="nav-link menu-link <?= url_is('abstract-paper*') ? 'active' : '' ?>" href="<?= base_url() ?>abstract-paper">
+                        <i class="ri-file-text-line"></i> <span>Abstract and Paper</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('payments*') ? 'active' : '' ?>" href="<?= base_url() ?>payments">
                         <i class="ri-money-dollar-circle-line"></i> <span>Payments</span>
                     </a>
@@ -72,7 +79,7 @@
                         </ul>
                     </div>
                 </li>
-                
+
                 <!-- <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('dashboard-announcements*') ? 'active' : '' ?>" href="<?= base_url() ?>dashboard-announcements">
                         <i class="ri-notification-2-line"></i> <span>Announcements</span>

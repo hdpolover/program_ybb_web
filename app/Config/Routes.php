@@ -106,8 +106,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('submission/entry/(:num)/update', 'dashboard\Submission::updateEntry/$1');
     $routes->post('submission/miscs/(:num)/update', 'dashboard\Submission::updateMisc/$1');
     $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');
-    $routes->post('submission/submit', 'dashboard\Submission::submitForm');
-
+    $routes->post('submission/submit', 'dashboard\Submission::submitForm');    // abstract paper
+    $routes->get('abstract-paper', 'dashboard\AbstractPaper::index');
+    $routes->get('abstract-paper/create', 'dashboard\AbstractPaper::create');
+    $routes->get('abstract-paper/edit/(:num)', 'dashboard\AbstractPaper::edit/$1');
+    $routes->post('abstract-paper/save', 'dashboard\AbstractPaper::save');
+    $routes->post('abstract-paper/update/(:num)', 'dashboard\AbstractPaper::update/$1');
+    
     // payment
     $routes->get('payments', 'dashboard\Payments::index');
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
