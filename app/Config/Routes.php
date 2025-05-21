@@ -56,6 +56,7 @@ $routes->get('/', 'landing\Home::index');
 $routes->get('programs', 'landing\Programs::index');
 $routes->get('programs/(:any)/details', 'landing\Programs::detail/$1');
 $routes->get('insights', 'landing\Insights::index');
+$routes->get('gallery', 'landing\Gallery::index');
 $routes->get('partners-sponsors', 'landing\PartnersSponsors::index');
 $routes->get('announcements', 'landing\Announcements::index');
 $routes->get('announcements/(:any)', 'landing\Announcements::detail/$1');
