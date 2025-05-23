@@ -8,15 +8,17 @@ class Gallery extends BaseController
 {
     public function index()
     { 
-        // get home data from API
-        $homeData = $this->makeGetRequest('/landing/home?web_url=' . $this->currentUrl);
+        // get gallery data from API
+        $galleryData = $this->makeGetRequest('/landing/gallery?web_url=' . $this->currentUrl);
 
         $data = [
             'title' => 'Gallery',
-            'photos' => $homeData['photos'] ?? [],
+            'category' => $galleryData['category'] ?? [],
+            'photos' => $galleryData['photos'] ?? [],
+            'otherProgramPhotos' => $galleryData['otherProgramPhotos'] ?? [],
         ];
-        
-        log_message('info', 'Home data retrieved: ' . print_r($homeData, true));
+
+        log_message('info', 'Gallery data retrieved: ' . print_r($galleryData, true));
 
         // if program has no photos, use photos from other programs
         if (empty($data['photos'])) {

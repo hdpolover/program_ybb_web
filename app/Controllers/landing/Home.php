@@ -16,6 +16,7 @@ class Home extends BaseController
             'category' => $homeData['category'] ?? [],
             'programs' => $homeData['programs'] ?? [],
             'testimonies' => $homeData['testimonies'] ?? [],
+            'hasPhotos' => $homeData['hasPhotos'] ?? false,
             'photos' => $homeData['photos'] ?? [],
         ];
 
