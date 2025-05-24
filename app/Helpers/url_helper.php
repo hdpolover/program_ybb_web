@@ -4,9 +4,11 @@ if (!function_exists('getBaseDomain')) {
     function getBaseDomain()
     {
         $request = \Config\Services::request();
-        $scheme = $request->getServer('REQUEST_SCHEME'); // "http" or "https"
-        $host = $request->getServer('HTTP_HOST');        // "example.com"
-
+        $scheme = $request->getServer('REQUEST_SCHEME') ?? 'https'; // Default to https if REQUEST_SCHEME is not available
+        $host = $request->getServer('HTTP_HOST') ?? $_SERVER['HTTP_HOST'] ?? 'localhost'; // Fallback to $_SERVER if needed
+        
+        log_message('debug', 'getBaseDomain - scheme: ' . $scheme . ', host: ' . $host);
+        
         return $scheme . '://' . $host;
     }
 }

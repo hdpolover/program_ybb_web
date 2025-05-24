@@ -42,19 +42,32 @@
                     <a class="nav-link menu-link <?= url_is('dashboard*') ? 'active' : '' ?>" href="<?= base_url() ?>dashboard">
                         <i class="ri-dashboard-line"></i> <span>Dashboard</span>
                     </a>
-                </li>
-
-                <li class="nav-item">
+                </li>                <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('submission*') ? 'active' : '' ?>" href="<?= base_url() ?>submission">
                         <i class="ri-file-upload-line"></i> <span>Submission</span>
                     </a>
                 </li>
 
+                <?php 
+                // Only show Abstract and Paper menu if program_type_id is 3
+                $showAbstractPaper = false;
+                
+                if (isset($webSettings['program_type_id']) && $webSettings['program_type_id'] == 3) {
+                    $showAbstractPaper = true;
+                    log_message('debug', 'Sidebar - Showing Abstract Paper menu: program_type_id is ' . $webSettings['program_type_id']);
+                } else {
+                    // If for some reason we can't determine the program type, don't show the menu
+                    log_message('debug', 'Sidebar - Hiding Abstract Paper menu: program_type_id is ' . ($webSettings['program_type_id'] ?? 'not set'));
+                }
+                
+                if ($showAbstractPaper): 
+                ?>
                 <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('abstract-paper*') ? 'active' : '' ?>" href="<?= base_url() ?>abstract-paper">
                         <i class="ri-file-text-line"></i> <span>Abstract and Paper</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <li class="nav-item">
                     <a class="nav-link menu-link <?= url_is('payments*') ? 'active' : '' ?>" href="<?= base_url() ?>payments">

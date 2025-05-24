@@ -19,14 +19,16 @@ class Auth extends BaseController
         $programs = $this->makeGetRequest('/programs/category/' . $categoryId, [], true);
 
         // check if any program is_registration_open = 1 
-        $isRegistrationOpen = false;
-
-        // loop through programs to check if any program is open for registration
-        foreach ($programs as $program) {
-            if (isset($program['is_registration_open']) && $program['is_registration_open'] == '1') {
-                $isRegistrationOpen = true;
-                break; // Exit loop if any program is open for registration
+        $isRegistrationOpen = false;        // loop through programs to check if any program is open for registration
+        if (is_array($programs) && !empty($programs)) {
+            foreach ($programs as $program) {
+                if (isset($program['is_registration_open']) && $program['is_registration_open'] == '1') {
+                    $isRegistrationOpen = true;
+                    break; // Exit loop if any program is open for registration
+                }
             }
+        } else {
+            log_message('warning', 'No programs found or invalid response from API for category ID: ' . ($categoryId ?? 'null'));
         }
 
         // log the result
@@ -54,21 +56,61 @@ class Auth extends BaseController
         log_message('debug', 'Current API URL: ' . $this->apiBaseUrl);
         log_message('debug', 'Environment: ' . ENVIRONMENT);
         log_message('debug', 'HTTP Host: ' . ($_SERVER['HTTP_HOST'] ?? 'not set'));
-
         if ($q) {
             // Log the ambassador query parameter that we're about to validate
             log_message('debug', 'Attempting to validate ambassador query: ' . $q);
 
             try {
                 // check query value
-                $endpoint = '/ambassadors/check-query/';
+                $endpoint = '/ambassadors/check-query';
                 log_message('debug', 'Making API request to ' . $endpoint . ' with query: ' . $q);
                 log_message('debug', 'Full API URL: ' . $this->apiBaseUrl . $endpoint);
+                log_message('debug', 'Current URL being used: ' . $this->currentUrl);
+
+                // Add a detailed trace of the request for troubleshooting
+                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+                log_message('debug', 'Called from: ' . ($trace[1]['file'] ?? 'unknown') . ' line ' . ($trace[1]['line'] ?? 'unknown'));
                 
-                $queryData = $this->makePostRequest($endpoint, ['encrypted_query' => $q], [], false, false);
+                // Change from POST to GET with query parameter
+                $queryData = $this->makeGetRequest($endpoint . '?encrypted_query=' . urlencode($q), [], false, true);
 
                 // Log the response data
                 log_message('debug', 'Ambassador query check response: ' . json_encode($queryData));
+
+                // Check for API errors
+                if (isset($queryData['error'])) {
+                    log_message('error', 'API error during ambassador validation: ' . ($queryData['message'] ?? 'Unknown error'));
+
+                    // Log more details if available
+                    if (isset($queryData['raw_response'])) {
+                        log_message('error', 'Raw API response: ' . $queryData['raw_response']);
+                    }
+
+                    // Instead of just redirecting with a generic error, let's try a fallback approach
+                    try {
+                        // Try to validate the ambassador directly using a different endpoint
+                        $directEndpoint = '/ambassadors/ref-code-from-query/' . urlencode($q);
+                        log_message('debug', 'Attempting fallback with direct query: ' . $directEndpoint);
+
+                        $fallbackData = $this->makeGetRequest($directEndpoint, [], false);
+
+                        if ($fallbackData && isset($fallbackData['ref_code'])) {
+                            log_message('debug', 'Fallback succeeded! Found ref_code: ' . $fallbackData['ref_code']);
+                            // We found the referral code, we can proceed
+                            $queryData = [
+                                'is_valid' => true,
+                                'ref_code' => $fallbackData['ref_code'],
+                                'ambassador' => $fallbackData
+                            ];
+                        } else {
+                            log_message('error', 'Fallback approach failed: ' . json_encode($fallbackData));
+                            return redirect()->to('sign-in')->with('error', 'Unable to validate ambassador reference. Please try again or contact support.');
+                        }
+                    } catch (\Exception $fallbackEx) {
+                        log_message('error', 'Fallback exception: ' . $fallbackEx->getMessage());
+                        return redirect()->to('sign-in')->with('error', 'Failed to validate ambassador reference. Please try a direct sign-up.');
+                    }
+                }
 
                 if ($queryData) {
                     log_message('debug', 'Query validation returned data: ' . json_encode($queryData));
@@ -78,16 +120,56 @@ class Auth extends BaseController
                         log_message('error', 'Query validation failed - query is marked as invalid by API');
                         return redirect()->to('sign-in')->with('error', 'Invalid query. Please contact support.');
                     }
-
                     log_message('debug', 'Query validation successful');
                 } else {
+                    // queryData is null or empty
                     log_message('error', 'Query validation failed - API returned empty response');
-                    log_message('error', 'URL: ' . $this->apiBaseUrl . $endpoint);
-                    log_message('error', 'POST data: ' . json_encode(['encrypted_query' => $q]));
+                    log_message('error', 'URL: ' . $this->apiBaseUrl . $endpoint . '?encrypted_query=' . urlencode($q));
+                    log_message('error', 'GET query parameter: ' . $q);
 
-                    // Continue with signup without ambassador reference instead of showing error
-                    log_message('debug', 'Continuing signup process without ambassador reference');
-                    return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
+                    // Try direct approach as a fallback
+                    try {
+                        // Attempt to decrypt the query locally or use a different API endpoint
+                        $directEndpoint = '/ambassadors/decode-query?q=' . urlencode($q);
+                        log_message('debug', 'Attempting direct decoding: ' . $directEndpoint);
+
+                        $decodedData = $this->makeGetRequest($directEndpoint, [], false);
+
+                        if ($decodedData && isset($decodedData['ref_code'])) {
+                            log_message('debug', 'Direct decoding succeeded! Found ref_code: ' . $decodedData['ref_code']);
+                            // We got the decoded data
+                            $ambassadorId = $decodedData['ambassador_id'] ?? null;
+
+                            if ($ambassadorId) {
+                                // Try to get ambassador details
+                                $ambassadorData = $this->makeGetRequest('/ambassadors/' . $ambassadorId, [], false);
+
+                                if ($ambassadorData && isset($ambassadorData['id'])) {
+                                    log_message('debug', 'Retrieved ambassador data for ID ' . $ambassadorId);
+                                    session()->set('ambassador_referral', [
+                                        'ref_code' => $decodedData['ref_code'],
+                                        'ambassador_id' => $ambassadorId
+                                    ]);
+
+                                    // Redirect to sign-up page and continue
+                                    log_message('debug', 'Setting session with ambassador referral data and continuing');
+                                    // No redirect, just continue with the sign-up process
+                                } else {
+                                    log_message('error', 'Could not get ambassador data for ID ' . $ambassadorId);
+                                    return redirect()->to('sign-in')->with('error', 'Ambassador not found. Please try again.');
+                                }
+                            } else {
+                                log_message('error', 'No ambassador ID in decoded data');
+                                return redirect()->to('sign-in')->with('error', 'Invalid referral link. Please try direct sign-up.');
+                            }
+                        } else {
+                            log_message('error', 'Direct decoding failed: ' . json_encode($decodedData));
+                            return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
+                        }
+                    } catch (\Exception $directEx) {
+                        log_message('error', 'Direct decoding exception: ' . $directEx->getMessage());
+                        return redirect()->to('sign-in')->with('error', 'Failed to validate query. Please contact support.');
+                    }
                 }
             } catch (\Exception $e) {
                 log_message('error', 'Exception during query validation: ' . $e->getMessage());
@@ -569,13 +651,24 @@ class Auth extends BaseController
             // Check for successful registration
             if (isset($response['participant']) && $response['participant']) {
 
-                // check if user is already registered
-                $message = 'Registration successful! Please check your email to verify your account.';
+                // get web settings to check if email verification is required
+                $webSettings = $this->data['webSettings'] ?? [];
 
-                if (isset($response['is_new']) && $response['is_new'] == true) {
+                $isVerificationRequired = isset($webSettings['is_verification_required']) && $webSettings['is_verification_required'] == '1';
+
+                // Log the verification requirement
+                log_message('debug', 'Is email verification required: ' . ($isVerificationRequired ? 'Yes' : 'No'));
+
+                // If email verification is required, adjust message accordingly
+                if ($isVerificationRequired) {
                     $message = 'Registration successful! Please check your email to verify your account.';
                 } else {
                     $message = 'Registration successful! You can now sign in to continue.';
+                }
+
+                // check if user is already registered form response is_new
+                if (isset($response['is_new']) && $response['is_new'] == false) {
+                    $message = 'You are already registered. Please sign in to continue.';
                 }
 
                 return redirect()->to('sign-in')->with('success', $message);
