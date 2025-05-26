@@ -34,11 +34,17 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-body">
-                                
-                                    <?php if (!isset($hasAbstract) || $hasAbstract === false): ?>
+                                <div class="card-body">                                <?php
+                                    // Check if participant is eligible for abstract submission
+                                    if (!isset($participant_data['eligible_for_abstract']) || $participant_data['eligible_for_abstract'] === false): ?>
+                                        <?= $this->include('participant/abstract-paper/components/not-eligible') ?>
+                                    <?php 
+                                    // Participant is eligible but hasn't submitted an abstract yet
+                                    elseif ($participant_data['eligible_for_abstract'] === true && $participant_data['abstract'] === null): ?>
                                         <?= $this->include('participant/abstract-paper/components/empty-state') ?>
-                                    <?php else: ?>
+                                    <?php 
+                                    // Participant is eligible and has submitted an abstract
+                                    else: ?>
                                         <?= $this->include('participant/abstract-paper/components/abstract-view') ?>
                                     <?php endif; ?>
                                     

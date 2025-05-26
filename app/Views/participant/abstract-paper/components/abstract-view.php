@@ -5,6 +5,11 @@
             <div>
                 <h4 class="card-title mb-0 text-white"><?= esc($abstractData['title']) ?></h4>
                 <div class="mt-2">
+                    <?php if (isset($abstractData['is_draft']) && $abstractData['is_draft']): ?>
+                        <span class="badge bg-secondary me-2">
+                            <i class="bx bx-edit-alt me-1"></i> Draft
+                        </span>
+                    <?php endif; ?>
                     <span class="badge <?= strtolower($abstractData['status']) == 'approved' ? 'bg-success' : (strtolower($abstractData['status']) == 'rejected' ? 'bg-danger' : 'bg-warning') ?> me-2">
                         <i class="bx bx-check-circle me-1"></i> <?= esc($abstractData['status']) ?>
                     </span>
