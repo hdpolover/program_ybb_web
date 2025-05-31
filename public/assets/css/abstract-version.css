@@ -1,0 +1,239 @@
+/* Abstract Version Management Styles */
+
+/* Version badges */
+.version-badge {
+    border-radius: 50px;
+    padding: 3px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.version-badge-active {
+    background-color: rgba(10, 179, 156, 0.18);
+    color: #0ab39c;
+}
+
+.version-badge-draft {
+    background-color: rgba(249, 189, 38, 0.18);
+    color: #f9bd26;
+}
+
+.version-badge-submitted {
+    background-color: rgba(64, 81, 137, 0.18);
+    color: #405189;
+}
+
+/* Version history timeline */
+.version-timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.version-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #f6f6f6;
+}
+
+.version-timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.version-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 0.25rem;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid #e2e5e8;
+}
+
+.version-timeline-item.active::before {
+    background-color: #0ab39c;
+    border-color: rgba(10, 179, 156, 0.18);
+}
+
+.version-timeline-item.draft::before {
+    background-color: #f9bd26;
+    border-color: rgba(249, 189, 38, 0.18);
+}
+
+.version-timeline-item.submitted::before {
+    background-color: #405189;
+    border-color: rgba(64, 81, 137, 0.18);
+}
+
+/* Version diff styles */
+.version-diff {
+    border-left: 3px solid #f6f6f6;
+    padding-left: 1rem;
+}
+
+.version-diff-added {
+    background-color: rgba(10, 179, 156, 0.1);
+    text-decoration: none;
+    padding: 2px 0;
+}
+
+.version-diff-removed {
+    background-color: rgba(244, 106, 106, 0.1);
+    text-decoration: line-through;
+    color: #f46a6a;
+    padding: 2px 0;
+}
+
+/* Abstract content display */
+.abstract-content {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.abstract-content h1,
+.abstract-content h2,
+.abstract-content h3,
+.abstract-content h4,
+.abstract-content h5,
+.abstract-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.abstract-content ul,
+.abstract-content ol {
+    padding-left: 1.5rem;
+}
+
+/* Keywords display */
+.keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-tag {
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    background-color: rgba(64, 81, 137, 0.1);
+    color: #405189;
+}
+
+/* Version switcher */
+.version-switcher {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.version-switcher-label {
+    font-size: 0.8125rem;
+    color: #878a99;
+}
+
+.version-switcher-select {
+    min-width: 100px;
+}
+
+/* Animation for version changes */
+@keyframes version-highlight {
+    0% { background-color: rgba(10, 179, 156, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.version-highlight {
+    animation: version-highlight 2s ease-out;
+}
+
+/* Version comparison specific styles */
+.diff-container {
+    position: relative;
+}
+
+.diff-container .card {
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.diff-container .card-header {
+    padding: 0.75rem 1rem;
+}
+
+.diff-container .card-body {
+    padding: 1rem;
+}
+
+.diff-highlight-added {
+    background-color: rgba(10, 179, 156, 0.1);
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+.diff-highlight-removed {
+    background-color: rgba(244, 106, 106, 0.1);
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+.diff-compare-column {
+    border-left: 1px solid #eef0f2;
+}
+
+/* Animations for version changes */
+@keyframes highlightChange {
+    0% {
+        background-color: rgba(10, 179, 156, 0);
+    }
+    50% {
+        background-color: rgba(10, 179, 156, 0.18);
+    }
+    100% {
+        background-color: rgba(10, 179, 156, 0);
+    }
+}
+
+.highlight-change {
+    animation: highlightChange 2s ease-in-out;
+}
+
+/* Side-by-side comparison */
+.side-by-side-comparison {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.5rem;
+}
+
+.side-by-side-comparison .version-col {
+    flex: 0 0 50%;
+    padding: 0 0.5rem;
+}
+
+.side-by-side-comparison .version-col .version-content {
+    height: 100%;
+    border: 1px solid #eef0f2;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    background-color: #fff;
+}
+
+/* Responsive styles for mobile */
+@media (max-width: 767.98px) {
+    .side-by-side-comparison .version-col {
+        flex: 0 0 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .diff-compare-column {
+        border-left: none;
+        border-top: 1px solid #eef0f2;
+        padding-top: 1rem;
+        margin-top: 1rem;
+    }
+}

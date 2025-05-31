@@ -11,92 +11,19 @@ class AbstractPaper extends BaseController
         // Helper for form and url functions
         helper(['form', 'url']);
     }
+    
     public function index()
     {
-        // Get participant data from database or API
-        // In production, you would fetch this from your participant model/database
-
-        // Example scenarios:
-        // 1. Participant not eligible for abstract submission (registration pending)
-        // 2. Participant eligible but no abstract submitted yet
-        // 3. Participant eligible with abstract submitted
-        // Toggle between scenarios by changing this value: 1, 2, or 3
-        // $scenario = 3; // Change this to test different scenarios
-
-        // if ($scenario === 1) {
-        //     // Scenario 1: Not eligible for abstract submission
-        //     $participant_data = [
-        //         'participant_id' => '32045',
-        //         'eligible_for_abstract' => false,
-        //         'abstract' => null
-        //     ];
-        // } elseif ($scenario === 2) {
-        //     // Scenario 2: Eligible but no abstract submitted
-        //     $participant_data = [
-        //         'participant_id' => '32045',
-        //         'eligible_for_abstract' => true,
-        //         'abstract' => null
-        //     ];
-        // } else {
-        //     // Scenario 3: Eligible with abstract submitted
-        //     $participant_data = [
-        //         'participant_id' => '32045',
-        //         'eligible_for_abstract' => true,
-        //         'abstract' => true // This will be replaced with actual abstract data below
-        //     ];
-        // }
-
-        // // Example abstract data for display when abstract exists
-        // $dummyAbstract = [
-        //     'id' => 1,
-        //     'title' => 'Deep Learning for Image Recognition',
-        //     'content' => 'Deep learning techniques utilize convolutional neural networks (CNNs) for image recognition. This research explores advanced methodologies and experimental results in implementing these techniques.',
-        //     'references' => 'K. He, X. Zhang, S. Ren, and J. Sun, "Deep Residual Learning for Image Recognition," in Proceedings of the IEEE Conference on Computer Vision.',
-        //     'status' => 'Under Review',
-        //     'category' => 'Machine Learning Track',
-        //     'topic' => 'Artificial Intelligence',
-        //     'keywords' => 'deep learning, CNN, image recognition, computer vision',
-        //     'lastUpdated' => '2024-05-15 14:30',
-        //     'is_draft' => false,
-        //     'authors' => [
-        //         [
-        //             'name' => 'Alice Smith',
-        //             'affiliation' => 'University of Example',
-        //             'isPrimary' => true
-        //         ],
-        //         [
-        //             'name' => 'Bob Johnson',
-        //             'affiliation' => 'Example institute',
-        //             'isPrimary' => false
-        //         ]
-        //     ],
-        //     'reviewers' => [
-        //         [
-        //             'name' => 'John Doe',
-        //             'status' => 'Minor revision',
-        //             'comments' => 'The introduction needs more details on prior work.',
-        //             'date' => '2024-05-10'
-        //         ]
-        //     ]
-        // ];
-
-        // // get participant ID from session
+        // Get participant ID from session
         $participantId = session()->get('current_participant_id');
+        $abstractData = $this->makeGetRequest('/abstracts/participant/' . $participantId . '/details', [], false);
 
-        $participant_data = $this->makeGetRequest('/abstracts/participant/' . $participantId . '/details', [], false);
-
-        log_message('info', 'Participant Data: ' . print_r($participant_data, true));
-
-        // If participant has an abstract, assign it to the participant data
-        if ($participant_data['eligible_for_abstract'] && isset($participant_data['abstract'])) {
-            $participant_data['abstract'] = [];
-        }
-
+        log_message('info', 'Participant Data: ' . print_r($abstractData, true));
+        
         // Build view data
         $data = [
             'title' => 'Abstract and Paper',
-            'participant_data' => $participant_data,
-            'abstractData' => $participant_data['abstract'] ?? []    // Pass the abstract data if it exists
+            'participant_data' => $abstractData
         ];
 
         return $this->render('participant/abstract-paper/index', $data);
@@ -114,38 +41,72 @@ class AbstractPaper extends BaseController
 
         return $this->render('participant/abstract-paper/manage-abstract', $data);
     }
-
-    public function edit($id)
+    
+    public function edit($id, $versionId = 1)
     {
         // Get abstract data by ID
-        // In production, you would call an API endpoint
-        $abstract = $this->getAbstractById($id);
+        try {
+            // Call API to get abstract data
+            $abstract = $this->makeGetRequest('/abstracts/' . $id, [], false);
 
-        if (!$abstract) {
-            return redirect()->to('/abstract-paper')->with('error', 'Abstract not found.');
+            if (!$abstract) {
+                return redirect()->to('/abstract-paper')->with('error', 'Abstract not found.');
+            }
+
+            // Get abstract versions
+            $abstractVersions = $this->makeGetRequest('/abstracts/' . $id . '/versions', [], false);
+            
+            // Find the specific version based on version ID
+            $currentVersion = null;
+            if (!empty($abstractVersions)) {
+                if ($versionId > 1) {
+                    // Search for the specific version by version_number
+                    foreach ($abstractVersions as $version) {
+                        if ($version['version_number'] == $versionId) {
+                            $currentVersion = $version;
+                            break;
+                        }
+                    }
+                    
+                    // If requested version not found, use the first one
+                    if (!$currentVersion) {
+                        $currentVersion = $abstractVersions[0];
+                        log_message('warning', 'Requested version ' . $versionId . ' not found for abstract ' . $id . '. Using latest version instead.');
+                    }
+                } else {
+                    // Default to first version if no specific version requested
+                    $currentVersion = $abstractVersions[0];
+                }
+                
+                // Replace abstract data with the selected version data
+                $abstract['current_version'] = $currentVersion;
+            }
+
+            // Get available topics
+            $topics = $this->getAvailableTopics();
+
+            $data = [
+                'title' => 'Edit Abstract',
+                'abstract' => $abstract,
+                'topics' => $topics
+            ];
+
+            return $this->render('participant/abstract-paper/manage-abstract', $data);
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to fetch abstract: ' . $e->getMessage());
+            return redirect()->to('/abstract-paper')->with('error', 'Unable to load abstract. Please try again later.');
         }
-
-        // Get available topics
-        $topics = $this->getAvailableTopics();
-
-        $data = [
-            'title' => 'Edit Abstract',
-            'abstract' => $abstract,
-            'topics' => $topics
-        ];
-
-        return $this->render('participant/abstract-paper/manage-abstract', $data);
     }
-
-    public function save()
+      public function save()
     {
         // Check if this is a draft
         $isDraft = $this->request->getPost('status') === 'draft';
 
         // Define validation rules based on whether it's a draft or final submission
         if ($isDraft) {
-            // For drafts, we'll only require the title
+            // For drafts, we only require topic and title
             $rules = [
+                'abstract_topic_id' => 'required',
                 'title' => 'required'
             ];
         } else {
@@ -153,7 +114,6 @@ class AbstractPaper extends BaseController
             $rules = [
                 'abstract_topic_id' => 'required',
                 'title' => 'required|min_length[5]',
-                'keywords' => 'required',
                 'content' => 'required|min_length[100]'
             ];
         }
@@ -171,7 +131,9 @@ class AbstractPaper extends BaseController
             'keywords' => $this->request->getPost('keywords'),
             'content' => $this->request->getPost('content'),
             'status' => $this->request->getPost('status')
-        ];        try {
+        ];
+
+        try {
             // Call the API endpoint to save the abstract
             $response = $this->makePostRequest('/abstracts', $data, [], false, false);
 
@@ -179,25 +141,25 @@ class AbstractPaper extends BaseController
             if (isset($response['error'])) {
                 $errorMessage = isset($response['message']) ? $response['message'] : 'An error occurred while saving your abstract.';
                 $errorTitle = 'Submission Failed';
-                
+
                 log_message('error', 'API Error: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
             }
-            
+
             // Check if we have a successful response with abstract data
             if (!isset($response['abstract'])) {
                 $errorMessage = 'The server returned an unexpected response. Please try again later.';
                 $errorTitle = 'Unexpected Response';
-                
+
                 log_message('error', 'Unexpected API Response: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
             }
-            
+
             // Store abstract ID in session for reference
             if (isset($response['abstract']['id'])) {
                 session()->set('last_abstract_id', $response['abstract']['id']);
             }
-            
+
             // If save is successful, redirect with success message
             $message = $isDraft ?
                 'Your abstract draft has been saved successfully. You can continue editing it later when you are ready to complete your submission.' :
@@ -206,17 +168,20 @@ class AbstractPaper extends BaseController
             // Include abstract ID in message if available
             if (isset($response['abstract']['id'])) {
                 $abstractId = $response['abstract']['id'];
-                $message .= $isDraft ? 
-                    " (Draft ID: {$abstractId})" : 
+                $message .= $isDraft ?
+                    " (Draft ID: {$abstractId})" :
                     " (Submission ID: {$abstractId})";
             }
 
             $title = $isDraft ? 'Draft Saved' : 'Submission Complete';
+
+            // Get the first version for the flash data
+            $currentVersion = !empty($response['abstract']['versions']) ? $response['abstract']['versions'][0] : null;
             
             // Save the abstract details in flash data to display in SweetAlert
             session()->setFlashdata('abstract_data', [
                 'id' => $response['abstract']['id'] ?? 'N/A',
-                'title' => $response['abstract']['title'] ?? 'Your Abstract',
+                'title' => $currentVersion['title'] ?? 'Your Abstract',
                 'status' => $response['abstract']['status'] ?? ($isDraft ? 'draft' : 'submitted'),
             ]);
 
@@ -230,24 +195,25 @@ class AbstractPaper extends BaseController
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
-
-    public function update($id)
+      public function update($id)
     {
+        // Add debugging
+        log_message('info', 'Update method called with ID: ' . $id);
+        log_message('info', 'POST data: ' . json_encode($this->request->getPost()));
+        
         // Check if this is a draft
-        $isDraft = $this->request->getPost('status') === 'draft';
-
-        // Define validation rules based on whether it's a draft or final submission
+        $isDraft = $this->request->getPost('status') === 'draft';// Define validation rules based on whether it's a draft or final submission
         if ($isDraft) {
-            // For drafts, we'll only require the title
+            // For drafts, we only require topic and title
             $rules = [
+                'abstract_topic_id' => 'required',
                 'title' => 'required'
             ];
         } else {
-            // For final submission, apply full validation
+            // For final submission, apply full validation (keywords are permit_empty according to API)
             $rules = [
                 'abstract_topic_id' => 'required',
                 'title' => 'required|min_length[5]',
-                'keywords' => 'required',
                 'content' => 'required|min_length[100]'
             ];
         }
@@ -264,30 +230,33 @@ class AbstractPaper extends BaseController
             'title' => $this->request->getPost('title'),
             'keywords' => $this->request->getPost('keywords'),
             'content' => $this->request->getPost('content'),
-            'status' => $this->request->getPost('status')
+            'status' => $this->request->getPost('status'),
+            'version_id' => $this->request->getPost('version_id')
         ];        try {
-            // Call the API endpoint to update the abstract - using PUT method
-            $response = $this->makePutRequest('/api/abstracts/' . $id, $data, [], true, true);
+            // Use the correct API endpoint for saving/updating abstract versions
+            $endpoint = '/abstracts/' . $id . '/save-version';
+            log_message('info', 'Updating abstract version with endpoint: ' . $endpoint);
+            log_message('info', 'Sending data: ' . json_encode($data));
             
+            $response = $this->makePostRequest($endpoint, $data, [], false, false);
+
             // Check if the response indicates an error
             if (isset($response['error'])) {
                 $errorMessage = isset($response['message']) ? $response['message'] : 'An error occurred while updating your abstract.';
                 $errorTitle = 'Update Failed';
-                
+
                 log_message('error', 'API Error during update: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
             }
-            
+
             // Check if we have a successful response with abstract data
             if (!isset($response['abstract'])) {
                 $errorMessage = 'The server returned an unexpected response. Please try again later.';
                 $errorTitle = 'Unexpected Response';
-                
+
                 log_message('error', 'Unexpected API Response during update: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
-            }
-            
-            // If update is successful, redirect with success message
+            }            // If update is successful, redirect with success message
             $message = $isDraft ?
                 'Your abstract draft has been updated successfully. You can continue editing it later when you are ready to complete your submission.' :
                 'Your abstract has been updated successfully and will be reviewed. You will be notified once the review process is complete.';
@@ -295,17 +264,41 @@ class AbstractPaper extends BaseController
             // Include abstract ID in message if available
             if (isset($response['abstract']['id'])) {
                 $abstractId = $response['abstract']['id'];
-                $message .= $isDraft ? 
-                    " (Draft ID: {$abstractId})" : 
+                $message .= $isDraft ?
+                    " (Draft ID: {$abstractId})" :
                     " (Submission ID: {$abstractId})";
             }
             
-            $title = $isDraft ? 'Draft Updated' : 'Update Complete';
+            // Add version information to the message
+            $versionId = $this->request->getPost('version_id');
+            $versionNumber = $this->request->getPost('version_number');
+            if ($versionId && $versionNumber) {
+                log_message('info', "Updated abstract version {$versionNumber} (ID: {$versionId}) for abstract {$id}");
+                $message .= " (Version: {$versionNumber})";
+            }$title = $isDraft ? 'Draft Updated' : 'Update Complete';
+
+            // Get the updated version details
+            $currentVersion = null;
+            if (!empty($response['abstract']['versions'])) {
+                // Look for the version we just updated
+                $versionId = $this->request->getPost('version_id');
+                foreach ($response['abstract']['versions'] as $version) {
+                    if ($version['id'] == $versionId) {
+                        $currentVersion = $version;
+                        break;
+                    }
+                }
+                
+                // If not found, use the first version
+                if (!$currentVersion && !empty($response['abstract']['versions'])) {
+                    $currentVersion = $response['abstract']['versions'][0];
+                }
+            }
             
             // Save the abstract details in flash data to display in SweetAlert
             session()->setFlashdata('abstract_data', [
                 'id' => $response['abstract']['id'] ?? $id,
-                'title' => $response['abstract']['title'] ?? $data['title'],
+                'title' => $currentVersion['title'] ?? $data['title'],
                 'status' => $response['abstract']['status'] ?? $data['status'],
             ]);
 
@@ -314,14 +307,213 @@ class AbstractPaper extends BaseController
             // Get a user-friendly error message
             $errorMessage = $this->handleApiError($e, 'We encountered a problem while updating your abstract. Please try again later or contact support if the issue persists.');
             $errorTitle = 'Update Error';
-            
+
             log_message('error', 'Exception during abstract update: ' . $e->getMessage());
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
+    
+    /**
+     * Add a new author to an abstract
+     *
+     * @return mixed
+     */
+    public function addAuthor()
+    {
+        // Check if this is an AJAX request
+        if (!$this->request->isAJAX()) {
+            // Regular form submission
+            $abstractId = $this->request->getPost('abstract_id');
+            
+            // Validate input
+            $rules = [
+                'full_name' => 'required|min_length[3]|max_length[255]',
+                'email' => 'required|valid_email|max_length[255]',
+                'institution' => 'required|min_length[3]|max_length[255]',
+                'role' => 'required|in_list[co_author,presenting]',
+            ];
+            
+            if (!$this->validate($rules)) {
+                // Return with validation errors
+                return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            }
+            
+            // Prepare data for API
+            $authorData = [
+                'full_name' => $this->request->getPost('full_name'),
+                'email' => $this->request->getPost('email'),
+                'institution' => $this->request->getPost('institution'),
+                'address' => $this->request->getPost('address'),
+                'is_presenting' => ($this->request->getPost('role') === 'presenting') ? 1 : 0
+            ];
+            
+            // Make API request to add author
+            $response = $this->makePostRequest('/abstracts/' . $abstractId . '/authors', $authorData);
+            
+            if (isset($response['success']) && $response['success']) {
+                return redirect()->to(base_url('abstract-paper'))->with('success', 'Author added successfully.');
+            }
+            
+            return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to add author.');
+        }
+        
+        // Handle AJAX request
+        $abstractId = $this->request->getPost('abstract_id');
+        
+        // Validate input
+        $rules = [
+            'full_name' => 'required|min_length[3]|max_length[255]',
+            'email' => 'required|valid_email|max_length[255]',
+            'institution' => 'required|min_length[3]|max_length[255]',
+            'role' => 'required|in_list[co_author,presenting]',
+        ];
+        
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'errors' => $this->validator->getErrors(),
+                'message' => 'Please fix the errors in the form.'
+            ]);
+        }
+        
+        // Prepare data for API
+        $authorData = [
+            'full_name' => $this->request->getPost('full_name'),
+            'email' => $this->request->getPost('email'),
+            'institution' => $this->request->getPost('institution'),
+            'address' => $this->request->getPost('address'),
+            'is_presenting' => ($this->request->getPost('role') === 'presenting') ? 1 : 0
+        ];
+        
+        // Make API request to add author
+        $response = $this->makePostRequest('/abstracts/' . $abstractId . '/authors', $authorData);
+        
+        return $this->response->setJSON($response);
+    }
+    
+    /**
+     * Update an existing author
+     *
+     * @return mixed
+     */
+    public function updateAuthor()
+    {
+        // Check if this is an AJAX request
+        if (!$this->request->isAJAX()) {
+            // Regular form submission
+            $authorId = $this->request->getPost('author_id');
+            $abstractId = $this->request->getPost('abstract_id');
+            
+            // Validate input
+            $rules = [
+                'full_name' => 'required|min_length[3]|max_length[255]',
+                'email' => 'required|valid_email|max_length[255]',
+                'institution' => 'required|min_length[3]|max_length[255]',
+                'role' => 'permit_empty|in_list[co_author,presenting]',
+            ];
+            
+            if (!$this->validate($rules)) {
+                // Return with validation errors
+                return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            }
+            
+            // Prepare data for API
+            $authorData = [
+                'full_name' => $this->request->getPost('full_name'),
+                'email' => $this->request->getPost('email'),
+                'institution' => $this->request->getPost('institution'),
+                'address' => $this->request->getPost('address')
+            ];
+            
+            // Only update role if provided and not primary author
+            if ($this->request->getPost('role')) {
+                $authorData['is_presenting'] = ($this->request->getPost('role') === 'presenting') ? 1 : 0;
+            }
+            
+            // Make API request to update author
+            $response = $this->makePutRequest('/abstracts/' . $abstractId . '/authors/' . $authorId, $authorData);
+            
+            if (isset($response['success']) && $response['success']) {
+                return redirect()->to(base_url('abstract-paper'))->with('success', 'Author updated successfully.');
+            }
+            
+            return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to update author.');
+        }
+        
+        // Handle AJAX request
+        $authorId = $this->request->getPost('author_id');
+        $abstractId = $this->request->getPost('abstract_id');
+        
+        // Validate input
+        $rules = [
+            'full_name' => 'required|min_length[3]|max_length[255]',
+            'email' => 'required|valid_email|max_length[255]',
+            'institution' => 'required|min_length[3]|max_length[255]',
+            'role' => 'permit_empty|in_list[co_author,presenting]',
+        ];
+        
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'errors' => $this->validator->getErrors(),
+                'message' => 'Please fix the errors in the form.'
+            ]);
+        }
+        
+        // Prepare data for API
+        $authorData = [
+            'full_name' => $this->request->getPost('full_name'),
+            'email' => $this->request->getPost('email'),
+            'institution' => $this->request->getPost('institution'),
+            'address' => $this->request->getPost('address')
+        ];
+        
+        // Only update role if provided and not primary author
+        if ($this->request->getPost('role')) {
+            $authorData['is_presenting'] = ($this->request->getPost('role') === 'presenting') ? 1 : 0;
+        }
+        
+        // Make API request to update author
+        $response = $this->makePutRequest('/abstracts/' . $abstractId . '/authors/' . $authorId, $authorData);
+        
+        return $this->response->setJSON($response);
+    }
+    
+    /**
+     * Delete an author
+     *
+     * @return mixed
+     */
+    public function deleteAuthor()
+    {
+        // Check if this is an AJAX request
+        if (!$this->request->isAJAX()) {
+            // Regular form submission
+            $authorId = $this->request->getPost('author_id');
+            $abstractId = $this->request->getPost('abstract_id');
+            
+            // Make API request to delete author
+            $response = $this->makeDeleteRequest('/abstracts/' . $abstractId . '/authors/' . $authorId);
+            
+            if (isset($response['success']) && $response['success']) {
+                return redirect()->to(base_url('abstract-paper'))->with('success', 'Author deleted successfully.');
+            }
+            
+            return redirect()->back()->with('error', $response['message'] ?? 'Failed to delete author.');
+        }
+        
+        // Handle AJAX request
+        $authorId = $this->request->getPost('author_id');
+        $abstractId = $this->request->getPost('abstract_id');
+        
+        // Make API request to delete author
+        $response = $this->makeDeleteRequest('/abstracts/' . $abstractId . '/authors/' . $authorId);
+        
+        return $this->response->setJSON($response);
+    }
+    
     /**
      * Get available topics for abstract submission
-     * In production, you would fetch this from an API
      */
     private function getAvailableTopics()
     {
@@ -330,43 +522,7 @@ class AbstractPaper extends BaseController
 
         try {
             // In a real application, you would fetch topics from an API
-            // For example:
             $topics = $this->makeGetRequest('/abstract-topics/program/' . $currentProgramId, [], false, false);
-
-            // // Sample data for demonstration - in production, use API data
-            // $topics = [
-            //     [
-            //         'id' => 1,
-            //         'program_id' => $currentProgramId,
-            //         'name' => 'Machine Learning',
-            //         'description' => 'Research related to machine learning algorithms, neural networks, deep learning, and AI applications.'
-            //     ],
-            //     [
-            //         'id' => 2,
-            //         'program_id' => $currentProgramId,
-            //         'name' => 'Data Science',
-            //         'description' => 'Studies involving data collection, preprocessing, visualization, and statistical analysis for deriving insights.'
-            //     ],
-            //     [
-            //         'id' => 3,
-            //         'program_id' => $currentProgramId,
-            //         'name' => 'Artificial Intelligence',
-            //         'description' => 'Research in AI theory, cognitive computing, natural language processing, and intelligent systems.'
-            //     ],
-            //     [
-            //         'id' => 4,
-            //         'program_id' => $currentProgramId,
-            //         'name' => 'Computer Vision',
-            //         'description' => 'Studies focused on enabling computers to gain high-level understanding from digital images or videos.'
-            //     ],
-            //     [
-            //         'id' => 5,
-            //         'program_id' => $currentProgramId,
-            //         'name' => 'Natural Language Processing',
-            //         'description' => 'Research on interactions between computers and human language, text analysis, and language generation.'
-            //     ]
-            // ];
-
             return $topics;
         } catch (\Exception $e) {
             // Handle error (e.g., log it)
@@ -374,42 +530,33 @@ class AbstractPaper extends BaseController
             return [];
         }
     }
+    
     /**
-     * Get abstract by ID
-     * In production, you would fetch this from an API
-     */
-    private function getAbstractById($id)
-    {
-        try {
-            // Call API to get abstract data
-            $abstract = $this->makeGetRequest('/api/abstracts/' . $id, [], true, false);
-            return $abstract;
-        } catch (\Exception $e) {
-            log_message('error', 'Failed to fetch abstract: ' . $e->getMessage());
-            return null;
-        }
-    }    /**
      * Helper method to handle API errors and extract meaningful messages
      */
     private function handleApiError(\Exception $e, $defaultMessage = 'An error occurred. Please try again later.')
     {
         log_message('error', 'API Error: ' . $e->getMessage());
-        
+
         // First, check if message contains specific errors we can interpret
         $message = $e->getMessage();
-        
+
         // Handle timeout errors
-        if (strpos($message, 'timeout') !== false || 
-            strpos($message, 'Connection timed out') !== false) {
+        if (
+            strpos($message, 'timeout') !== false ||
+            strpos($message, 'Connection timed out') !== false
+        ) {
             return 'The server is taking too long to respond. This could be due to high traffic or connectivity issues. Please try again later.';
         }
-        
+
         // Handle connection errors
-        if (strpos($message, 'Connection refused') !== false || 
-            strpos($message, 'Could not resolve host') !== false) {
+        if (
+            strpos($message, 'Connection refused') !== false ||
+            strpos($message, 'Could not resolve host') !== false
+        ) {
             return 'Unable to connect to the server. Please check your internet connection and try again later.';
         }
-        
+
         // Check if the message contains JSON response
         if (strpos($message, '{') !== false) {
             try {
@@ -417,7 +564,7 @@ class AbstractPaper extends BaseController
                 preg_match('/{.*}/s', $message, $matches);
                 if (!empty($matches[0])) {
                     $responseData = json_decode($matches[0], true);
-                    
+
                     // If we have a structured error message from the API
                     if (isset($responseData['message'])) {
                         return $responseData['message'];
@@ -433,7 +580,7 @@ class AbstractPaper extends BaseController
                 log_message('error', 'Failed to parse API error response: ' . $parseException->getMessage());
             }
         }
-        
+
         return $defaultMessage;
     }
 }

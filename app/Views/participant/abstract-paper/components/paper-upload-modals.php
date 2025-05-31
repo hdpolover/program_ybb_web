@@ -4,9 +4,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="uploadPaperModalLabel">Upload Full Paper</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="<?= base_url('participant/abstract/upload-paper/' . $abstractData['id']) ?>" method="post" enctype="multipart/form-data">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>            </div>
+            <form action="<?= base_url('participant/abstract/upload-paper/' . $participant_data['abstract']['id']) ?>" method="post" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <div class="modal-body">
                     <div class="alert alert-info mb-4">
@@ -43,11 +42,10 @@
 <div class="modal fade" id="updatePaperModal" tabindex="-1" aria-labelledby="updatePaperModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="updatePaperModalLabel">Update Paper</h5>
+            <div class="modal-header">                <h5 class="modal-title" id="updatePaperModalLabel">Update Paper</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="<?= base_url('participant/abstract/update-paper/' . $abstractData['id']) ?>" method="post" enctype="multipart/form-data">
+            <form action="<?= base_url('participant/abstract/update-paper/' . $participant_data['abstract']['id']) ?>" method="post" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <div class="modal-body">
                     <div class="alert alert-info mb-4">
@@ -57,11 +55,9 @@
                     <div class="mb-3">
                         <label for="updatePaperFile" class="form-label">Select New Paper File (PDF)</label>
                         <input type="file" class="form-control" id="updatePaperFile" name="paper_file" accept=".pdf" required>
-                    </div>
-
-                    <div class="mb-3">
+                    </div>                    <div class="mb-3">
                         <label for="updatePaperVersion" class="form-label">New Version</label>
-                        <input type="text" class="form-control" id="updatePaperVersion" name="paper_version" value="<?= esc($abstractData['paper_version'] ?? '1.0') ?>" required>
+                        <input type="text" class="form-control" id="updatePaperVersion" name="paper_version" value="<?= esc($participant_data['abstract']['paper_version'] ?? '1.0') ?>" required>
                     </div>
 
                     <div class="mb-3">

@@ -40,7 +40,7 @@
                                         <?= $this->include('participant/abstract-paper/components/not-eligible') ?>
                                     <?php 
                                     // Participant is eligible but hasn't submitted an abstract yet
-                                    elseif ($participant_data['eligible_for_abstract'] === true && $participant_data['abstract'] === null): ?>
+                                    elseif ($participant_data['eligible_for_abstract'] === true && empty($participant_data['abstract'])): ?>
                                         <?= $this->include('participant/abstract-paper/components/empty-state') ?>
                                     <?php 
                                     // Participant is eligible and has submitted an abstract
@@ -63,36 +63,68 @@
         <!-- end main content-->
 
     </div>
-    <!-- END layout-wrapper -->
-
-    <?= $this->include('partials/vendor-scripts') ?>
+    <!-- END layout-wrapper -->    <?= $this->include('partials/vendor-scripts') ?>
 
     <!-- Sweet Alert js-->
     <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
-
+    
+    <!-- jQuery -->
+    <script src="/assets/libs/jquery/jquery.min.js"></script>
+    
+    <!-- Abstract Paper View JS -->
+    <script src="/assets/js/abstract-paper-view.js"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Display sweet alert for success messages
             <?php if (session()->has('success')): ?>
                 Swal.fire({
-                    title: 'Success!',
+                    title: '<?= session()->has('success_title') ? session('success_title') : 'Success!' ?>',
                     text: '<?= session('success') ?>',
                     icon: 'success',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#5156be'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
+                    }
                 });
             <?php endif; ?>
 
             // Display sweet alert for error messages
             <?php if (session()->has('error')): ?>
                 Swal.fire({
-                    title: 'Error!',
+                    title: '<?= session()->has('error_title') ? session('error_title') : 'Error!' ?>',
                     text: '<?= session('error') ?>',
                     icon: 'error',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#5156be'
                 });
             <?php endif; ?>
+            
+            // Handle create new abstract button
+            const createAbstractBtn = document.getElementById('create-abstract-btn');
+            if (createAbstractBtn) {
+                createAbstractBtn.addEventListener('click', function() {
+                    window.location.href = '<?= base_url('abstract-paper/create') ?>';
+                    
+                    // Show loading indicator
+                    Swal.fire({
+                        title: 'Loading...',
+                        html: `
+                            <div class="text-start">
+                                <p>Preparing the abstract creation form...</p>
+                                <div class="progress mt-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        `,
+                        showConfirmButton: false,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+                });
+            }
         });
     </script>
 

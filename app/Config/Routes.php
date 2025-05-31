@@ -88,6 +88,11 @@ $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 
 
 // Protected routes for logged in users
 $routes->group('', ['filter' => 'auth'], function ($routes) {
+    // Abstract API endpoints
+    $routes->post('api/abstracts/(:num)/save-version', 'AjaxHandler::saveAbstractVersion/$1');
+    $routes->get('api/abstracts/versions/compare', 'AjaxHandler::compareAbstractVersions');
+    $routes->get('api/test/abstract-version-creation', 'AjaxHandler::testAbstractVersionCreation'); // Debug endpoint
+    
     $routes->get('dashboard', 'dashboard\Dashboard::index');
 
     // announcements
@@ -101,6 +106,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     // submission
     $routes->get('submission', 'dashboard\Submission::index');
     $routes->get('submission/edit', 'dashboard\Submission::edit');
+
     // New submission form handling endpoints
     $routes->post('submission/personal/(:num)/update', 'dashboard\Submission::updatePersonal/$1');
     $routes->post('submission/professional/(:num)/update', 'dashboard\Submission::updateProfessional/$1');
@@ -111,9 +117,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('abstract-paper', 'dashboard\AbstractPaper::index');
     $routes->get('abstract-paper/create', 'dashboard\AbstractPaper::create');
     $routes->get('abstract-paper/edit/(:num)', 'dashboard\AbstractPaper::edit/$1');
+    $routes->get('abstract-paper/edit/(:num)/version/(:num)', 'dashboard\AbstractPaper::edit/$1/$2');
     $routes->post('abstract-paper/save', 'dashboard\AbstractPaper::save');
     $routes->post('abstract-paper/update/(:num)', 'dashboard\AbstractPaper::update/$1');
-    
+    $routes->post('abstract-paper/add-author', 'dashboard\AbstractPaper::addAuthor');
+    $routes->post('abstract-paper/update-author', 'dashboard\AbstractPaper::updateAuthor');
+    $routes->post('abstract-paper/delete-author', 'dashboard\AbstractPaper::deleteAuthor');
+
     // payment
     $routes->get('payments', 'dashboard\Payments::index');
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
@@ -124,7 +134,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('documents/certificates', 'dashboard\Documents::certificates');
     // generate loa
     $routes->get('documents/generate-loa/(:num)/(:num)', 'dashboard\Documents::generateLoa/$1/$2');
-    
+
     // ambassadors
     $routes->group('ambassadors', function ($routes) {
         $routes->get('sign-in', 'Auth::ambassadorSignIn', ['filter' => 'noauth']);
@@ -133,11 +143,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('generate-link', 'dashboard\Ambassadors::generateReferralLink');
 
         $routes->post('authorize', 'Auth::authorizeAmbassador', ['filter' => 'noauth']);
-        
+
         // dashboard ambassador routes
         $routes->get('dashboard', 'ambassador\Dashboard::index');
         $routes->get('referred-participants', 'ambassador\ReferredParticipants::index');
-        $routes->get('profile', 'ambassador\Profile::index');    });
+        $routes->get('profile', 'ambassador\Profile::index');
+    });
 });
 
 // $routes->get('sitemap.xml', 'Sitemap::index'); // Removed duplicate route

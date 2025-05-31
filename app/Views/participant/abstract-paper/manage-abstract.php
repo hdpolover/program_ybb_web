@@ -63,8 +63,26 @@
                                     <p class="mb-0">This abstract is currently saved as a draft. You can continue editing and save as a draft again, or complete all required fields and submit when ready.</p>
                                     <hr>
                                     <p class="mb-0 small">
-                                        <i class="bx bx-info-circle me-1"></i> Only the title is required to save a draft. All fields marked with <span class="text-danger">*</span> are required for final submission.
+                                        <i class="bx bx-info-circle me-1"></i> Topic and title are required to save a draft. All fields marked with <span class="text-danger">*</span> are required for final submission.
                                     </p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (isset($abstract) && isset($abstract['current_version'])): ?>
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-2">
+                                    <i class="bx bx-revision fs-5"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading">Editing Abstract Version</h5>
+                                    <p class="mb-0">You are editing version <?= $abstract['current_version']['version_number'] ?> of your abstract, created on <?= date('F j, Y', strtotime($abstract['current_version']['created_at'])) ?>.</p>
+                                    <?php if (isset($abstract['current_version']['updated_at']) && $abstract['current_version']['created_at'] !== $abstract['current_version']['updated_at']): ?>
+                                        <p class="mb-0 small">Last updated on <?= date('F j, Y', strtotime($abstract['current_version']['updated_at'])) ?></p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -80,10 +98,37 @@
                                         <i class="bx bx-info-circle me-1"></i> Fields marked with <span class="text-danger">*</span> are required for final submission.
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <form id="abstractForm" method="post" action="<?= isset($abstract) ? base_url('abstract-paper/update/' . $abstract['id']) : base_url('abstract-paper/save') ?>">
+
+                                <?php if (isset($abstract) && isset($abstractVersions) && count($abstractVersions) > 1): ?>
+                                    <div class="card-header bg-light-subtle border-top border-bottom">
+                                        <div class="d-flex align-items-center">
+                                            <h5 class="mb-0 me-3 fs-6">Version History</h5>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <?php foreach ($abstractVersions as $version): ?>
+                                                    <a href="<?= base_url('abstract-paper/edit/' . $abstract['id'] . '/' . $version['version_number']) ?>"
+                                                        class="btn <?= ($abstract['current_version']['version_number'] == $version['version_number']) ? 'btn-primary' : 'btn-outline-secondary' ?>">
+                                                        v<?= $version['version_number'] ?>
+                                                        <?php if (isset($version['is_active']) && $version['is_active'] == '1'): ?>
+                                                            <i class="bx bx-check-circle ms-1" data-bs-toggle="tooltip" title="Active Version"></i>
+                                                        <?php endif; ?>
+                                                    </a>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <div class="ms-auto">
+                                                <small class="text-muted">
+                                                    <i class="bx bx-info-circle"></i> Click on a version number to view or edit that version
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>                                <div class="card-body">
+                                    <form id="abstractForm" method="POST" action="">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="abstract_id" value="<?= isset($abstract) ? $abstract['id'] : '' ?>">
+                                        <?php if (isset($abstract) && isset($abstract['current_version'])): ?>
+                                            <input type="hidden" name="version_id" value="<?= $abstract['current_version']['id'] ?>">
+                                            <input type="hidden" name="version_number" value="<?= $abstract['current_version']['version_number'] ?>">
+                                        <?php endif; ?>
                                         <input type="hidden" name="program_id" value="<?= session()->get('current_program_id') ?>">
                                         <input type="hidden" name="primary_participant_id" value="<?= session()->get('current_participant_id') ?>">
                                         <div class="row mb-3">
@@ -95,7 +140,7 @@
                                                         <?php foreach ($topics as $topic): ?>
                                                             <option value="<?= $topic['id'] ?>"
                                                                 data-description="<?= htmlspecialchars($topic['description'] ?? '') ?>"
-                                                                <?= (isset($abstract) && $abstract['topic_id'] == $topic['id']) ? 'selected' : '' ?>>
+                                                                <?= (isset($abstract) && isset($abstract['abstract_topic_id']) && $abstract['abstract_topic_id'] == $topic['id']) ? 'selected' : '' ?>>
                                                                 <?= $topic['name'] ?>
                                                             </option>
                                                         <?php endforeach; ?>
@@ -109,29 +154,41 @@
                                             <div class="col-lg-12">
                                                 <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control" id="title" name="title"
-                                                    value="<?= isset($abstract) ? $abstract['title'] : '' ?>" required>
+                                                    value="<?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['title'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['title'] : '') ?>"
+                                                    placeholder="Enter a concise and descriptive title for your abstract" required>
                                                 <div class="invalid-feedback">Please enter the abstract title.</div>
+                                                <div class="form-text text-muted">A good title should clearly represent the content and focus of your research.</div>
+                                            </div>
+                                        </div>                                        <div class="row mb-3">
+                                            <div class="col-lg-12">
+                                                <label for="keywords" class="form-label">Keywords</label>
+                                                <input type="text" class="form-control" id="keywords" name="keywords"
+                                                    value="<?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['keywords'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['keywords'] : '') ?>"
+                                                    placeholder="Enter keywords separated by commas">
+                                                <div class="invalid-feedback">Please enter keywords.</div>
+                                                <div class="form-text text-muted">Enter keywords separated by commas (e.g., research, medicine, science)</div>
+                                            </div>
+                                        </div>
+
+
+                                        <div class="row mb-3">
+                                            <div class="col-lg-12">
+                                                <label class="form-label">Abstract Content <span class="text-danger">*</span></label>
+                                                <div id="abstract-editor" style="height: 300px;">
+                                                    <?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['content'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['content'] : '') ?>
+                                                </div>
+                                                <input type="hidden" name="content" id="abstract-content">
+                                                <div class="invalid-feedback" id="content-feedback">Please enter abstract content.</div>
                                             </div>
                                         </div>
 
                                         <div class="row mb-3">
                                             <div class="col-lg-12">
-                                                <label for="keywords" class="form-label">Keywords <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="keywords" name="keywords"
-                                                    value="<?= isset($abstract) ? $abstract['keywords'] : '' ?>"
-                                                    placeholder="Enter keywords separated by commas" required>
-                                                <div class="invalid-feedback">Please enter keywords.</div>
-                                                <div class="form-text text-muted">Enter keywords separated by commas (e.g., research, medicine, science)</div>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-lg-12">
-                                                <label class="form-label">Abstract Content <span class="text-danger">*</span></label>
-                                                <div id="abstract-editor" style="height: 300px;">
-                                                    <?= isset($abstract) ? $abstract['content'] : '' ?>
-                                                </div>
-                                                <input type="hidden" name="content" id="abstract-content">
-                                                <div class="invalid-feedback" id="content-feedback">Please enter abstract content.</div>
+                                                <label for="refs" class="form-label">References</label>
+                                                <textarea class="form-control" id="refs" name="refs" rows="6"
+                                                    placeholder="Enter references in the required format (e.g., APA, IEEE, etc.)"><?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['refs'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['refs'] : '') ?></textarea>
+                                                <div class="invalid-feedback">Please enter references.</div>
+                                                <div class="form-text text-muted">Include all references cited in your abstract following the conference's citation format</div>
                                             </div>
                                         </div>
 
@@ -144,10 +201,9 @@
                                                     <div class="hstack gap-2 justify-content-end">
                                                         <button type="button" class="btn btn-secondary" id="save-draft-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Save your work without submitting">
                                                             <i class="bx bx-save me-1"></i> Save Draft
-                                                        </button>
-                                                        <button type="submit" class="btn btn-primary" id="submit-btn">
-                                                            <i class="bx bx-check-circle me-1"></i> <?= isset($abstract) ? 'Update Abstract' : 'Submit Abstract' ?>
-                                                        </button>
+                                                        </button>                                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                                            <i class="bx bx-check-circle me-1"></i> Submit Abstract
+                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -176,11 +232,17 @@
 
     <?= $this->include('partials/vendor-scripts') ?>
 
-    <!-- Sweet Alert js-->
-    <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+    <!-- jQuery -->
+    <script src="/assets/libs/jquery/jquery.min.js"></script>
 
     <!-- quill js -->
     <script src="/assets/libs/quill/quill.min.js"></script>
+
+    <!-- Sweet Alerts js -->
+    <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+
+    <!-- Abstract Version Manager -->
+    <script src="/assets/js/abstract-version-manager.js"></script>
 
     <!-- init js -->
     <script>
@@ -222,8 +284,8 @@
                     ]
                 },
                 placeholder: 'Write your abstract content here...',
-            }); 
-            
+            });
+
             // Show SweetAlert messages if there are flash messages
             <?php if (session()->has('success')): ?>
                 <?php
@@ -270,9 +332,7 @@
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#5156be'
                 });
-            <?php endif; ?>
-
-            // Form submission handling
+            <?php endif; ?> // Form submission handling
             const abstractForm = document.getElementById('abstractForm');
             const submitBtn = document.getElementById('submit-btn');
             const saveDraftBtn = document.getElementById('save-draft-btn'); // Helper function to validate form
@@ -284,18 +344,20 @@
                 // Basic validation
                 let isValid = true;
 
-                // For draft, we only require title
+                // Topic is required for both draft and full submission
+                if (!document.getElementById('abstract_topic_id').value) {
+                    document.getElementById('abstract_topic_id').classList.add('is-invalid');
+                    isValid = false;
+                }
+
+                // Title is required for both draft and submission
+                if (!document.getElementById('title').value) {
+                    document.getElementById('title').classList.add('is-invalid');
+                    isValid = false;
+                }                // For full submission, we require additional fields
                 if (isFullValidation) {
-                    if (!document.getElementById('abstract_topic_id').value) {
-                        document.getElementById('abstract_topic_id').classList.add('is-invalid');
-                        isValid = false;
-                    }
-
-                    if (!document.getElementById('keywords').value) {
-                        document.getElementById('keywords').classList.add('is-invalid');
-                        isValid = false;
-                    }
-
+                    // Keywords are permit_empty according to API, so not required for submission
+                    
                     if (quill.getText().trim().length === 0) {
                         document.getElementById('abstract-editor').classList.add('is-invalid');
                         document.getElementById('content-feedback').style.display = 'block';
@@ -303,204 +365,21 @@
                     }
                 }
 
-                // Title is required for both draft and submission
-                if (!document.getElementById('title').value) {
-                    document.getElementById('title').classList.add('is-invalid');
-                    isValid = false;
-                }
-
                 return isValid;
-            } 
-            
-            // Prevent the form from submitting directly when the submit button is clicked
-            submitBtn.addEventListener('click', function(e) {
-                e.preventDefault();
+            }
 
-                // Validate with full validation
-                if (!validateForm(true)) {
-                    Swal.fire({
-                        title: 'Form Error!',
-                        text: 'Please fill in all required fields correctly.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#5156be'
-                    });
-                    return;
-                }
-
-                // Set status to submitted
-                if (!document.getElementById('status')) {
-                    const statusInput = document.createElement('input');
-                    statusInput.type = 'hidden';
-                    statusInput.id = 'status';
-                    statusInput.name = 'status';
-                    statusInput.value = 'submitted';
-                    abstractForm.appendChild(statusInput);
-                } else {
-                    document.getElementById('status').value = 'submitted';
-                }
-
-                // Show confirmation dialog
-                Swal.fire({
-                    title: 'Submit Abstract',
-                    html: `
-                        <div class="text-start">
-                            <p>Are you sure you want to submit this abstract? This will finalize your submission.</p>
-                            <p class="mb-0"><strong>Note:</strong></p>
-                            <ul class="text-start mb-0">
-                                <li>All required fields must be completed.</li>
-                                <li>After submission, your abstract will be sent for review.</li>
-                                <li>You can still view your submission and track its status.</li>
-                            </ul>
-                        </div>
-                    `,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, submit it!',
-                    cancelButtonText: 'No, review again',
-                    confirmButtonColor: '#5156be',
-                    cancelButtonColor: '#fd625e'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Disable buttons to prevent multiple submissions
-                        submitBtn.disabled = true;
-                        saveDraftBtn.disabled = true;
-
-                        // Show loading spinner on the submit button
-                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Submitting...';
-
-                        // Show submission in progress dialog
-                        Swal.fire({
-                            title: 'Submitting Abstract',
-                            html: `
-                                <div class="text-start">
-                                    <p><i class="bx bx-paper-plane me-1"></i> Submitting your abstract for review...</p>
-                                    <p><small>This may take a few moments. Please don't close this window.</small></p>
-                                    <div class="progress mt-3">
-                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
-                                    </div>
-                                </div>
-                            `,
-                            icon: 'info',
-                            showConfirmButton: false,
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            didOpen: () => {
-                                // Submit the form after showing the dialog
-                                setTimeout(() => {
-                                    abstractForm.submit();
-
-                                    // Set a timeout to show a message if the server takes too long
-                                    setTimeout(() => {
-                                        // Check if the alert is still open
-                                        if (Swal.isVisible()) {
-                                            Swal.update({
-                                                title: 'Still Processing',
-                                                html: `
-                                                    <div class="text-start">
-                                                        <p><i class="bx bx-time me-1"></i> The server is taking longer than expected to respond.</p>
-                                                        <p>Your request is still being processed. You can:</p>
-                                                        <ul>
-                                                            <li>Continue waiting</li>
-                                                            <li>Check your abstract list in a few minutes to see if it was submitted</li>
-                                                            <li>Try again if you don't see your abstract in the list</li>
-                                                        </ul>
-                                                    </div>
-                                                `,
-                                                icon: 'warning'
-                                            });
-                                        }
-                                    }, 20000); // Show timeout message after 20 seconds
-                                }, 500);
-                            }
-                        });
-                    }
-                });
-            }); 
-            
-            // Save Draft functionality
-            saveDraftBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-
-                // Only validate title for draft
-                if (!validateForm(false)) {
-                    Swal.fire({
-                        title: 'Form Error!',
-                        text: 'Please provide at least a title for your draft.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#5156be'
-                    });
-                    return;
-                }
-
-                // Disable buttons to prevent multiple submissions
-                saveDraftBtn.disabled = true;
-                submitBtn.disabled = true;
-
-                // Show loading spinner on the save draft button
-                saveDraftBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
-
-                // Add a hidden field to indicate this is a draft
-                if (!document.getElementById('status')) {
-                    const statusInput = document.createElement('input');
-                    statusInput.type = 'hidden';
-                    statusInput.id = 'status';
-                    statusInput.name = 'status';
-                    statusInput.value = 'draft';
-                    abstractForm.appendChild(statusInput);
-                } else {
-                    document.getElementById('status').value = 'draft';
-                }
-
-                // Show a detailed saving message with timeout
-                let saveAlert = Swal.fire({
-                    title: 'Saving Draft',
-                    html: `
-                        <div class="text-start">
-                            <p><i class="bx bx-save me-1"></i> Saving your draft abstract...</p>
-                            <p><small>This may take a few moments. Please don't close this window.</small></p>
-                            <div class="progress mt-3">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
-                            </div>
-                        </div>
-                    `,
-                    icon: 'info',
-                    showConfirmButton: false,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        // Submit the form after showing the dialog
-                        setTimeout(() => {
-                            abstractForm.submit();
-
-                            // Set a timeout to show a message if the server takes too long
-                            setTimeout(() => {
-                                // Check if the alert is still open
-                                if (Swal.isVisible()) {
-                                    Swal.update({
-                                        title: 'Still Processing',
-                                        html: `
-                                            <div class="text-start">
-                                                <p><i class="bx bx-time me-1"></i> The server is taking longer than expected to respond.</p>
-                                                <p>Your request is still being processed. You can:</p>
-                                                <ul>
-                                                    <li>Continue waiting</li>
-                                                    <li>Check your abstract list in a few minutes to see if it was saved</li>
-                                                    <li>Try again if you don't see your abstract in the list</li>
-                                                </ul>
-                                            </div>
-                                        `,
-                                        icon: 'warning'
-                                    });
-                                }
-                            }, 20000); // Show timeout message after 20 seconds
-                        }, 500);
-                    }
-                });
-            });
-
-            // Clear validation error on input
+            // Function to extract content from Quill editor
+            function getQuillContent() {
+                return quill.root.innerHTML;
+            }            // Setup form handlers - use traditional form submission for all abstracts
+            console.log('Setting up form handlers');
+            setupNewAbstractHandlers(
+                '#abstractForm',
+                '#save-draft-btn',
+                '#submit-btn',
+                getQuillContent,
+                validateForm
+            );// Clear validation error on input
             const inputs = document.querySelectorAll('.form-control, .form-select');
             inputs.forEach(input => {
                 input.addEventListener('input', function() {

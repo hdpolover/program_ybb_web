@@ -8,12 +8,11 @@
                 <div class="mb-4">
                     <i class="mdi mdi-file-document-outline text-primary" style="font-size: 3.5rem;"></i>
                 </div>
-                <h5 class="font-size-16 mb-3">You haven't submitted an abstract yet</h5>
-                <p class="text-muted mb-4">
+                <h5 class="font-size-16 mb-3">You haven't submitted an abstract yet</h5>                <p class="text-muted mb-4">
                     Start your contribution by submitting your work. This is an essential step in the academic submission process. You'll need to provide relevant details including topic, title, keywords, and content summary. You can also collaborate with co-authors to enhance your submission before finalizing.
                 </p>
                 <button id="create-abstract-btn" class="btn btn-primary waves-effect waves-light">
-                    <i class="mdi mdi-plus me-1"></i> Create New Abstract
+                    <i class="bx bx-plus me-1"></i> Create New Abstract
                 </button>
             </div>
         </div>

@@ -527,21 +527,190 @@ abstract class BaseController extends Controller
             log_message('error', 'Exception trace: ' . $e->getTraceAsString());            
             return ['error' => 'unexpected_error', 'message' => $errorMessage];
         }
-    }
+    }    /**
+     * Make a POST request to an API endpoint and return the full response (not just data)
+     * 
+     * @param string $endpoint The API endpoint
+     * @param array|string $data The data to send
+     * @param array $headers Additional headers
+     * @param bool $useJwt Whether to use JWT authorization
+     * @param bool $asJson Whether to send data as JSON
+     * @param bool $isMultipart Whether to send as multipart
+     * @param array $multipartData Additional multipart data
+     * @return mixed Full response data
+     */
+    function makePostRequestFullResponse($endpoint, $data, $headers = [], $useJwt = false, $asJson = false, $isMultipart = false, $multipartData = [])
+    {
+        try {
+            $url = $this->apiBaseUrl . $endpoint;
+            $options = [];
 
-    /**
+            // Handle data format based on parameters
+            if ($isMultipart) {
+                // Use multipart/form-data format (for file uploads)
+                $options['multipart'] = [];
+
+                // Add regular form fields to multipart data
+                if (is_array($data)) {
+                    foreach ($data as $name => $contents) {
+                        // Convert any arrays to JSON strings to prevent "Array to string conversion" errors
+                        if (is_array($contents)) {
+                            $contents = json_encode($contents);
+                        }
+                        $options['multipart'][] = [
+                            'name' => $name,
+                            'contents' => $contents
+                        ];
+                    }
+                }
+
+                // Add provided multipart data (files)
+                if (!empty($multipartData)) {
+                    foreach ($multipartData as $part) {
+                        // Ensure each part has the required fields and is properly formatted
+                        if (isset($part['name']) && isset($part['contents']) && isset($part['filename'])) {
+                            $options['multipart'][] = $part;
+                        } else {
+                            log_message('warning', 'Skipping invalid multipart data: ' . json_encode($part));
+                        }
+                    }
+                }
+
+                // For multipart requests, we need to let the client set the Content-Type
+                // Create headers without Content-Type to let Guzzle set it properly for multipart data
+                $multipartHeaders = [
+                    'Accept' => 'application/json'
+                ];
+
+                // Do NOT include the default headers which contain Content-Type: application/json
+                // This is critical for multipart requests
+                $options['headers'] = array_merge($multipartHeaders, $headers);
+
+                // Explicitly remove Content-Type if it exists to let Guzzle handle it
+                if (isset($options['headers']['Content-Type'])) {
+                    unset($options['headers']['Content-Type']);
+                }
+            } else if ($asJson) {
+                // Use JSON format
+                $options['body'] = is_array($data) ? json_encode($data) : $data;
+                $options['headers'] = array_merge($this->defaultHeaders, $headers);
+                
+                // Explicitly ensure Content-Type is set for JSON
+                $options['headers']['Content-Type'] = 'application/json';
+                log_message('debug', 'POST as JSON with Content-Type: application/json');
+            } else {
+                // Use regular form data format
+                $options['form_params'] = $data;
+
+                // Only include Content-Type: application/json if explicitly requested
+                $formHeaders = [
+                    'Accept' => 'application/json'
+                ];
+                $options['headers'] = array_merge($formHeaders, $headers);
+                log_message('debug', 'POST as form data without JSON Content-Type');
+            }
+
+            // Add JWT token to headers if needed
+            if ($useJwt) {
+                $token = $this->getJwtToken();
+                if ($token) {
+                    $options['headers']['Authorization'] = 'Bearer ' . $token;
+                }
+            }
+
+            // Log the URL and request data for debugging
+            log_message('debug', "POST Request URL: " . $url);
+            log_message('debug', "POST Request Data: " . json_encode($data));
+            log_message('debug', "POST Request Headers: " . json_encode($options['headers']));
+            log_message('debug', "POST Request as JSON: " . ($asJson ? 'Yes' : 'No'));
+
+            // Set up additional options
+            $options['http_errors'] = false; // Don't throw exceptions for error responses
+            $options['timeout'] = 30; // Set a longer timeout for API calls
+            $options['connect_timeout'] = 10; // Add connection timeout
+
+            // Make the request
+            try {
+                $response = $this->client->request('POST', $url, $options);
+                
+                // Get response body
+                $responseBody = $response->getBody();
+                $bodyText = '';
+                
+                // Safely read the response body
+                if ($responseBody) {
+                    $bodyText = (string)$responseBody;
+                }
+                
+                $bodyDecoded = null;
+                if (!empty($bodyText)) {
+                    $bodyDecoded = json_decode($bodyText, true);
+                }
+                
+                // Get HTTP status code
+                $statusCode = $response->getStatusCode();
+                log_message('debug', "POST Response Status Code: " . $statusCode);
+                
+                // Log response body for debugging
+                log_message('debug', "POST Response Body: " . ($bodyText ?: 'empty'));
+                
+                // Check if response is valid JSON
+                if ($bodyText && json_last_error() !== JSON_ERROR_NONE) {
+                    log_message('error', "POST Response is not valid JSON: " . json_last_error_msg());
+                    // Try to return something useful even if it's not JSON
+                    return ['error' => 'Invalid JSON response', 'raw_response' => $bodyText];
+                }
+                
+                // Return the FULL response, not just the data portion
+                return $bodyDecoded ?: ['error' => 'empty_response', 'status_code' => $statusCode];
+                
+            } catch (\Exception $e) {
+                // Handle all connection errors (timeouts, DNS failures, etc.)
+                $isConnectionError = (strpos($e->getMessage(), 'Connection') !== false || 
+                                    strpos($e->getMessage(), 'timeout') !== false ||
+                                    strpos($e->getMessage(), 'DNS') !== false);
+                
+                if ($isConnectionError) {
+                    log_message('error', 'POST Request Connection Error: ' . $e->getMessage());
+                    log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
+                    return ['error' => 'connection_failed', 'message' => 'Could not connect to API server'];
+                } else {
+                    // Handle all other errors
+                    $errorMessage = $e->getMessage();
+                    log_message('error', 'POST Request Error: ' . $errorMessage);
+                    log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
+                    log_message('error', 'Exception trace: ' . $e->getTraceAsString());
+                    
+                    return ['error' => 'request_failed', 'message' => $errorMessage];
+                }
+            }
+        } catch (\Exception $e) {
+            // Outer catch block for any unexpected errors
+            $errorMessage = $e->getMessage();
+            log_message('error', 'Unexpected POST Request Error: ' . $errorMessage);
+            log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
+            log_message('error', 'Exception trace: ' . $e->getTraceAsString());            
+            return ['error' => 'unexpected_error', 'message' => $errorMessage];
+        }
+    }    /**
      * Make a PUT request to an API endpoint with optional JWT authentication
      * 
      * @param string $endpoint The API endpoint
      * @param array|string $data The data to send
      * @param array $headers Additional headers
      * @param bool $useJwt Whether to use JWT authorization
+     * @param bool $returnException Whether to return exception (true) or throw it (false)
      * @return mixed Response data or null on error
      */
-    function makePutRequest($endpoint, $data, $headers = [], $useJwt = false)
+    function makePutRequest($endpoint, $data, $headers = [], $useJwt = false, $returnException = false)
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
+            
+            // Log the request details (without sensitive information)
+            $logData = $data;
+            if (isset($logData['password'])) $logData['password'] = '***';
+            log_message('info', 'Making PUT request to: ' . $url . ' with data: ' . json_encode($logData));
 
             // Prepare the request body
             $requestBody = is_array($data) ? json_encode($data) : $data;
@@ -565,9 +734,13 @@ abstract class BaseController extends Controller
                 return $bodyDecoded['data'];
             } else {
                 return $bodyDecoded; // Return the whole response if 'data' key is not present
-            }
-        } catch (\Exception $e) {
+            }        } catch (\Exception $e) {
             log_message('error', 'PUT Request Error: ' . $e->getMessage());
+            if ($returnException) {
+                return $e;
+            } else {
+                throw $e;
+            }
             return null;
         }
     }
