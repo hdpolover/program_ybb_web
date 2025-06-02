@@ -316,8 +316,7 @@ abstract class BaseController extends Controller
             }
         } catch (\Exception $e) {
             log_message('error', 'BaseController - Failed to get program type ID: ' . $e->getMessage());
-            return null;
-        }
+            return null;        }
     }
 
     // create a fucntion for get requests that accepts endpoint and headers and returns response as json
@@ -326,6 +325,9 @@ abstract class BaseController extends Controller
         try {
             // combine endpoint with base url
             $url = $this->apiBaseUrl . $endpoint;
+            
+            // Log the request URL for debugging
+            log_message('debug', 'Making GET request to: ' . $url);
 
             // Add JWT token to headers if needed
             if ($useJwt) {
@@ -338,8 +340,15 @@ abstract class BaseController extends Controller
             $response = $this->client->request('GET', $url, [
                 'headers' => array_merge($this->defaultHeaders, $headers),
             ]);
+            
+            // Log the response status code
+            $statusCode = $response->getStatusCode();
+            log_message('debug', 'API response status code: ' . $statusCode);
 
             $bodyDecoded = json_decode($response->getBody(), true);
+            
+            // Log the full response for debugging
+            log_message('debug', 'API response body: ' . json_encode($bodyDecoded));
 
             if (isset($bodyDecoded['data'])) {
                 return $bodyDecoded['data'];
@@ -357,9 +366,20 @@ abstract class BaseController extends Controller
 
                 return $bodyDecoded; // Return the whole response if 'data' key is not present
             }
+        } catch (\CodeIgniter\HTTP\Exceptions\HTTPException $e) {
+            // Handle HTTP-specific exceptions
+            $statusCode = $e->getCode();
+            log_message('error', 'HTTP Error: ' . $e->getMessage() . ' (Status Code: ' . $statusCode . ')');
+            
+            if ($statusCode == 404) {
+                log_message('error', 'API endpoint not found: ' . $endpoint);
+            }
+            
+            return null;
         } catch (\Exception $e) {
             // Log the error or handle it as needed
-            log_message('error', $e->getMessage());
+            log_message('error', 'Error in makeGetRequest: ' . $e->getMessage() . ' (' . get_class($e) . ')');
+            log_message('error', 'Error trace: ' . $e->getTraceAsString());
             return null;
         }
     }

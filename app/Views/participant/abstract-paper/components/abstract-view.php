@@ -32,13 +32,13 @@ $versionCount = count($versions);
 $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion['version_number'] : 1;
 ?>
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-primary py-3"> <!-- Title with Edit Button at Top Right -->
-        <div class="d-flex justify-content-between align-items-start mb-3">            <h1 class="card-title mb-0 text-white fw-bold">
+    <div class="card-header bg-primary py-3"> <!-- Title with Edit Button at Top Right -->        <div class="d-flex justify-content-between align-items-start mb-3">            <h1 class="card-title mb-0 text-white fw-bold">
                 <?= esc($latestVersion['title'] ?? 'Untitled Abstract') ?>
             </h1>
-            <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id']) ?>" 
+            <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id'] . '/' . $latestVersionNumber) ?>" 
                class="btn btn-light btn-sm edit-abstract-btn" 
                data-abstract-id="<?= $participant_data['abstract']['id'] ?>"
+               data-version-id="<?= $latestVersionNumber ?>"
                data-ajax="false">
                 <i class="bx bx-edit me-1"></i> Edit Abstract
             </a>
@@ -321,9 +321,8 @@ $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion[
                                                         <i class="bx <?= isset($version['status']) && $version['status'] === 'submitted' ? 'bx-check-circle' : 'bx-time' ?> me-1"></i>
                                                         <?= isset($version['status']) ? ucfirst($version['status']) : 'Draft' ?>
                                                     </span>
-                                                    <div class="btn-group btn-group-sm" role="group">
-                                                        <?php if ($index === 0): // Only show edit button for the latest version ?>
-                                                        <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id']) ?>" 
+                                                    <div class="btn-group btn-group-sm" role="group">                                                        <?php if ($index === 0): // Only show edit button for the latest version ?>
+                                                        <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id'] . '/' . $versionNum) ?>" 
                                                            class="btn btn-primary btn-sm view-version-btn"
                                                            data-abstract-id="<?= $participant_data['abstract']['id'] ?>"
                                                            data-version-id="<?= $version['id'] ?>">

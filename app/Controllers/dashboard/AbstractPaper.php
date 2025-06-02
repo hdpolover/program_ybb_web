@@ -11,7 +11,7 @@ class AbstractPaper extends BaseController
         // Helper for form and url functions
         helper(['form', 'url']);
     }
-    
+
     public function index()
     {
         // Get participant ID from session
@@ -19,7 +19,7 @@ class AbstractPaper extends BaseController
         $abstractData = $this->makeGetRequest('/abstracts/participant/' . $participantId . '/details', [], false);
 
         log_message('info', 'Participant Data: ' . print_r($abstractData, true));
-        
+
         // Build view data
         $data = [
             'title' => 'Abstract and Paper',
@@ -41,24 +41,43 @@ class AbstractPaper extends BaseController
 
         return $this->render('participant/abstract-paper/manage-abstract', $data);
     }
-    
+
     public function edit($id, $versionId = 1)
     {
+        // Add debug logging
+        log_message('debug', "Edit method called with ID: {$id}, Version ID: {$versionId}");
+
         // Get abstract data by ID
         try {
             // Call API to get abstract data
             $abstract = $this->makeGetRequest('/abstracts/' . $id, [], false);
 
             if (!$abstract) {
+                log_message('error', "Abstract not found with ID: {$id}");
                 return redirect()->to('/abstract-paper')->with('error', 'Abstract not found.');
-            }
-
+            }            
+            
             // Get abstract versions
             $abstractVersions = $this->makeGetRequest('/abstracts/' . $id . '/versions', [], false);
-            
+            log_message('debug', "Abstract versions API response: " . json_encode($abstractVersions));
+
             // Find the specific version based on version ID
             $currentVersion = null;
+            $latestVersion = null;
+
             if (!empty($abstractVersions)) {
+                // Sort versions to ensure we have the latest one
+                usort($abstractVersions, function ($a, $b) {
+                    $a_version = isset($a['version_number']) ? (int)$a['version_number'] : 0;
+                    $b_version = isset($b['version_number']) ? (int)$b['version_number'] : 0;
+                    return $b_version - $a_version; // Descending order (latest first)
+                });
+
+                // The latest version will be the first one after sorting
+                $latestVersion = $abstractVersions[0];
+                $latestVersionNumber = isset($latestVersion['version_number']) ? (int)$latestVersion['version_number'] : 1;
+
+                // If a specific version was requested
                 if ($versionId > 1) {
                     // Search for the specific version by version_number
                     foreach ($abstractVersions as $version) {
@@ -67,29 +86,51 @@ class AbstractPaper extends BaseController
                             break;
                         }
                     }
-                    
-                    // If requested version not found, use the first one
+
+                    // If the requested version is not the latest, redirect to the latest version
+                    // with a notice that they should be working with the latest version
+                    if ($currentVersion && (int)$currentVersion['version_number'] < $latestVersionNumber) {
+                        return redirect()->to('/abstract-paper/edit/' . $id . '/' . $latestVersionNumber)
+                            ->with('warning', 'You have been redirected to the latest version (' . $latestVersionNumber . ') of this abstract. Always edit the most recent version to avoid conflicts.')
+                            ->with('warning_title', 'Using Latest Version');
+                    }
+
+                    // If requested version not found, use the latest one
                     if (!$currentVersion) {
-                        $currentVersion = $abstractVersions[0];
+                        $currentVersion = $latestVersion;
                         log_message('warning', 'Requested version ' . $versionId . ' not found for abstract ' . $id . '. Using latest version instead.');
                     }
                 } else {
-                    // Default to first version if no specific version requested
-                    $currentVersion = $abstractVersions[0];
+                    // Default to latest version if no specific version requested
+                    $currentVersion = $latestVersion;
                 }
-                
+
                 // Replace abstract data with the selected version data
                 $abstract['current_version'] = $currentVersion;
-            }
-
+            }            
+            
             // Get available topics
             $topics = $this->getAvailableTopics();
+
+            // abstract settings data
+            $programId = $abstract['program_id'] ?? null;
+            
+            $abstractSettings = $this->makeGetRequest('/abstract-settings/program/' . $programId, [], false);
 
             $data = [
                 'title' => 'Edit Abstract',
                 'abstract' => $abstract,
-                'topics' => $topics
+                'abstractVersions' => $abstractVersions,
+                'topics' => $topics,
+                'abstractSettings' => $abstractSettings
             ];
+
+            log_message('debug', "Rendering edit view with data: " . json_encode([
+                'abstract_id' => $abstract['id'] ?? null,
+                'version_count' => count($abstractVersions),
+                'current_version_id' => $abstract['current_version']['id'] ?? null,
+                'current_version_number' => $abstract['current_version']['version_number'] ?? null
+            ]));
 
             return $this->render('participant/abstract-paper/manage-abstract', $data);
         } catch (\Exception $e) {
@@ -97,7 +138,7 @@ class AbstractPaper extends BaseController
             return redirect()->to('/abstract-paper')->with('error', 'Unable to load abstract. Please try again later.');
         }
     }
-      public function save()
+    public function save()
     {
         // Check if this is a draft
         $isDraft = $this->request->getPost('status') === 'draft';
@@ -177,7 +218,7 @@ class AbstractPaper extends BaseController
 
             // Get the first version for the flash data
             $currentVersion = !empty($response['abstract']['versions']) ? $response['abstract']['versions'][0] : null;
-            
+
             // Save the abstract details in flash data to display in SweetAlert
             session()->setFlashdata('abstract_data', [
                 'id' => $response['abstract']['id'] ?? 'N/A',
@@ -195,14 +236,38 @@ class AbstractPaper extends BaseController
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
-      public function update($id)
+    public function update($id)
     {
         // Add debugging
         log_message('info', 'Update method called with ID: ' . $id);
         log_message('info', 'POST data: ' . json_encode($this->request->getPost()));
-        
+
+        // Get abstract versions to verify we're updating the latest version
+        $abstractVersions = $this->makeGetRequest('/abstracts/' . $id . '/versions', [], false);
+
+        if (!empty($abstractVersions)) {
+            // Sort versions by version_number in descending order
+            usort($abstractVersions, function ($a, $b) {
+                $a_version = isset($a['version_number']) ? (int)$a['version_number'] : 0;
+                $b_version = isset($b['version_number']) ? (int)$b['version_number'] : 0;
+                return $b_version - $a_version; // Descending order (latest first)
+            });
+
+            // Get the latest version number
+            $latestVersionNumber = isset($abstractVersions[0]['version_number']) ? (int)$abstractVersions[0]['version_number'] : 1;
+            $currentVersionNumber = (int)$this->request->getPost('version_number');
+
+            // If the version being updated is not the latest, redirect to edit the latest version
+            if ($currentVersionNumber < $latestVersionNumber) {
+                return redirect()->to('/abstract-paper/edit/' . $id . '/' . $latestVersionNumber)
+                    ->with('warning', 'You attempted to update an older version (' . $currentVersionNumber . ') of this abstract. 
+                    You have been redirected to the latest version (' . $latestVersionNumber . '). Always edit the most recent version to avoid conflicts.')
+                    ->with('warning_title', 'Using Latest Version');
+            }
+        }
+
         // Check if this is a draft
-        $isDraft = $this->request->getPost('status') === 'draft';// Define validation rules based on whether it's a draft or final submission
+        $isDraft = $this->request->getPost('status') === 'draft'; // Define validation rules based on whether it's a draft or final submission
         if ($isDraft) {
             // For drafts, we only require topic and title
             $rules = [
@@ -232,12 +297,13 @@ class AbstractPaper extends BaseController
             'content' => $this->request->getPost('content'),
             'status' => $this->request->getPost('status'),
             'version_id' => $this->request->getPost('version_id')
-        ];        try {
+        ];
+        try {
             // Use the correct API endpoint for saving/updating abstract versions
             $endpoint = '/abstracts/' . $id . '/save-version';
             log_message('info', 'Updating abstract version with endpoint: ' . $endpoint);
             log_message('info', 'Sending data: ' . json_encode($data));
-            
+
             $response = $this->makePostRequest($endpoint, $data, [], false, false);
 
             // Check if the response indicates an error
@@ -268,14 +334,15 @@ class AbstractPaper extends BaseController
                     " (Draft ID: {$abstractId})" :
                     " (Submission ID: {$abstractId})";
             }
-            
+
             // Add version information to the message
             $versionId = $this->request->getPost('version_id');
             $versionNumber = $this->request->getPost('version_number');
             if ($versionId && $versionNumber) {
                 log_message('info', "Updated abstract version {$versionNumber} (ID: {$versionId}) for abstract {$id}");
                 $message .= " (Version: {$versionNumber})";
-            }$title = $isDraft ? 'Draft Updated' : 'Update Complete';
+            }
+            $title = $isDraft ? 'Draft Updated' : 'Update Complete';
 
             // Get the updated version details
             $currentVersion = null;
@@ -288,13 +355,13 @@ class AbstractPaper extends BaseController
                         break;
                     }
                 }
-                
+
                 // If not found, use the first version
                 if (!$currentVersion && !empty($response['abstract']['versions'])) {
                     $currentVersion = $response['abstract']['versions'][0];
                 }
             }
-            
+
             // Save the abstract details in flash data to display in SweetAlert
             session()->setFlashdata('abstract_data', [
                 'id' => $response['abstract']['id'] ?? $id,
@@ -312,7 +379,7 @@ class AbstractPaper extends BaseController
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
-    
+
     /**
      * Add a new author to an abstract
      *
@@ -324,7 +391,7 @@ class AbstractPaper extends BaseController
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $abstractId = $this->request->getPost('abstract_id');
-            
+
             // Validate input
             $rules = [
                 'full_name' => 'required|min_length[3]|max_length[255]',
@@ -332,12 +399,12 @@ class AbstractPaper extends BaseController
                 'institution' => 'required|min_length[3]|max_length[255]',
                 'role' => 'required|in_list[co_author,presenting]',
             ];
-            
+
             if (!$this->validate($rules)) {
                 // Return with validation errors
                 return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
             }
-            
+
             // Prepare data for API
             $authorData = [
                 'full_name' => $this->request->getPost('full_name'),
@@ -346,20 +413,20 @@ class AbstractPaper extends BaseController
                 'address' => $this->request->getPost('address'),
                 'is_presenting' => ($this->request->getPost('role') === 'presenting') ? 1 : 0
             ];
-            
+
             // Make API request to add author
             $response = $this->makePostRequest('/abstracts/' . $abstractId . '/authors', $authorData);
-            
+
             if (isset($response['success']) && $response['success']) {
                 return redirect()->to(base_url('abstract-paper'))->with('success', 'Author added successfully.');
             }
-            
+
             return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to add author.');
         }
-        
+
         // Handle AJAX request
         $abstractId = $this->request->getPost('abstract_id');
-        
+
         // Validate input
         $rules = [
             'full_name' => 'required|min_length[3]|max_length[255]',
@@ -367,7 +434,7 @@ class AbstractPaper extends BaseController
             'institution' => 'required|min_length[3]|max_length[255]',
             'role' => 'required|in_list[co_author,presenting]',
         ];
-        
+
         if (!$this->validate($rules)) {
             return $this->response->setJSON([
                 'success' => false,
@@ -375,7 +442,7 @@ class AbstractPaper extends BaseController
                 'message' => 'Please fix the errors in the form.'
             ]);
         }
-        
+
         // Prepare data for API
         $authorData = [
             'full_name' => $this->request->getPost('full_name'),
@@ -384,13 +451,13 @@ class AbstractPaper extends BaseController
             'address' => $this->request->getPost('address'),
             'is_presenting' => ($this->request->getPost('role') === 'presenting') ? 1 : 0
         ];
-        
+
         // Make API request to add author
         $response = $this->makePostRequest('/abstracts/' . $abstractId . '/authors', $authorData);
-        
+
         return $this->response->setJSON($response);
     }
-    
+
     /**
      * Update an existing author
      *
@@ -403,7 +470,7 @@ class AbstractPaper extends BaseController
             // Regular form submission
             $authorId = $this->request->getPost('author_id');
             $abstractId = $this->request->getPost('abstract_id');
-            
+
             // Validate input
             $rules = [
                 'full_name' => 'required|min_length[3]|max_length[255]',
@@ -411,12 +478,12 @@ class AbstractPaper extends BaseController
                 'institution' => 'required|min_length[3]|max_length[255]',
                 'role' => 'permit_empty|in_list[co_author,presenting]',
             ];
-            
+
             if (!$this->validate($rules)) {
                 // Return with validation errors
                 return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
             }
-            
+
             // Prepare data for API
             $authorData = [
                 'full_name' => $this->request->getPost('full_name'),
@@ -424,26 +491,26 @@ class AbstractPaper extends BaseController
                 'institution' => $this->request->getPost('institution'),
                 'address' => $this->request->getPost('address')
             ];
-            
+
             // Only update role if provided and not primary author
             if ($this->request->getPost('role')) {
                 $authorData['is_presenting'] = ($this->request->getPost('role') === 'presenting') ? 1 : 0;
             }
-            
+
             // Make API request to update author
             $response = $this->makePutRequest('/abstracts/' . $abstractId . '/authors/' . $authorId, $authorData);
-            
+
             if (isset($response['success']) && $response['success']) {
                 return redirect()->to(base_url('abstract-paper'))->with('success', 'Author updated successfully.');
             }
-            
+
             return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to update author.');
         }
-        
+
         // Handle AJAX request
         $authorId = $this->request->getPost('author_id');
         $abstractId = $this->request->getPost('abstract_id');
-        
+
         // Validate input
         $rules = [
             'full_name' => 'required|min_length[3]|max_length[255]',
@@ -451,7 +518,7 @@ class AbstractPaper extends BaseController
             'institution' => 'required|min_length[3]|max_length[255]',
             'role' => 'permit_empty|in_list[co_author,presenting]',
         ];
-        
+
         if (!$this->validate($rules)) {
             return $this->response->setJSON([
                 'success' => false,
@@ -459,7 +526,7 @@ class AbstractPaper extends BaseController
                 'message' => 'Please fix the errors in the form.'
             ]);
         }
-        
+
         // Prepare data for API
         $authorData = [
             'full_name' => $this->request->getPost('full_name'),
@@ -467,18 +534,18 @@ class AbstractPaper extends BaseController
             'institution' => $this->request->getPost('institution'),
             'address' => $this->request->getPost('address')
         ];
-        
+
         // Only update role if provided and not primary author
         if ($this->request->getPost('role')) {
             $authorData['is_presenting'] = ($this->request->getPost('role') === 'presenting') ? 1 : 0;
         }
-        
+
         // Make API request to update author
         $response = $this->makePutRequest('/abstracts/' . $abstractId . '/authors/' . $authorId, $authorData);
-        
+
         return $this->response->setJSON($response);
     }
-    
+
     /**
      * Delete an author
      *
@@ -491,27 +558,27 @@ class AbstractPaper extends BaseController
             // Regular form submission
             $authorId = $this->request->getPost('author_id');
             $abstractId = $this->request->getPost('abstract_id');
-            
+
             // Make API request to delete author
             $response = $this->makeDeleteRequest('/abstracts/' . $abstractId . '/authors/' . $authorId);
-            
+
             if (isset($response['success']) && $response['success']) {
                 return redirect()->to(base_url('abstract-paper'))->with('success', 'Author deleted successfully.');
             }
-            
+
             return redirect()->back()->with('error', $response['message'] ?? 'Failed to delete author.');
         }
-        
+
         // Handle AJAX request
         $authorId = $this->request->getPost('author_id');
         $abstractId = $this->request->getPost('abstract_id');
-        
+
         // Make API request to delete author
         $response = $this->makeDeleteRequest('/abstracts/' . $abstractId . '/authors/' . $authorId);
-        
+
         return $this->response->setJSON($response);
     }
-    
+
     /**
      * Get available topics for abstract submission
      */
@@ -530,7 +597,7 @@ class AbstractPaper extends BaseController
             return [];
         }
     }
-    
+
     /**
      * Helper method to handle API errors and extract meaningful messages
      */

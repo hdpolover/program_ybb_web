@@ -41,14 +41,28 @@
                     echo view('partials/page-title', array('pagetitle' => 'Abstract Management', 'title' => $pageTitle));
                     ?>
 
-                    <!-- Display validation errors and flash messages -->
-                    <?php if (session()->has('errors')): ?>
+                    <!-- Display validation errors and flash messages --> <?php if (session()->has('errors')): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <ul class="mb-0">
                                 <?php foreach (session('errors') as $error): ?>
                                     <li><?= esc($error) ?></li>
                                 <?php endforeach; ?>
                             </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (session()->has('warning')): ?>
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-2">
+                                    <i class="bx bx-info-circle fs-5"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading"><?= session()->has('warning_title') ? session('warning_title') : 'Warning' ?></h5>
+                                    <p class="mb-0"><?= session('warning') ?></p>
+                                </div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
@@ -78,8 +92,8 @@
                                     <i class="bx bx-revision fs-5"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h5 class="alert-heading">Editing Abstract Version</h5>
-                                    <p class="mb-0">You are editing version <?= $abstract['current_version']['version_number'] ?> of your abstract, created on <?= date('F j, Y', strtotime($abstract['current_version']['created_at'])) ?>.</p>
+                                    <h5 class="alert-heading">Editing Abstract</h5>
+                                    <p class="mb-0">You are currently editing version <?= $abstract['current_version']['version_number'] ?> of your abstract, created on <?= date('F j, Y', strtotime($abstract['current_version']['created_at'])) ?>.</p>
                                     <?php if (isset($abstract['current_version']['updated_at']) && $abstract['current_version']['created_at'] !== $abstract['current_version']['updated_at']): ?>
                                         <p class="mb-0 small">Last updated on <?= date('F j, Y', strtotime($abstract['current_version']['updated_at'])) ?></p>
                                     <?php endif; ?>
@@ -95,33 +109,10 @@
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h4 class="card-title mb-0"><?= $pageTitle ?></h4>
                                     <div class="text-muted small">
-                                        <i class="bx bx-info-circle me-1"></i> Fields marked with <span class="text-danger">*</span> are required for final submission.
+                                        <i class="bx bx-info-circle me-1"></i> Fields marked with <span class="text-danger">*</span> are required for final submission. Only <strong>Topic</strong> and <strong>Title</strong> are required for saving as draft.
                                     </div>
                                 </div>
-
-                                <?php if (isset($abstract) && isset($abstractVersions) && count($abstractVersions) > 1): ?>
-                                    <div class="card-header bg-light-subtle border-top border-bottom">
-                                        <div class="d-flex align-items-center">
-                                            <h5 class="mb-0 me-3 fs-6">Version History</h5>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <?php foreach ($abstractVersions as $version): ?>
-                                                    <a href="<?= base_url('abstract-paper/edit/' . $abstract['id'] . '/' . $version['version_number']) ?>"
-                                                        class="btn <?= ($abstract['current_version']['version_number'] == $version['version_number']) ? 'btn-primary' : 'btn-outline-secondary' ?>">
-                                                        v<?= $version['version_number'] ?>
-                                                        <?php if (isset($version['is_active']) && $version['is_active'] == '1'): ?>
-                                                            <i class="bx bx-check-circle ms-1" data-bs-toggle="tooltip" title="Active Version"></i>
-                                                        <?php endif; ?>
-                                                    </a>
-                                                <?php endforeach; ?>
-                                            </div>
-                                            <div class="ms-auto">
-                                                <small class="text-muted">
-                                                    <i class="bx bx-info-circle"></i> Click on a version number to view or edit that version
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>                                <div class="card-body">
+                                <div class="card-body">
                                     <form id="abstractForm" method="POST" action="">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="abstract_id" value="<?= isset($abstract) ? $abstract['id'] : '' ?>">
@@ -156,21 +147,30 @@
                                                 <input type="text" class="form-control" id="title" name="title"
                                                     value="<?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['title'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['title'] : '') ?>"
                                                     placeholder="Enter a concise and descriptive title for your abstract" required>
-                                                <div class="invalid-feedback">Please enter the abstract title.</div>
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="invalid-feedback">Please enter the abstract title.</div>
+                                                    <small class="text-muted mt-1">
+                                                        <span id="title-word-count">0</span> / <?= isset($abstractSettings['title_length']) ? $abstractSettings['title_length'] : 15 ?> words
+                                                    </small>
+                                                </div>
                                                 <div class="form-text text-muted">A good title should clearly represent the content and focus of your research.</div>
                                             </div>
-                                        </div>                                        <div class="row mb-3">
+                                        </div>
+                                        <div class="row mb-3">
                                             <div class="col-lg-12">
-                                                <label for="keywords" class="form-label">Keywords</label>
+                                                <label for="keywords" class="form-label">Keywords <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control" id="keywords" name="keywords"
                                                     value="<?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['keywords'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['keywords'] : '') ?>"
                                                     placeholder="Enter keywords separated by commas">
-                                                <div class="invalid-feedback">Please enter keywords.</div>
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="invalid-feedback">Please enter keywords.</div>
+                                                    <small class="text-muted mt-1">
+                                                        <span id="keywords-word-count">0</span> / <?= isset($abstractSettings['keywords_length']) ? $abstractSettings['keywords_length'] : 5 ?> words
+                                                    </small>
+                                                </div>
                                                 <div class="form-text text-muted">Enter keywords separated by commas (e.g., research, medicine, science)</div>
                                             </div>
                                         </div>
-
-
                                         <div class="row mb-3">
                                             <div class="col-lg-12">
                                                 <label class="form-label">Abstract Content <span class="text-danger">*</span></label>
@@ -178,16 +178,25 @@
                                                     <?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['content'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['content'] : '') ?>
                                                 </div>
                                                 <input type="hidden" name="content" id="abstract-content">
-                                                <div class="invalid-feedback" id="content-feedback">Please enter abstract content.</div>
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="invalid-feedback" id="content-feedback">Please enter abstract content.</div>
+                                                    <small class="text-muted mt-1">
+                                                        <span id="content-word-count">0</span> / <?= isset($abstractSettings['content_length']) ? $abstractSettings['content_length'] : 500 ?> words
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
-
                                         <div class="row mb-3">
                                             <div class="col-lg-12">
-                                                <label for="refs" class="form-label">References</label>
+                                                <label for="refs" class="form-label">References <span class="text-danger">*</span></label>
                                                 <textarea class="form-control" id="refs" name="refs" rows="6"
                                                     placeholder="Enter references in the required format (e.g., APA, IEEE, etc.)"><?= isset($abstract) && isset($abstract['current_version']) ? $abstract['current_version']['refs'] : (isset($abstract) && isset($abstract['versions']) && !empty($abstract['versions']) ? $abstract['versions'][0]['refs'] : '') ?></textarea>
-                                                <div class="invalid-feedback">Please enter references.</div>
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="invalid-feedback">Please enter references.</div>
+                                                    <small class="text-muted mt-1">
+                                                        <span id="refs-word-count">0</span> / <?= isset($abstractSettings['refs_length']) ? $abstractSettings['refs_length'] : 120 ?> words
+                                                    </small>
+                                                </div>
                                                 <div class="form-text text-muted">Include all references cited in your abstract following the conference's citation format</div>
                                             </div>
                                         </div>
@@ -196,14 +205,14 @@
                                             <div class="col-lg-12">
                                                 <div class="d-flex flex-column">
                                                     <div class="text-muted mb-3 ms-auto">
-                                                        <small><i class="bx bx-info-circle me-1"></i> You can save your work as a draft and complete it later.</small>
+                                                        <small><i class="bx bx-info-circle me-1"></i> You can save your work as a draft with just <strong>Topic</strong> and <strong>Title</strong> and complete it later.</small>
                                                     </div>
                                                     <div class="hstack gap-2 justify-content-end">
                                                         <button type="button" class="btn btn-secondary" id="save-draft-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Save your work without submitting">
                                                             <i class="bx bx-save me-1"></i> Save Draft
-                                                        </button>                                        <button type="submit" class="btn btn-primary" id="submit-btn">
-                                            <i class="bx bx-check-circle me-1"></i> Submit Abstract
-                                        </button>
+                                                        </button> <button type="submit" class="btn btn-primary" id="submit-btn">
+                                                            <i class="bx bx-check-circle me-1"></i> Submit Abstract
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -247,13 +256,53 @@
     <!-- init js -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Word count limits from abstract settings (dynamic from controller)
+            const WORD_LIMITS = {
+                title: <?= isset($abstractSettings['title_length']) ? $abstractSettings['title_length'] : 15 ?>,
+                keywords: <?= isset($abstractSettings['keywords_length']) ? $abstractSettings['keywords_length'] : 5 ?>,
+                content: <?= isset($abstractSettings['content_length']) ? $abstractSettings['content_length'] : 500 ?>,
+                refs: <?= isset($abstractSettings['refs_length']) ? $abstractSettings['refs_length'] : 120 ?>
+            };
+
+            // Word counting function
+            function countWords(text) {
+                if (!text || text.trim() === '') return 0;
+                return text.trim().split(/\s+/).length;
+            }
+
+            // Update word count display and validation
+            function updateWordCount(fieldId, text, limit) {
+                const wordCount = countWords(text);
+                const countElement = document.getElementById(fieldId + '-word-count');
+                const fieldElement = document.getElementById(fieldId);
+
+                if (countElement) {
+                    countElement.textContent = wordCount;
+
+                    // Update styling based on limit
+                    if (wordCount > limit) {
+                        countElement.parentElement.classList.remove('text-muted');
+                        countElement.parentElement.classList.add('text-danger');
+                        fieldElement.classList.add('is-invalid');
+                    } else if (wordCount > limit * 0.9) { // Warning at 90%
+                        countElement.parentElement.classList.remove('text-muted', 'text-danger');
+                        countElement.parentElement.classList.add('text-warning');
+                        fieldElement.classList.remove('is-invalid');
+                    } else {
+                        countElement.parentElement.classList.remove('text-danger', 'text-warning');
+                        countElement.parentElement.classList.add('text-muted');
+                        fieldElement.classList.remove('is-invalid');
+                    }
+                }
+
+                return wordCount <= limit;
+            }
+
             // Initialize tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-
-            // Initialize Quill editor
+            }); // Initialize Quill editor
             var quill = new Quill('#abstract-editor', {
                 theme: 'snow',
                 modules: {
@@ -284,6 +333,54 @@
                     ]
                 },
                 placeholder: 'Write your abstract content here...',
+            });
+
+            // Initialize word counts for existing content after a small delay to ensure everything is ready
+            setTimeout(function() {
+                updateWordCount('title', document.getElementById('title').value, WORD_LIMITS.title);
+                updateWordCount('keywords', document.getElementById('keywords').value, WORD_LIMITS.keywords);
+                updateWordCount('content', quill.getText(), WORD_LIMITS.content);
+                updateWordCount('refs', document.getElementById('refs').value, WORD_LIMITS.refs);
+            }, 100); 
+            // Add word count tracking for title
+            const titleElement = document.getElementById('title');
+            titleElement.addEventListener('input', function() {
+                updateWordCount('title', this.value, WORD_LIMITS.title);
+            });
+            titleElement.addEventListener('keyup', function() {
+                updateWordCount('title', this.value, WORD_LIMITS.title);
+            });
+            titleElement.addEventListener('paste', function() {
+                setTimeout(() => updateWordCount('title', this.value, WORD_LIMITS.title), 10);
+            });
+
+            // Add word count tracking for keywords
+            const keywordsElement = document.getElementById('keywords');
+            keywordsElement.addEventListener('input', function() {
+                updateWordCount('keywords', this.value, WORD_LIMITS.keywords);
+            });
+            keywordsElement.addEventListener('keyup', function() {
+                updateWordCount('keywords', this.value, WORD_LIMITS.keywords);
+            });
+            keywordsElement.addEventListener('paste', function() {
+                setTimeout(() => updateWordCount('keywords', this.value, WORD_LIMITS.keywords), 10);
+            });
+
+            // Add word count tracking for Quill editor
+            quill.on('text-change', function() {
+                updateWordCount('content', quill.getText(), WORD_LIMITS.content);
+            });
+
+            // Add word count tracking for references
+            const refsElement = document.getElementById('refs');
+            refsElement.addEventListener('input', function() {
+                updateWordCount('refs', this.value, WORD_LIMITS.refs);
+            });
+            refsElement.addEventListener('keyup', function() {
+                updateWordCount('refs', this.value, WORD_LIMITS.refs);
+            });
+            refsElement.addEventListener('paste', function() {
+                setTimeout(() => updateWordCount('refs', this.value, WORD_LIMITS.refs), 10);
             });
 
             // Show SweetAlert messages if there are flash messages
@@ -341,6 +438,10 @@
                 const content = quill.root.innerHTML;
                 document.getElementById('abstract-content').value = content;
 
+                // Clear all validation states first
+                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                document.getElementById('content-feedback').style.display = 'none';
+
                 // Basic validation
                 let isValid = true;
 
@@ -351,17 +452,64 @@
                 }
 
                 // Title is required for both draft and submission
-                if (!document.getElementById('title').value) {
+                const titleValue = document.getElementById('title').value.trim();
+                if (!titleValue) {
                     document.getElementById('title').classList.add('is-invalid');
                     isValid = false;
-                }                // For full submission, we require additional fields
+                } else {
+                    // Check word limit for title
+                    const titleWordCount = countWords(titleValue);
+                    if (titleWordCount > WORD_LIMITS.title) {
+                        document.getElementById('title').classList.add('is-invalid');
+                        isValid = false;
+                    }
+                }
+
+                // For full submission, we require additional fields
                 if (isFullValidation) {
-                    // Keywords are permit_empty according to API, so not required for submission
-                    
-                    if (quill.getText().trim().length === 0) {
+                    // Keywords are required for final submission
+                    const keywordsValue = document.getElementById('keywords').value.trim();
+                    if (!keywordsValue) {
+                        document.getElementById('keywords').classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        // Check word limit for keywords
+                        const keywordsWordCount = countWords(keywordsValue);
+                        if (keywordsWordCount > WORD_LIMITS.keywords) {
+                            document.getElementById('keywords').classList.add('is-invalid');
+                            isValid = false;
+                        }
+                    }
+
+                    // Content is required for final submission
+                    const contentText = quill.getText().trim();
+                    if (contentText.length === 0) {
                         document.getElementById('abstract-editor').classList.add('is-invalid');
                         document.getElementById('content-feedback').style.display = 'block';
                         isValid = false;
+                    } else {
+                        // Check word limit for content
+                        const contentWordCount = countWords(contentText);
+                        if (contentWordCount > WORD_LIMITS.content) {
+                            document.getElementById('abstract-editor').classList.add('is-invalid');
+                            document.getElementById('content-feedback').style.display = 'block';
+                            document.getElementById('content-feedback').textContent = `Content exceeds maximum word limit of ${WORD_LIMITS.content} words.`;
+                            isValid = false;
+                        }
+                    }
+
+                    // References are required for final submission
+                    const refsValue = document.getElementById('refs').value.trim();
+                    if (!refsValue) {
+                        document.getElementById('refs').classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        // Check word limit for references
+                        const refsWordCount = countWords(refsValue);
+                        if (refsWordCount > WORD_LIMITS.refs) {
+                            document.getElementById('refs').classList.add('is-invalid');
+                            isValid = false;
+                        }
                     }
                 }
 
@@ -371,7 +519,7 @@
             // Function to extract content from Quill editor
             function getQuillContent() {
                 return quill.root.innerHTML;
-            }            // Setup form handlers - use traditional form submission for all abstracts
+            } // Setup form handlers - use traditional form submission for all abstracts
             console.log('Setting up form handlers');
             setupNewAbstractHandlers(
                 '#abstractForm',
@@ -379,18 +527,22 @@
                 '#submit-btn',
                 getQuillContent,
                 validateForm
-            );// Clear validation error on input
+            ); // Clear validation error on input
             const inputs = document.querySelectorAll('.form-control, .form-select');
             inputs.forEach(input => {
                 input.addEventListener('input', function() {
-                    this.classList.remove('is-invalid');
+                    // Only clear validation state, don't remove word count styling
+                    if (this.id !== 'title' && this.id !== 'keywords' && this.id !== 'refs') {
+                        this.classList.remove('is-invalid');
+                    }
                 });
             });
 
             // Clear editor validation on input
             quill.on('text-change', function() {
-                document.getElementById('abstract-editor').classList.remove('is-invalid');
+                // Only clear validation state for content feedback, word count styling is handled separately
                 document.getElementById('content-feedback').style.display = 'none';
+                document.getElementById('content-feedback').textContent = 'Please enter abstract content.';
             }); // Handle topic selection to show description
             const topicSelect = document.getElementById('abstract_topic_id');
             const topicDescription = document.getElementById('topic-description');

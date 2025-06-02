@@ -112,12 +112,12 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('submission/professional/(:num)/update', 'dashboard\Submission::updateProfessional/$1');
     $routes->post('submission/entry/(:num)/update', 'dashboard\Submission::updateEntry/$1');
     $routes->post('submission/miscs/(:num)/update', 'dashboard\Submission::updateMisc/$1');
-    $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');
-    $routes->post('submission/submit', 'dashboard\Submission::submitForm');    // abstract paper
+    $routes->post('submission/validateAmbassadorCode', 'dashboard\Submission::validateAmbassadorCode');    $routes->post('submission/submit', 'dashboard\Submission::submitForm');    // abstract paper
     $routes->get('abstract-paper', 'dashboard\AbstractPaper::index');
     $routes->get('abstract-paper/create', 'dashboard\AbstractPaper::create');
     $routes->get('abstract-paper/edit/(:num)', 'dashboard\AbstractPaper::edit/$1');
-    $routes->get('abstract-paper/edit/(:num)/version/(:num)', 'dashboard\AbstractPaper::edit/$1/$2');
+    $routes->get('abstract-paper/edit/(:num)/(:num)', 'dashboard\AbstractPaper::edit/$1/$2'); // Direct version access
+    $routes->get('abstract-paper/edit/(:num)/version/(:num)', 'dashboard\AbstractPaper::edit/$1/$2'); // With 'version' in URL
     $routes->post('abstract-paper/save', 'dashboard\AbstractPaper::save');
     $routes->post('abstract-paper/update/(:num)', 'dashboard\AbstractPaper::update/$1');
     $routes->post('abstract-paper/add-author', 'dashboard\AbstractPaper::addAuthor');
