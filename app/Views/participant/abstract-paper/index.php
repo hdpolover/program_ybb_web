@@ -2,13 +2,14 @@
 
 <head>
 
-     <?php echo view('partials/title-meta', array('title' => 'Abstract and Paper')); ?>
-
-    <!-- Sweet Alert css-->
+     <?php echo view('partials/title-meta', array('title' => 'Abstract and Paper')); ?>    <!-- Sweet Alert css-->
     <link href="/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
 
     <!-- swiper css -->
     <link rel="stylesheet" href="/assets/libs/swiper/swiper-bundle.min.css">
+
+    <!-- Version Comparison CSS -->
+    <link href="/assets/css/version-comparison.css" rel="stylesheet" type="text/css" />
 
     <?= $this->include('partials/head-css') ?>
 
@@ -73,21 +74,49 @@
     
     <!-- Abstract Paper View JS -->
     <script src="/assets/js/abstract-paper-view.js"></script>
-    
-    <script>
+      <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Display sweet alert for success messages
-            <?php if (session()->has('success')): ?>
+            // Enhanced success alert for abstract operations
+            <?php if (session()->has('abstract_success')): ?>
+                <?php 
+                $successData = session('abstract_success');
+                $isDraft = $successData['is_draft'] ?? false;
+                $abstractId = $successData['id'] ?? null;
+                $abstractTitle = $successData['title'] ?? 'Your Abstract';
+                $status = $successData['status'] ?? 'unknown';
+                $message = $successData['message'] ?? '';
+                $versionNumber = $successData['version_number'] ?? null;
+                ?>
+                  Swal.fire({
+                    title: '<?= $isDraft ? "Draft Saved!" : "Abstract Submitted!" ?>',
+                    html: `
+                        <div class="text-start">
+                            <h5 class="mb-3"><?= esc($abstractTitle) ?></h5>
+                            <p><strong>ID:</strong> <?= esc($abstractId) ?></p>
+                            <p><strong>Status:</strong> <span class="badge bg-<?= $isDraft ? 'warning' : 'success' ?>"><?= ucfirst(esc($status)) ?></span></p>
+                            <?php if ($versionNumber): ?>
+                            <p><strong>Version:</strong> <?= esc($versionNumber) ?></p>
+                            <?php endif; ?>
+                            <hr>
+                            <p><?= esc($message) ?></p>
+                            <?php if (!$isDraft): ?>
+                            <p class="text-muted small">You will be notified once the review process is complete.</p>
+                            <?php endif; ?>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#5156be',
+                    allowOutsideClick: false
+                });
+            <?php elseif (session()->has('success')): ?>
+                // Fallback for regular success messages
                 Swal.fire({
                     title: '<?= session()->has('success_title') ? session('success_title') : 'Success!' ?>',
                     text: '<?= session('success') ?>',
                     icon: 'success',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#5156be'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.reload();
-                    }
                 });
             <?php endif; ?>
 
@@ -125,8 +154,10 @@
                     });
                 });
             }
-        });
-    </script>
+        });    </script>
+
+    <!-- Abstract Paper View JS -->
+    <script src="/assets/js/abstract-paper-view.js"></script>
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>

@@ -5,6 +5,12 @@
  * for saving draft versions and submitting finalized versions of abstracts.
  */
 
+// Global variable to track the prevent unload function
+let preventPageUnload = function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+};
+
 /**
  * Save an abstract version using AJAX
  * 
@@ -30,10 +36,11 @@ function saveAbstractVersion(abstractId, formData, status, versionId = null, onS
             });
         }
         return;
-    }
-
-    // Prepare the request data
+    }    // Prepare the request data
     const requestData = {
+        program_id: formData.program_id || $('input[name="program_id"]').val(),
+        primary_participant_id: formData.primary_participant_id || $('input[name="primary_participant_id"]').val(),
+        abstract_topic_id: formData.abstract_topic_id || $('select[name="abstract_topic_id"]').val(),
         title: formData.title,
         content: formData.content,
         keywords: formData.keywords,
@@ -46,40 +53,92 @@ function saveAbstractVersion(abstractId, formData, status, versionId = null, onS
         requestData.version_id = versionId;
     }
 
+    console.log('Request data being sent:', requestData);
+
     // Show appropriate saving message based on status
     let savingMessage = (status === 'draft') ? 'Saving Draft' : 'Submitting Abstract';
     let savingIcon = (status === 'draft') ? 'bx-save' : 'bx-paper-plane';
     let progressBarClass = (status === 'draft') ? 'bg-primary' : 'bg-success';
-    let savingText = (status === 'draft') ? 'Saving your draft abstract...' : 'Submitting your abstract for review...';
-
-    // Show a saving dialog with progress indicator
+    let savingText = (status === 'draft') ? 'Saving your draft abstract...' : 'Submitting your abstract for review...';    // Show a saving dialog with progress indicator and better styling
     const saveAlert = Swal.fire({
         title: savingMessage,
         html: `
             <div class="text-start">
-                <p><i class="bx ${savingIcon} me-1"></i> ${savingText}</p>
-                <p><small>This may take a few moments. Please don't close this window.</small></p>
-                <div class="progress mt-3">
+                <p class="mb-2"><i class="bx ${savingIcon} me-2"></i> ${savingText}</p>
+                <p class="mb-3"><small class="text-muted">This may take a few moments. Please don't close this window.</small></p>
+                <div class="progress mb-2" style="height: 8px;">
                     <div class="progress-bar progress-bar-striped progress-bar-animated ${progressBarClass}" 
                          role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" 
                          style="width: 100%"></div>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm ${progressBarClass.replace('bg-', 'text-')}" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
         `,
         icon: 'info',
         showConfirmButton: false,
-        allowOutsideClick: false,
-        allowEscapeKey: false
-    });    
+        allowOutsideClick: false,        allowEscapeKey: false,
+        didOpen: () => {
+            // Prevent accidental page close
+            window.addEventListener('beforeunload', preventPageUnload);
+        }
+    });
     
-    // Check if jQuery is available
+    // Set up timeout handling
+    const timeoutId = setTimeout(() => {
+        // Check if the SweetAlert is still visible
+        if (Swal.isVisible()) {
+            Swal.update({
+                title: 'Still Processing',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-2"><i class="bx bx-time me-2"></i> The server is taking longer than expected to respond.</p>
+                        <p class="mb-3">Your request is still being processed. You can:</p>
+                        <ul class="text-start mb-3">
+                            <li>Continue waiting</li>
+                            <li>Check your abstract list in a few minutes to see if it was saved</li>
+                            <li>Try again if you don't see your abstract in the list</li>
+                        </ul>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                                 role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" 
+                                 style="width: 100%"></div>
+                        </div>
+                        <div class="d-flex justify-content-center">
+                            <div class="spinner-border spinner-border-sm text-warning" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showConfirmButton: true,
+                confirmButtonText: 'Continue Waiting',
+                showCancelButton: true,
+                cancelButtonText: 'Close and Check Later',
+                confirmButtonColor: '#f7b84b',
+                cancelButtonColor: '#fd625e'
+            }).then((result) => {
+                if (result.isDismissed || result.dismiss === 'cancel') {
+                    // User chose to close, cleanup
+                    window.removeEventListener('beforeunload', preventPageUnload);
+                    if (typeof onError === 'function') {
+                        onError('Request timed out - user chose to close');
+                    }
+                }
+            });
+        }
+    }, 20000); // Show timeout message after 20 seconds
+      // Check if jQuery is available
     if (typeof jQuery !== 'undefined' && jQuery.ajax) {
-        // Use jQuery AJAX
+        // Use jQuery AJAX with form data (not JSON)
         jQuery.ajax({
             url: `/api/abstracts/${abstractId}/save-version`,
             type: 'POST',
-            data: JSON.stringify(requestData),
-            contentType: 'application/json',
+            data: requestData, // Send as form data, not JSON
             dataType: 'json',
             success: function(response) {
                 handleSaveResponse(response, status, onSuccess, onError);
@@ -91,14 +150,21 @@ function saveAbstractVersion(abstractId, formData, status, versionId = null, onS
             timeout: 30000
         });
     } else {
-        // Use vanilla JavaScript fetch
+        // Use vanilla JavaScript fetch with FormData
+        const formData = new FormData();
+        Object.keys(requestData).forEach(key => {
+            if (requestData[key] !== null && requestData[key] !== undefined) {
+                formData.append(key, requestData[key]);
+            }
+        });
+        
         fetch(`/api/abstracts/${abstractId}/save-version`, {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(requestData)
+                // Don't set Content-Type when using FormData, let browser set it
+            }
         })
         .then(response => {
             if (!response.ok) {
@@ -110,31 +176,8 @@ function saveAbstractVersion(abstractId, formData, status, versionId = null, onS
             handleSaveResponse(response, status, onSuccess, onError);
         })
         .catch(error => {
-            handleSaveError({ responseText: JSON.stringify({ message: error.message }) }, 'error', error, onError);
-        });
+            handleSaveError({ responseText: JSON.stringify({ message: error.message }) }, 'error', error, onError);        });
     }
-
-    // Set a timeout to show a "still processing" message if the server takes too long
-    setTimeout(() => {
-        // Check if the SweetAlert is still visible
-        if (Swal.isVisible()) {
-            Swal.update({
-                title: 'Still Processing',
-                html: `
-                    <div class="text-start">
-                        <p><i class="bx bx-time me-1"></i> The server is taking longer than expected to respond.</p>
-                        <p>Your request is still being processed. You can:</p>
-                        <ul>
-                            <li>Continue waiting</li>
-                            <li>Check your abstract list in a few minutes to see if it was saved</li>
-                            <li>Try again if you don't see your abstract in the list</li>
-                        </ul>
-                    </div>
-                `,
-                icon: 'warning'
-            });
-        }
-    }, 20000); // Show timeout message after 20 seconds
 }
 
 /**
@@ -194,15 +237,18 @@ function setupAbstractVersionHandlers(
             const content = contentExtractor();
             $(settings.contentField).val(content);
         }
-        
-        // Disable buttons to prevent multiple submissions
+          // Disable buttons to prevent multiple submissions
         $saveDraftBtn.prop('disabled', true);
         $submitBtn.prop('disabled', true);
-          // Show loading spinner on the save draft button
+        
+        // Show loading spinner on the save draft button
         $saveDraftBtn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...');
         
         // Get form data
         const formData = {
+            program_id: $(settings.abstractIdField).closest('form').find('input[name="program_id"]').val(),
+            primary_participant_id: $(settings.abstractIdField).closest('form').find('input[name="primary_participant_id"]').val(),
+            abstract_topic_id: $(settings.abstractIdField).closest('form').find('select[name="abstract_topic_id"]').val(),
             title: $(settings.titleField).val(),
             keywords: $(settings.keywordsField).val(),
             refs: $(settings.refsField).val(),
@@ -212,8 +258,7 @@ function setupAbstractVersionHandlers(
         // Get abstract ID and version ID
         const abstractId = $(settings.abstractIdField).val();
         const versionId = $(settings.versionIdField).length ? $(settings.versionIdField).val() : null;
-        
-        // Save the abstract version
+          // Save the abstract version
         saveAbstractVersion(
             abstractId,
             formData,
@@ -222,31 +267,34 @@ function setupAbstractVersionHandlers(
             function(data) {
                 // Success callback
                 console.log('Draft saved successfully:', data);
-                
-                // Redirect if auto-redirect is enabled
-                if (settings.autoRedirect) {
-                    window.location.href = settings.redirectUrl;
-                } else {
+                    
+                    // Redirect if auto-redirect is enabled
+                    if (settings.autoRedirect) {
+                        // Small delay to let user see the success message
+                        setTimeout(() => {
+                            window.location.href = settings.redirectUrl;
+                        }, 1500);
+                    } else {
+                        // Re-enable buttons and restore text
+                        $saveDraftBtn.prop('disabled', false);
+                        $submitBtn.prop('disabled', false);
+                        $saveDraftBtn.html('<i class="bx bx-save me-1"></i> Save Draft');
+                        
+                        // Update version ID field if present
+                        if ($(settings.versionIdField).length && data.abstract_version && data.abstract_version.id) {
+                            $(settings.versionIdField).val(data.abstract_version.id);
+                        }
+                    }
+                },
+                function(error) {
+                    // Error callback
+                    console.error('Error saving draft:', error);
+                    
                     // Re-enable buttons and restore text
                     $saveDraftBtn.prop('disabled', false);
                     $submitBtn.prop('disabled', false);
                     $saveDraftBtn.html('<i class="bx bx-save me-1"></i> Save Draft');
-                    
-                    // Update version ID field if present
-                    if ($(settings.versionIdField).length && data.abstract_version.id) {
-                        $(settings.versionIdField).val(data.abstract_version.id);
-                    }
                 }
-            },
-            function(error) {
-                // Error callback
-                console.error('Error saving draft:', error);
-                
-                // Re-enable buttons and restore text
-                $saveDraftBtn.prop('disabled', false);
-                $submitBtn.prop('disabled', false);
-                $saveDraftBtn.html('<i class="bx bx-save me-1"></i> Save Draft');
-            }
         );
     });
     
@@ -295,19 +343,20 @@ function setupAbstractVersionHandlers(
         }).then((result) => {
             if (result.isConfirmed) {
                 // Disable buttons to prevent multiple submissions
-                $submitBtn.prop('disabled', true);
-                $saveDraftBtn.prop('disabled', true);
+                $submitBtn.prop('disabled', true);                $saveDraftBtn.prop('disabled', true);
                   // Show loading spinner on the submit button
                 $submitBtn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Submitting...');
                 
                 // Get form data
                 const formData = {
+                    program_id: $(settings.abstractIdField).closest('form').find('input[name="program_id"]').val(),
+                    primary_participant_id: $(settings.abstractIdField).closest('form').find('input[name="primary_participant_id"]').val(),
+                    abstract_topic_id: $(settings.abstractIdField).closest('form').find('select[name="abstract_topic_id"]').val(),
                     title: $(settings.titleField).val(),
                     keywords: $(settings.keywordsField).val(),
                     refs: $(settings.refsField).val(),
                     content: $(settings.contentField).val()
                 };
-                
                 // Get abstract ID and version ID
                 const abstractId = $(settings.abstractIdField).val();
                 const versionId = $(settings.versionIdField).length ? $(settings.versionIdField).val() : null;
@@ -317,14 +366,16 @@ function setupAbstractVersionHandlers(
                     abstractId,
                     formData,
                     'submitted',
-                    versionId,
-                    function(data) {
+                    versionId,                    function(data) {
                         // Success callback
                         console.log('Abstract submitted successfully:', data);
                         
                         // Redirect if auto-redirect is enabled
                         if (settings.autoRedirect) {
-                            window.location.href = settings.redirectUrl;
+                            // Small delay to let user see the success message
+                            setTimeout(() => {
+                                window.location.href = settings.redirectUrl;
+                            }, 1500);
                         } else {
                             // Re-enable buttons and restore text
                             $submitBtn.prop('disabled', false);
@@ -332,7 +383,7 @@ function setupAbstractVersionHandlers(
                             $submitBtn.html('<i class="bx bx-check-circle me-1"></i> Submit Abstract');
                             
                             // Update version ID field if present
-                            if ($(settings.versionIdField).length && data.abstract_version.id) {
+                            if ($(settings.versionIdField).length && data.abstract_version && data.abstract_version.id) {
                                 $(settings.versionIdField).val(data.abstract_version.id);
                             }
                         }
@@ -367,34 +418,60 @@ function setupNewAbstractHandlers(
     submitBtnSelector, 
     contentExtractor, 
     validateForm
-) {    console.log('setupNewAbstractHandlers called');
+) {    
+    console.log('setupNewAbstractHandlers called with:', {
+        formSelector,
+        saveDraftBtnSelector, 
+        submitBtnSelector
+    });
+    
+    // Check if jQuery is available
+    if (typeof jQuery === 'undefined') {
+        console.error('jQuery is not available!');
+        return;
+    }
+    
     const $form = $(formSelector);
     const $saveDraftBtn = $(saveDraftBtnSelector);
     const $submitBtn = $(submitBtnSelector);
     
-    console.log('Form element:', $form);
-    console.log('Save Draft button:', $saveDraftBtn);
-    console.log('Submit button:', $submitBtn);
+    console.log('Form element found:', $form.length > 0);
+    console.log('Save Draft button found:', $saveDraftBtn.length > 0);
+    console.log('Submit button found:', $submitBtn.length > 0);
     
     // Check if this is an existing abstract (has abstract_id) or new one
     const abstractId = $form.find('input[name="abstract_id"]').val();
     console.log('Abstract ID:', abstractId);
     
-    // Set the form action based on whether it's new or existing
+    // For existing abstracts, use AJAX approach for better UX
     if (abstractId && abstractId !== '') {
-        // Existing abstract - use update endpoint
-        $form.attr('action', '/abstract-paper/update/' + abstractId);
-    } else {
-        // New abstract - use save endpoint
+        console.log('Setting up AJAX handlers for existing abstract');
+        setupAbstractVersionHandlers(
+            formSelector, 
+            saveDraftBtnSelector, 
+            submitBtnSelector, 
+            contentExtractor, 
+            validateForm,
+            {
+                redirectUrl: '/abstract-paper',
+                autoRedirect: true
+            }
+        );
+        return;
+    }
+      // For new abstracts, use traditional form submission
+    console.log('Setting up form submission handlers for new abstract');
+    
+    // Set the form action for new abstract if not already set
+    if (!$form.attr('action') || $form.attr('action') === '') {
         $form.attr('action', '/abstract-paper/save');
     }
     $form.attr('method', 'POST');
     
     console.log('Form action set to:', $form.attr('action'));
-    
-    // Handle Save Draft button click
+      // Handle Save Draft button click
     $saveDraftBtn.on('click', function(e) {
-        console.log('Save Draft button clicked');
+        console.log('Save Draft button clicked - event handler working!');
         e.preventDefault();
         
         // Validate the form for draft (minimal validation)
@@ -496,41 +573,73 @@ function setupNewAbstractHandlers(
 
 // Helper function to handle save response
 function handleSaveResponse(response, status, onSuccess, onError) {
-    // Close the saving dialog
+    // Close the saving dialog and cleanup
     Swal.close();
+    
+    // Remove beforeunload listener
+    window.removeEventListener('beforeunload', preventPageUnload);
 
     // Check if the response is valid and has the expected structure
-    if (response && response.status && response.data && response.data.abstract_version) {
+    // The API returns: { "status": "success", "message": "...", "data": { "abstract_version": {...}, "status": "..." } }
+    if (response && response.status === 'success' && response.data && response.data.abstract_version) {
         // Create a success message based on the status
         let successTitle = (status === 'draft') ? 'Draft Saved Successfully' : 'Abstract Submitted Successfully';
-        let successIcon = (status === 'draft') ? 'success' : 'success';
+        let successIcon = 'success';
         let successButtonText = 'OK';
+        
+        // Format the date properly
+        const formatDate = (dateString) => {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString; // Return original if formatting fails
+            }
+        };
         
         // Different messages for draft vs submission
         let successMessage;
         if (status === 'draft') {
             successMessage = `
                 <div class="text-start">
-                    <p>Your draft has been saved successfully. You can continue editing it later.</p>
-                    <ul class="mt-2 mb-0">
-                        <li><strong>Title:</strong> ${response.data.abstract_version.title}</li>
-                        <li><strong>Version:</strong> ${response.data.abstract_version.version_number}</li>
-                        <li><strong>Last Updated:</strong> ${response.data.abstract_version.updated_at}</li>
-                    </ul>
+                    <p class="mb-3">${response.message || 'Your draft has been saved successfully. You can continue editing it later.'}</p>
+                    <div class="card bg-light">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-2">Draft Details</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Title:</strong> ${response.data.abstract_version.title || 'Untitled'}</li>
+                                <li><strong>Version:</strong> ${response.data.abstract_version.version_number || '1'}</li>
+                                <li><strong>Status:</strong> <span class="badge bg-warning">Draft</span></li>
+                                <li><strong>Last Updated:</strong> ${formatDate(response.data.abstract_version.updated_at)}</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             `;
         } else {
             successMessage = `
                 <div class="text-start">
-                    <p>Your abstract has been submitted successfully and is now pending review.</p>
-                    <ul class="mt-2 mb-0">
-                        <li><strong>Title:</strong> ${response.data.abstract_version.title}</li>
-                        <li><strong>Version:</strong> ${response.data.abstract_version.version_number}</li>
-                        <li><strong>Submission Date:</strong> ${response.data.abstract_version.updated_at}</li>
-                    </ul>
+                    <p class="mb-3">${response.message || 'Your abstract has been submitted successfully and is now pending review.'}</p>
+                    <div class="card bg-light">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-2">Submission Details</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Title:</strong> ${response.data.abstract_version.title || 'Untitled'}</li>
+                                <li><strong>Version:</strong> ${response.data.abstract_version.version_number || '1'}</li>
+                                <li><strong>Status:</strong> <span class="badge bg-success">Submitted</span></li>
+                                <li><strong>Submission Date:</strong> ${formatDate(response.data.abstract_version.updated_at)}</li>
+                            </ul>
+                        </div>
+                    </div>
                     <div class="alert alert-info mt-3 mb-0">
                         <i class="bx bx-info-circle me-1"></i>
-                        <small>You will receive notifications about the review process.</small>
+                        <small>You will receive notifications about the review process via email.</small>
                     </div>
                 </div>
             `;
@@ -542,17 +651,40 @@ function handleSaveResponse(response, status, onSuccess, onError) {
             html: successMessage,
             icon: successIcon,
             confirmButtonText: successButtonText,
-            confirmButtonColor: '#5156be'
+            confirmButtonColor: '#5156be',
+            allowOutsideClick: false
         }).then(() => {
             // Call the success callback with the response data
             if (typeof onSuccess === 'function') {
                 onSuccess(response.data);
             }
         });
+    } else if (response && response.status === 'error') {
+        // Handle API error response
+        Swal.fire({
+            title: 'Save Failed',
+            html: `
+                <div class="text-start">
+                    <p>${response.message || 'An error occurred while saving your abstract.'}</p>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bx bx-info-circle me-1"></i>
+                        <small>Please try again or contact support if this problem persists.</small>
+                    </div>
+                </div>
+            `,
+            icon: 'error',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#5156be'
+        });
+
+        // Call the error callback
+        if (typeof onError === 'function') {
+            onError(response.message || 'Save failed');
+        }
     } else {
         // Handle unexpected response format
         Swal.fire({
-            title: 'Something Went Wrong',
+            title: 'Unexpected Response',
             html: `
                 <div class="text-start">
                     <p>The server response was not in the expected format.</p>
@@ -576,29 +708,74 @@ function handleSaveResponse(response, status, onSuccess, onError) {
 
 // Helper function to handle save errors
 function handleSaveError(xhr, status, error, onError) {
-    // Close the saving dialog
+    // Close the saving dialog and cleanup
     Swal.close();
+    
+    // Remove beforeunload listener
+    window.removeEventListener('beforeunload', preventPageUnload);
 
     // Try to parse the error response
     let errorMessage = 'An unknown error occurred while saving your abstract.';
     let errorDetails = '';
     
     try {
-        const errorResponse = JSON.parse(xhr.responseText);
-        if (errorResponse && errorResponse.message) {
-            errorMessage = errorResponse.message;
+        // Try to parse as JSON first
+        let errorResponse;
+        if (xhr.responseText) {
+            errorResponse = JSON.parse(xhr.responseText);
+        } else if (typeof xhr === 'string') {
+            errorResponse = JSON.parse(xhr);
         }
-        // Include additional error details if available
-        if (errorResponse && errorResponse.data && errorResponse.data.errors) {
-            errorDetails = '<ul class="mt-2 mb-0">';
-            for (const key in errorResponse.data.errors) {
-                errorDetails += `<li>${errorResponse.data.errors[key]}</li>`;
+        
+        if (errorResponse) {
+            if (errorResponse.message) {
+                errorMessage = errorResponse.message;
             }
-            errorDetails += '</ul>';
+            // Include additional error details if available
+            if (errorResponse.data && errorResponse.data.errors) {
+                errorDetails = '<ul class="mt-2 mb-0">';
+                for (const key in errorResponse.data.errors) {
+                    errorDetails += `<li>${errorResponse.data.errors[key]}</li>`;
+                }
+                errorDetails += '</ul>';
+            } else if (errorResponse.errors) {
+                errorDetails = '<ul class="mt-2 mb-0">';
+                for (const key in errorResponse.errors) {
+                    if (Array.isArray(errorResponse.errors[key])) {
+                        errorResponse.errors[key].forEach(err => {
+                            errorDetails += `<li>${err}</li>`;
+                        });
+                    } else {
+                        errorDetails += `<li>${errorResponse.errors[key]}</li>`;
+                    }
+                }
+                errorDetails += '</ul>';
+            }
         }
     } catch (e) {
-        // If parsing fails, use the default error message
+        // If parsing fails, check for common HTTP status codes
         console.error('Error parsing error response:', e);
+        
+        if (xhr.status) {
+            switch (xhr.status) {
+                case 422:
+                    errorMessage = 'Validation error: Please check your input and try again.';
+                    break;
+                case 500:
+                    errorMessage = 'Server error: Please try again later or contact support.';
+                    break;
+                case 404:
+                    errorMessage = 'The requested resource was not found. Please refresh the page and try again.';
+                    break;
+                case 403:
+                    errorMessage = 'You do not have permission to perform this action.';
+                    break;
+                default:
+                    errorMessage = `Server returned error ${xhr.status}. Please try again later.`;
+            }
+        } else if (error && error.message) {
+            errorMessage = error.message;
+        }
     }
 
     // Show error message with SweetAlert2

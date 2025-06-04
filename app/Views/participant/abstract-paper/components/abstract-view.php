@@ -31,17 +31,28 @@ $latestVersion = !empty($versions) ? $versions[0] : null;
 $versionCount = count($versions);
 $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion['version_number'] : 1;
 ?>
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-primary py-3"> <!-- Title with Edit Button at Top Right -->        <div class="d-flex justify-content-between align-items-start mb-3">            <h1 class="card-title mb-0 text-white fw-bold">
+<div class="card shadow-sm mb-4">    <div class="card-header bg-primary py-3"> <!-- Title with Edit Button at Top Right -->        <div class="d-flex justify-content-between align-items-start mb-3">            <h1 class="card-title mb-0 text-white fw-bold">
                 <?= esc($latestVersion['title'] ?? 'Untitled Abstract') ?>
             </h1>
-            <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id'] . '/' . $latestVersionNumber) ?>" 
-               class="btn btn-light btn-sm edit-abstract-btn" 
-               data-abstract-id="<?= $participant_data['abstract']['id'] ?>"
-               data-version-id="<?= $latestVersionNumber ?>"
-               data-ajax="false">
-                <i class="bx bx-edit me-1"></i> Edit Abstract
-            </a>
+            <?php 
+            $abstractStatus = strtolower($participant_data['abstract']['status'] ?? 'draft');
+            $hasFeedback = !empty($participant_data['abstract']['reviewers']);
+            $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+            ?>
+            
+            <?php if ($canEdit): ?>
+                <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id'] . '/' . $latestVersionNumber) ?>" 
+                   class="btn btn-light btn-sm edit-abstract-btn" 
+                   data-abstract-id="<?= $participant_data['abstract']['id'] ?>"
+                   data-version-id="<?= $latestVersionNumber ?>"
+                   data-ajax="false">
+                    <i class="bx bx-edit me-1"></i> Edit Abstract
+                </a>
+            <?php else: ?>
+                <span class="text-white-50 small">
+                    <i class="bx bx-lock me-1"></i> Editing disabled - Abstract submitted
+                </span>
+            <?php endif; ?>
         </div>
 
         <!-- Status and Topic with Dates Below -->
@@ -79,9 +90,30 @@ $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion[
                     </button>
                 </div>
             </div>
+        </div>    </div>
+</div>
+
+<?php if ($abstractStatus === 'submitted' && !$hasFeedback): ?>
+    <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bx bx-info-circle fs-4 me-3 text-warning"></i>
+            <div>
+                <h6 class="alert-heading mb-1">Abstract Submitted</h6>
+                <p class="mb-0">Your abstract has been submitted and is currently under review. You cannot make changes at this time. You will be able to edit your abstract if reviewers provide feedback requiring revisions.</p>
+            </div>
         </div>
     </div>
-</div>
+<?php elseif ($abstractStatus === 'submitted' && $hasFeedback): ?>
+    <div class="alert alert-info border-0 shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bx bx-edit fs-4 me-3 text-info"></i>
+            <div>
+                <h6 class="alert-heading mb-1">Reviewer Feedback Available</h6>
+                <p class="mb-0">Reviewers have provided feedback on your submitted abstract. You can now make revisions based on their comments. Please review the feedback section below and update your abstract accordingly.</p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="row mb-4">
     <!-- First Row: Abstract Information (8) + Reviewer Feedback (4) -->
@@ -164,15 +196,20 @@ $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion[
     <!-- Second Row: Authors Information (6) + Paper Upload (6) -->
     <div class="col-lg-6">
         <!-- Authors Information Card -->
-        <div class="card border shadow-sm mb-4">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card border shadow-sm mb-4">            <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <h5 class="card-title text-dark mb-0">
                     <i class="bx bx-user-circle me-1"></i> Authors Information
                 </h5>
                 <div>
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCoAuthorModal">
-                        <i class="bx bx-cog me-1"></i> Manage
-                    </button>
+                    <?php if ($canEdit): ?>
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCoAuthorModal">
+                            <i class="bx bx-cog me-1"></i> Manage
+                        </button>
+                    <?php else: ?>
+                        <span class="text-muted small">
+                            <i class="bx bx-lock me-1"></i> Cannot edit while submitted
+                        </span>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">
@@ -276,11 +313,14 @@ $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion[
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body"> 
-                <?php if (!empty($participant_data['abstract']['versions'])): ?>
+            <div class="modal-body">                <?php if (!empty($participant_data['abstract']['versions'])): ?>
                     <div class="alert alert-info mb-3">
                         <i class="bx bx-info-circle me-1"></i>
-                        <span>Only the latest version can be edited. Previous versions are available for viewing and comparison purposes.</span>
+                        <?php if ($canEdit): ?>
+                            <span>Only the latest version can be edited. Previous versions are available for viewing and comparison purposes.</span>
+                        <?php else: ?>
+                            <span>This abstract has been submitted and cannot be edited until reviewers provide feedback. All versions are available for viewing and comparison purposes only.</span>
+                        <?php endif; ?>
                     </div>
                     <div class="accordion" id="versionAccordion">
                         <?php
@@ -320,14 +360,19 @@ $latestVersionNumber = isset($latestVersion['version_number']) ? $latestVersion[
                                                 <div class="d-flex justify-content-between align-items-center">                                                <span class="badge bg-<?= isset($version['status']) && $version['status'] === 'submitted' ? 'success' : 'warning' ?> mb-2">
                                                         <i class="bx <?= isset($version['status']) && $version['status'] === 'submitted' ? 'bx-check-circle' : 'bx-time' ?> me-1"></i>
                                                         <?= isset($version['status']) ? ucfirst($version['status']) : 'Draft' ?>
-                                                    </span>
-                                                    <div class="btn-group btn-group-sm" role="group">                                                        <?php if ($index === 0): // Only show edit button for the latest version ?>
-                                                        <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id'] . '/' . $versionNum) ?>" 
-                                                           class="btn btn-primary btn-sm view-version-btn"
-                                                           data-abstract-id="<?= $participant_data['abstract']['id'] ?>"
-                                                           data-version-id="<?= $version['id'] ?>">
-                                                            <i class="bx bx-edit me-1"></i> Edit
-                                                        </a>
+                                                    </span>                                                    <div class="btn-group btn-group-sm" role="group">                                                        <?php if ($index === 0): // Only show edit button for the latest version ?>
+                                                            <?php if ($canEdit): ?>
+                                                                <a href="<?= base_url('abstract-paper/edit/' . $participant_data['abstract']['id'] . '/' . $versionNum) ?>" 
+                                                                   class="btn btn-primary btn-sm view-version-btn"
+                                                                   data-abstract-id="<?= $participant_data['abstract']['id'] ?>"
+                                                                   data-version-id="<?= $version['id'] ?>">
+                                                                    <i class="bx bx-edit me-1"></i> Edit
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                                                    <i class="bx bx-lock me-1"></i> Edit Disabled
+                                                                </button>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
                                                         <button type="button" class="btn btn-secondary btn-sm view-version-btn"
                                                                 data-abstract-id="<?= $participant_data['abstract']['id'] ?>"

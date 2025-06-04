@@ -14,10 +14,10 @@
                     and pay the registration fee.
                 </p>
                 <div class="d-flex justify-content-center gap-2">
-                    <a href="<?= base_url('registration') ?>" class="btn btn-primary waves-effect waves-light">
+                    <a href="<?= base_url('submission') ?>" class="btn btn-primary waves-effect waves-light">
                         <i class="mdi mdi-clipboard-text-outline me-1"></i> Complete Registration
                     </a>
-                    <a href="<?= base_url('payment') ?>" class="btn btn-info waves-effect waves-light">
+                    <a href="<?= base_url('payments') ?>" class="btn btn-info waves-effect waves-light">
                         <i class="mdi mdi-credit-card-outline me-1"></i> Make Payment
                     </a>
                 </div>

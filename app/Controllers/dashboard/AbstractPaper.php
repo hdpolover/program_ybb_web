@@ -11,38 +11,83 @@ class AbstractPaper extends BaseController
         // Helper for form and url functions
         helper(['form', 'url']);
     }
-
     public function index()
     {
+        log_message('info', '[AbstractPaper::index] Starting index method');
+
         // Get participant ID from session
         $participantId = session()->get('current_participant_id');
-        $abstractData = $this->makeGetRequest('/abstracts/participant/' . $participantId . '/details', [], false);
+        log_message('info', "[AbstractPaper::index] Participant ID from session: {$participantId}");
 
-        log_message('info', 'Participant Data: ' . print_r($abstractData, true));
+        if (!$participantId) {
+            log_message('error', '[AbstractPaper::index] No participant ID found in session');
+            return redirect()->to('/dashboard')->with('error', 'Participant session not found. Please login again.');
+        }
 
-        // Build view data
-        $data = [
-            'title' => 'Abstract and Paper',
-            'participant_data' => $abstractData
-        ];
+        try {
+            log_message('info', "[AbstractPaper::index] Making API request to: /abstracts/participant/{$participantId}/details");
+            $abstractData = $this->makeGetRequest('/abstracts/participant/' . $participantId . '/details', [], false);
 
-        return $this->render('participant/abstract-paper/index', $data);
+            log_message('info', '[AbstractPaper::index] API Response received');
+            log_message('debug', '[AbstractPaper::index] Participant Data: ' . json_encode($abstractData));
+
+            // Build view data
+            $data = [
+                'title' => 'Abstract and Paper',
+                'participant_data' => $abstractData
+            ];
+
+            log_message('info', '[AbstractPaper::index] Rendering view with data');
+            return $this->render('participant/abstract-paper/index', $data);
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::index] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::index] Stack trace: ' . $e->getTraceAsString());
+            return redirect()->to('/dashboard')->with('error', 'Unable to load abstract data. Please try again later.');
+        }
     }
-
     public function create()
     {
-        // Get available topics for abstract submission
-        $topics = $this->getAvailableTopics();
+        log_message('info', '[AbstractPaper::create] Starting create method');
 
-        $data = [
-            'title' => 'Create New Abstract',
-            'topics' => $topics
-        ];
+        try {
+            // Get available topics for abstract submission
+            log_message('info', '[AbstractPaper::create] Fetching available topics');
+            $topics = $this->getAvailableTopics();
+            log_message('info', '[AbstractPaper::create] Found ' . count($topics) . ' topics');
+            log_message('debug', '[AbstractPaper::create] Topics data: ' . json_encode($topics));
 
-        return $this->render('participant/abstract-paper/manage-abstract', $data);
-    }
+            // Get abstract settings for current program
+            $programId = session()->get('current_program_id');
+            log_message('info', "[AbstractPaper::create] Getting abstract settings for program ID: {$programId}");
 
-    public function edit($id, $versionId = 1)
+            $abstractSettings = null;
+            if ($programId) {
+                try {
+                    $abstractSettings = $this->makeGetRequest('/abstract-settings/program/' . $programId, [], false);
+                    log_message('info', '[AbstractPaper::create] Abstract settings retrieved successfully');
+                    log_message('debug', '[AbstractPaper::create] Abstract settings: ' . json_encode($abstractSettings));
+                } catch (\Exception $e) {
+                    log_message('warning', '[AbstractPaper::create] Failed to fetch abstract settings: ' . $e->getMessage());
+                    // Continue without settings - use defaults in view
+                }
+            } else {
+                log_message('warning', '[AbstractPaper::create] No program ID in session, using default abstract settings');
+            }
+
+            $data = [
+                'title' => 'Create New Abstract',
+                'topics' => $topics,
+                'abstractSettings' => $abstractSettings
+            ];
+
+            log_message('info', '[AbstractPaper::create] Rendering create view');
+            return $this->render('participant/abstract-paper/manage-abstract', $data);
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::create] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::create] Stack trace: ' . $e->getTraceAsString());
+            return redirect()->to('/abstract-paper')->with('error', 'Unable to load the create form. Please try again later.');
+        }
+    }    public function edit($id, $versionId = 1)
     {
         // Add debug logging
         log_message('debug', "Edit method called with ID: {$id}, Version ID: {$versionId}");
@@ -55,8 +100,22 @@ class AbstractPaper extends BaseController
             if (!$abstract) {
                 log_message('error', "Abstract not found with ID: {$id}");
                 return redirect()->to('/abstract-paper')->with('error', 'Abstract not found.');
-            }            
+            }
+
+            // Check if editing is allowed
+            $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+            $hasFeedback = !empty($abstract['reviewers']);
+            $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
             
+            if (!$canEdit) {
+                log_message('warning', "[AbstractPaper::edit] Edit access blocked - Abstract ID: {$id} is submitted without feedback");
+                return redirect()->to('/abstract-paper/view/' . $id)
+                    ->with('warning', 'This abstract has been submitted and cannot be edited until reviewers provide feedback requiring revisions.')
+                    ->with('warning_title', 'Editing Restricted');
+            }
+            
+            log_message('info', "[AbstractPaper::edit] Edit access granted - Status: {$abstractStatus}, Has feedback: " . ($hasFeedback ? 'yes' : 'no'));
+
             // Get abstract versions
             $abstractVersions = $this->makeGetRequest('/abstracts/' . $id . '/versions', [], false);
             log_message('debug', "Abstract versions API response: " . json_encode($abstractVersions));
@@ -107,14 +166,14 @@ class AbstractPaper extends BaseController
 
                 // Replace abstract data with the selected version data
                 $abstract['current_version'] = $currentVersion;
-            }            
-            
+            }
+
             // Get available topics
             $topics = $this->getAvailableTopics();
 
             // abstract settings data
             $programId = $abstract['program_id'] ?? null;
-            
+
             $abstractSettings = $this->makeGetRequest('/abstract-settings/program/' . $programId, [], false);
 
             $data = [
@@ -140,8 +199,13 @@ class AbstractPaper extends BaseController
     }
     public function save()
     {
+        log_message('info', '[AbstractPaper::save] Starting save method');
+        log_message('info', '[AbstractPaper::save] Request method: ' . $this->request->getMethod());
+        log_message('debug', '[AbstractPaper::save] POST data: ' . json_encode($this->request->getPost()));
+
         // Check if this is a draft
         $isDraft = $this->request->getPost('status') === 'draft';
+        log_message('info', "[AbstractPaper::save] Is draft: " . ($isDraft ? 'yes' : 'no'));
 
         // Define validation rules based on whether it's a draft or final submission
         if ($isDraft) {
@@ -150,18 +214,28 @@ class AbstractPaper extends BaseController
                 'abstract_topic_id' => 'required',
                 'title' => 'required'
             ];
+            log_message('info', '[AbstractPaper::save] Using draft validation rules');
         } else {
             // For final submission, apply full validation
             $rules = [
                 'abstract_topic_id' => 'required',
-                'title' => 'required|min_length[5]',
-                'content' => 'required|min_length[100]'
+                'title' => 'required',
+                'content' => 'required',
+                'keywords' => 'required',
+                'refs' => 'required'
             ];
+            log_message('info', '[AbstractPaper::save] Using full validation rules');
         }
 
+        log_message('debug', '[AbstractPaper::save] Validation rules: ' . json_encode($rules));
+
         if (!$this->validate($rules)) {
+            log_message('warning', '[AbstractPaper::save] Validation failed');
+            log_message('debug', '[AbstractPaper::save] Validation errors: ' . json_encode($this->validator->getErrors()));
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
+
+        log_message('info', '[AbstractPaper::save] Validation passed');
 
         // Process form data using the required fields for API
         $data = [
@@ -171,19 +245,27 @@ class AbstractPaper extends BaseController
             'title' => $this->request->getPost('title'),
             'keywords' => $this->request->getPost('keywords'),
             'content' => $this->request->getPost('content'),
+            'refs' => $this->request->getPost('refs') ?: '', // Include refs field, default to empty string if null
             'status' => $this->request->getPost('status')
         ];
 
+        log_message('info', '[AbstractPaper::save] Prepared data for API');
+        log_message('debug', '[AbstractPaper::save] API data: ' . json_encode($data));
+
         try {
             // Call the API endpoint to save the abstract
+            log_message('info', '[AbstractPaper::save] Making API request to: /abstracts');
             $response = $this->makePostRequest('/abstracts', $data, [], false, false);
+
+            log_message('info', '[AbstractPaper::save] API response received');
+            log_message('debug', '[AbstractPaper::save] API response: ' . json_encode($response));
 
             // Check if the response indicates an error
             if (isset($response['error'])) {
                 $errorMessage = isset($response['message']) ? $response['message'] : 'An error occurred while saving your abstract.';
                 $errorTitle = 'Submission Failed';
 
-                log_message('error', 'API Error: ' . json_encode($response));
+                log_message('error', '[AbstractPaper::save] API Error: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
             }
 
@@ -192,190 +274,234 @@ class AbstractPaper extends BaseController
                 $errorMessage = 'The server returned an unexpected response. Please try again later.';
                 $errorTitle = 'Unexpected Response';
 
-                log_message('error', 'Unexpected API Response: ' . json_encode($response));
+                log_message('error', '[AbstractPaper::save] Unexpected API Response: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
             }
+            log_message('info', '[AbstractPaper::save] Abstract saved successfully');
 
             // Store abstract ID in session for reference
-            if (isset($response['abstract']['id'])) {
-                session()->set('last_abstract_id', $response['abstract']['id']);
-            }
-
-            // If save is successful, redirect with success message
-            $message = $isDraft ?
-                'Your abstract draft has been saved successfully. You can continue editing it later when you are ready to complete your submission.' :
-                'Congratulations! Your abstract has been submitted successfully and is now pending review. You will be notified once the review process is complete.';
-
-            // Include abstract ID in message if available
+            $abstractId = null;
             if (isset($response['abstract']['id'])) {
                 $abstractId = $response['abstract']['id'];
-                $message .= $isDraft ?
-                    " (Draft ID: {$abstractId})" :
-                    " (Submission ID: {$abstractId})";
+                session()->set('last_abstract_id', $abstractId);
+                log_message('info', '[AbstractPaper::save] Stored abstract ID in session: ' . $abstractId);
             }
-
-            $title = $isDraft ? 'Draft Saved' : 'Submission Complete';
 
             // Get the first version for the flash data
             $currentVersion = !empty($response['abstract']['versions']) ? $response['abstract']['versions'][0] : null;
 
-            // Save the abstract details in flash data to display in SweetAlert
-            session()->setFlashdata('abstract_data', [
-                'id' => $response['abstract']['id'] ?? 'N/A',
-                'title' => $currentVersion['title'] ?? 'Your Abstract',
+            // Prepare detailed success message
+            $title = $isDraft ? 'Draft Saved Successfully!' : 'Abstract Submitted Successfully!';
+            $abstractTitle = $currentVersion['title'] ?? $this->request->getPost('title') ?? 'Your Abstract';
+
+            $message = $isDraft ?
+                'Your abstract draft has been saved and you can continue editing it later.' :
+                'Congratulations! Your abstract has been submitted and is now pending review.';            // Save comprehensive abstract details in flash data for enhanced SweetAlert
+            session()->setFlashdata('abstract_success', [
+                'id' => $abstractId ?? 'N/A',
+                'title' => $abstractTitle,
                 'status' => $response['abstract']['status'] ?? ($isDraft ? 'draft' : 'submitted'),
+                'is_draft' => $isDraft,
+                'message' => $message
             ]);
 
+            log_message('info', '[AbstractPaper::save] Redirecting to abstract-paper with enhanced success data');
             return redirect()->to('/abstract-paper')->with('success', $message)->with('success_title', $title);
         } catch (\Exception $e) {
             // Get a user-friendly error message
             $errorMessage = $this->handleApiError($e, 'We encountered a problem while saving your abstract. Please try again later or contact support if the issue persists.');
             $errorTitle = 'Submission Error';
 
-            log_message('error', 'Exception during abstract save: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::save] Exception during abstract save: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::save] Stack trace: ' . $e->getTraceAsString());
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
-    public function update($id)
+    /**
+     * Update an existing abstract
+     *
+     * @param int $id Abstract ID
+     * @return mixed
+     */    public function update($id)
     {
-        // Add debugging
-        log_message('info', 'Update method called with ID: ' . $id);
-        log_message('info', 'POST data: ' . json_encode($this->request->getPost()));
+        log_message('info', "[AbstractPaper::update] Starting update method for abstract ID: {$id}");
+        log_message('info', '[AbstractPaper::update] Request method: ' . $this->request->getMethod());
+        log_message('debug', '[AbstractPaper::update] POST data: ' . json_encode($this->request->getPost()));
 
-        // Get abstract versions to verify we're updating the latest version
-        $abstractVersions = $this->makeGetRequest('/abstracts/' . $id . '/versions', [], false);
-
-        if (!empty($abstractVersions)) {
-            // Sort versions by version_number in descending order
-            usort($abstractVersions, function ($a, $b) {
-                $a_version = isset($a['version_number']) ? (int)$a['version_number'] : 0;
-                $b_version = isset($b['version_number']) ? (int)$b['version_number'] : 0;
-                return $b_version - $a_version; // Descending order (latest first)
-            });
-
-            // Get the latest version number
-            $latestVersionNumber = isset($abstractVersions[0]['version_number']) ? (int)$abstractVersions[0]['version_number'] : 1;
-            $currentVersionNumber = (int)$this->request->getPost('version_number');
-
-            // If the version being updated is not the latest, redirect to edit the latest version
-            if ($currentVersionNumber < $latestVersionNumber) {
-                return redirect()->to('/abstract-paper/edit/' . $id . '/' . $latestVersionNumber)
-                    ->with('warning', 'You attempted to update an older version (' . $currentVersionNumber . ') of this abstract. 
-                    You have been redirected to the latest version (' . $latestVersionNumber . '). Always edit the most recent version to avoid conflicts.')
-                    ->with('warning_title', 'Using Latest Version');
-            }
-        }
-
-        // Check if this is a draft
-        $isDraft = $this->request->getPost('status') === 'draft'; // Define validation rules based on whether it's a draft or final submission
-        if ($isDraft) {
-            // For drafts, we only require topic and title
-            $rules = [
-                'abstract_topic_id' => 'required',
-                'title' => 'required'
-            ];
-        } else {
-            // For final submission, apply full validation (keywords are permit_empty according to API)
-            $rules = [
-                'abstract_topic_id' => 'required',
-                'title' => 'required|min_length[5]',
-                'content' => 'required|min_length[100]'
-            ];
-        }
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
-
-        // Process form data using the required fields for API
-        $data = [
-            'program_id' => $this->request->getPost('program_id'),
-            'primary_participant_id' => $this->request->getPost('primary_participant_id'),
-            'abstract_topic_id' => $this->request->getPost('abstract_topic_id'),
-            'title' => $this->request->getPost('title'),
-            'keywords' => $this->request->getPost('keywords'),
-            'content' => $this->request->getPost('content'),
-            'status' => $this->request->getPost('status'),
-            'version_id' => $this->request->getPost('version_id')
-        ];
         try {
+            // First, get the abstract to check its status and if editing is allowed
+            log_message('info', "[AbstractPaper::update] Checking edit permissions for abstract ID: {$id}");
+            $abstract = $this->makeGetRequest('/abstracts/' . $id, [], false);
+            
+            if (!$abstract) {
+                log_message('error', "[AbstractPaper::update] Abstract not found with ID: {$id}");
+                return redirect()->to('/abstract-paper')->with('error', 'Abstract not found.');
+            }
+            
+            // Check if editing is allowed
+            $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+            $hasFeedback = !empty($abstract['reviewers']);
+            $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+            
+            if (!$canEdit) {
+                log_message('warning', "[AbstractPaper::update] Edit attempt blocked - Abstract ID: {$id} is submitted without feedback");
+                return redirect()->to('/abstract-paper/view/' . $id)
+                    ->with('error', 'This abstract has been submitted and cannot be edited until reviewers provide feedback requiring revisions.');
+            }
+            
+            log_message('info', "[AbstractPaper::update] Edit permission granted - Status: {$abstractStatus}, Has feedback: " . ($hasFeedback ? 'yes' : 'no'));
+
+            // Get abstract versions to verify we're updating the latest version
+            log_message('info', "[AbstractPaper::update] Fetching versions for abstract ID: {$id}");
+            $abstractVersions = $this->makeGetRequest('/abstracts/' . $id . '/versions', [], false);
+            log_message('debug', "[AbstractPaper::update] Abstract versions API response: " . json_encode($abstractVersions));
+
+            if (!empty($abstractVersions)) {
+                // Sort versions by version_number in descending order
+                usort($abstractVersions, function ($a, $b) {
+                    $a_version = isset($a['version_number']) ? (int)$a['version_number'] : 0;
+                    $b_version = isset($b['version_number']) ? (int)$b['version_number'] : 0;
+                    return $b_version - $a_version; // Descending order (latest first)
+                });
+
+                // Get the latest version number
+                $latestVersionNumber = isset($abstractVersions[0]['version_number']) ? (int)$abstractVersions[0]['version_number'] : 1;
+                $currentVersionNumber = (int)$this->request->getPost('version_number');
+
+                log_message('info', "[AbstractPaper::update] Latest version: {$latestVersionNumber}, Current version: {$currentVersionNumber}");
+
+                // If the version being updated is not the latest, redirect to edit the latest version
+                if ($currentVersionNumber < $latestVersionNumber) {
+                    log_message('warning', "[AbstractPaper::update] Attempt to update older version {$currentVersionNumber}, redirecting to latest version {$latestVersionNumber}");
+                    return redirect()->to('/abstract-paper/edit/' . $id . '/' . $latestVersionNumber)
+                        ->with('warning', 'You attempted to update an older version (' . $currentVersionNumber . ') of this abstract. 
+                        You have been redirected to the latest version (' . $latestVersionNumber . '). Always edit the most recent version to avoid conflicts.')
+                        ->with('warning_title', 'Using Latest Version');
+                }
+            } else {
+                log_message('warning', "[AbstractPaper::update] No versions found for abstract ID: {$id}");
+            }
+
+            // Check if this is a draft
+            $isDraft = $this->request->getPost('status') === 'draft';
+            log_message('info', "[AbstractPaper::update] Is draft: " . ($isDraft ? 'yes' : 'no'));
+
+            // Define validation rules based on whether it's a draft or final submission
+            if ($isDraft) {
+                // For drafts, we only require topic and title
+                $rules = [
+                    'abstract_topic_id' => 'required',
+                    'title' => 'required'
+                ];
+                log_message('info', '[AbstractPaper::update] Using draft validation rules');
+            } else {
+                // For final submission, apply full validation (keywords are permit_empty according to API)
+                $rules = [
+                    'abstract_topic_id' => 'required',
+                    'title' => 'required',
+                    'content' => 'required',
+                    'keywords' => 'required',
+                    'refs' => 'required'
+                ];
+                log_message('info', '[AbstractPaper::update] Using full validation rules');
+            }
+
+            log_message('debug', '[AbstractPaper::update] Validation rules: ' . json_encode($rules));
+
+            if (!$this->validate($rules)) {
+                log_message('warning', '[AbstractPaper::update] Validation failed');
+                log_message('debug', '[AbstractPaper::update] Validation errors: ' . json_encode($this->validator->getErrors()));
+                return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            }
+
+            log_message('info', '[AbstractPaper::update] Validation passed');
+
+            // Process form data using the required fields for API
+            $data = [
+                'program_id' => $this->request->getPost('program_id'),
+                'primary_participant_id' => $this->request->getPost('primary_participant_id'),
+                'abstract_topic_id' => $this->request->getPost('abstract_topic_id'),
+                'title' => $this->request->getPost('title'),
+                'keywords' => $this->request->getPost('keywords'),
+                'content' => $this->request->getPost('content'),
+                'refs' => $this->request->getPost('refs') ?: '', // Include refs field, default to empty string if null
+                'status' => $this->request->getPost('status'),
+                'version_id' => $this->request->getPost('version_id')
+            ];
+
+            log_message('info', '[AbstractPaper::update] Prepared data for API');
+            log_message('debug', '[AbstractPaper::update] API data: ' . json_encode($data));
+
             // Use the correct API endpoint for saving/updating abstract versions
             $endpoint = '/abstracts/' . $id . '/save-version';
-            log_message('info', 'Updating abstract version with endpoint: ' . $endpoint);
-            log_message('info', 'Sending data: ' . json_encode($data));
+            log_message('info', '[AbstractPaper::update] Making API request to: ' . $endpoint);
 
             $response = $this->makePostRequest($endpoint, $data, [], false, false);
+
+            log_message('info', '[AbstractPaper::update] API response received');
+            log_message('debug', '[AbstractPaper::update] API response: ' . json_encode($response));
 
             // Check if the response indicates an error
             if (isset($response['error'])) {
                 $errorMessage = isset($response['message']) ? $response['message'] : 'An error occurred while updating your abstract.';
                 $errorTitle = 'Update Failed';
 
-                log_message('error', 'API Error during update: ' . json_encode($response));
+                log_message('error', '[AbstractPaper::update] API Error during update: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
             }
 
             // Check if we have a successful response with abstract data
-            if (!isset($response['abstract'])) {
+            if (!isset($response['abstract_version'])) {
                 $errorMessage = 'The server returned an unexpected response. Please try again later.';
                 $errorTitle = 'Unexpected Response';
 
-                log_message('error', 'Unexpected API Response during update: ' . json_encode($response));
+                log_message('error', '[AbstractPaper::update] Unexpected API Response during update: ' . json_encode($response));
                 return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
-            }            // If update is successful, redirect with success message
-            $message = $isDraft ?
-                'Your abstract draft has been updated successfully. You can continue editing it later when you are ready to complete your submission.' :
-                'Your abstract has been updated successfully and will be reviewed. You will be notified once the review process is complete.';
-
-            // Include abstract ID in message if available
-            if (isset($response['abstract']['id'])) {
-                $abstractId = $response['abstract']['id'];
-                $message .= $isDraft ?
-                    " (Draft ID: {$abstractId})" :
-                    " (Submission ID: {$abstractId})";
             }
+            log_message('info', '[AbstractPaper::update] Abstract updated successfully');
 
-            // Add version information to the message
-            $versionId = $this->request->getPost('version_id');
-            $versionNumber = $this->request->getPost('version_number');
-            if ($versionId && $versionNumber) {
-                log_message('info', "Updated abstract version {$versionNumber} (ID: {$versionId}) for abstract {$id}");
-                $message .= " (Version: {$versionNumber})";
+            // Get abstract ID for reference
+            $abstractId = $id;
+            if (isset($response['abstract_version']['abstract_id'])) {
+                $abstractId = $response['abstract_version']['abstract_id'];
+                log_message('info', "[AbstractPaper::update] Updated abstract ID: {$abstractId}");
             }
-            $title = $isDraft ? 'Draft Updated' : 'Update Complete';
 
             // Get the updated version details
-            $currentVersion = null;
-            if (!empty($response['abstract']['versions'])) {
-                // Look for the version we just updated
-                $versionId = $this->request->getPost('version_id');
-                foreach ($response['abstract']['versions'] as $version) {
-                    if ($version['id'] == $versionId) {
-                        $currentVersion = $version;
-                        break;
-                    }
-                }
+            $currentVersion = $response['abstract_version'];
+            $versionId = $this->request->getPost('version_id');
+            $versionNumber = $this->request->getPost('version_number');
 
-                // If not found, use the first version
-                if (!$currentVersion && !empty($response['abstract']['versions'])) {
-                    $currentVersion = $response['abstract']['versions'][0];
-                }
-            }
+            // Prepare detailed success message
+            $title = $isDraft ? 'Draft Updated Successfully!' : 'Abstract Updated Successfully!';
+            $abstractTitle = $currentVersion['title'] ?? $this->request->getPost('title') ?? 'Your Abstract';
 
-            // Save the abstract details in flash data to display in SweetAlert
-            session()->setFlashdata('abstract_data', [
-                'id' => $response['abstract']['id'] ?? $id,
-                'title' => $currentVersion['title'] ?? $data['title'],
+            $message = $isDraft ?
+                'Your abstract draft has been updated and you can continue editing it later.' :
+                'Your abstract has been updated successfully and will be reviewed.';
+
+            if ($versionId && $versionNumber) {
+                log_message('info', "[AbstractPaper::update] Updated abstract version {$versionNumber} (ID: {$versionId}) for abstract {$id}");
+                $message .= " (Version: {$versionNumber})";
+            }            // Save comprehensive abstract details in flash data for enhanced SweetAlert
+            session()->setFlashdata('abstract_success', [
+                'id' => $abstractId,
+                'title' => $abstractTitle,
                 'status' => $response['abstract']['status'] ?? $data['status'],
+                'is_draft' => $isDraft,
+                'message' => $message,
+                'version_number' => $versionNumber
             ]);
 
+            log_message('info', '[AbstractPaper::update] Redirecting to abstract-paper with enhanced success data');
             return redirect()->to('/abstract-paper')->with('success', $message)->with('success_title', $title);
         } catch (\Exception $e) {
             // Get a user-friendly error message
             $errorMessage = $this->handleApiError($e, 'We encountered a problem while updating your abstract. Please try again later or contact support if the issue persists.');
             $errorTitle = 'Update Error';
 
-            log_message('error', 'Exception during abstract update: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::update] Exception during abstract update: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::update] Stack trace: ' . $e->getTraceAsString());
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
@@ -384,13 +510,29 @@ class AbstractPaper extends BaseController
      * Add a new author to an abstract
      *
      * @return mixed
-     */
-    public function addAuthor()
+     */    public function addAuthor()
     {
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $abstractId = $this->request->getPost('abstract_id');
+            
+            // Check if editing is allowed for this abstract
+            try {
+                $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+                if ($abstract) {
+                    $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+                    $hasFeedback = !empty($abstract['reviewers']);
+                    $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+                    
+                    if (!$canEdit) {
+                        return redirect()->to('/abstract-paper/view/' . $abstractId)
+                            ->with('error', 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.');
+                    }
+                }
+            } catch (\Exception $e) {
+                log_message('warning', "[AbstractPaper::addAuthor] Could not verify edit permissions: " . $e->getMessage());
+            }
 
             // Validate input
             $rules = [
@@ -422,10 +564,27 @@ class AbstractPaper extends BaseController
             }
 
             return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to add author.');
-        }
-
-        // Handle AJAX request
+        }        // Handle AJAX request
         $abstractId = $this->request->getPost('abstract_id');
+
+        // Check if editing is allowed for this abstract
+        try {
+            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+            if ($abstract) {
+                $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+                $hasFeedback = !empty($abstract['reviewers']);
+                $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+                
+                if (!$canEdit) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.'
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('warning', "[AbstractPaper::addAuthor] Could not verify edit permissions: " . $e->getMessage());
+        }
 
         // Validate input
         $rules = [
@@ -462,14 +621,30 @@ class AbstractPaper extends BaseController
      * Update an existing author
      *
      * @return mixed
-     */
-    public function updateAuthor()
+     */    public function updateAuthor()
     {
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $authorId = $this->request->getPost('author_id');
             $abstractId = $this->request->getPost('abstract_id');
+
+            // Check if editing is allowed for this abstract
+            try {
+                $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+                if ($abstract) {
+                    $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+                    $hasFeedback = !empty($abstract['reviewers']);
+                    $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+                    
+                    if (!$canEdit) {
+                        return redirect()->to('/abstract-paper/view/' . $abstractId)
+                            ->with('error', 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.');
+                    }
+                }
+            } catch (\Exception $e) {
+                log_message('warning', "[AbstractPaper::updateAuthor] Could not verify edit permissions: " . $e->getMessage());
+            }
 
             // Validate input
             $rules = [
@@ -505,11 +680,28 @@ class AbstractPaper extends BaseController
             }
 
             return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to update author.');
-        }
-
-        // Handle AJAX request
+        }        // Handle AJAX request
         $authorId = $this->request->getPost('author_id');
         $abstractId = $this->request->getPost('abstract_id');
+
+        // Check if editing is allowed for this abstract
+        try {
+            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+            if ($abstract) {
+                $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+                $hasFeedback = !empty($abstract['reviewers']);
+                $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+                
+                if (!$canEdit) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.'
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('warning', "[AbstractPaper::updateAuthor] Could not verify edit permissions: " . $e->getMessage());
+        }
 
         // Validate input
         $rules = [
@@ -550,14 +742,30 @@ class AbstractPaper extends BaseController
      * Delete an author
      *
      * @return mixed
-     */
-    public function deleteAuthor()
+     */    public function deleteAuthor()
     {
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $authorId = $this->request->getPost('author_id');
             $abstractId = $this->request->getPost('abstract_id');
+
+            // Check if editing is allowed for this abstract
+            try {
+                $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+                if ($abstract) {
+                    $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+                    $hasFeedback = !empty($abstract['reviewers']);
+                    $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+                    
+                    if (!$canEdit) {
+                        return redirect()->to('/abstract-paper/view/' . $abstractId)
+                            ->with('error', 'Cannot delete authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.');
+                    }
+                }
+            } catch (\Exception $e) {
+                log_message('warning', "[AbstractPaper::deleteAuthor] Could not verify edit permissions: " . $e->getMessage());
+            }
 
             // Make API request to delete author
             $response = $this->makeDeleteRequest('/abstracts/' . $abstractId . '/authors/' . $authorId);
@@ -573,37 +781,72 @@ class AbstractPaper extends BaseController
         $authorId = $this->request->getPost('author_id');
         $abstractId = $this->request->getPost('abstract_id');
 
+        // Check if editing is allowed for this abstract
+        try {
+            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+            if ($abstract) {
+                $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+                $hasFeedback = !empty($abstract['reviewers']);
+                $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+                
+                if (!$canEdit) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Cannot delete authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.'
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('warning', "[AbstractPaper::deleteAuthor] Could not verify edit permissions: " . $e->getMessage());
+        }
+
         // Make API request to delete author
         $response = $this->makeDeleteRequest('/abstracts/' . $abstractId . '/authors/' . $authorId);
 
         return $this->response->setJSON($response);
     }
-
     /**
      * Get available topics for abstract submission
      */
     private function getAvailableTopics()
     {
+        log_message('info', '[AbstractPaper::getAvailableTopics] Starting method');
+
         // Get current program ID from session
         $currentProgramId = session()->get('current_program_id');
+        log_message('info', "[AbstractPaper::getAvailableTopics] Current program ID: {$currentProgramId}");
+
+        if (!$currentProgramId) {
+            log_message('warning', '[AbstractPaper::getAvailableTopics] No program ID found in session');
+            return [];
+        }
 
         try {
-            // In a real application, you would fetch topics from an API
+            log_message('info', "[AbstractPaper::getAvailableTopics] Making API request to: /abstract-topics/program/{$currentProgramId}");
             $topics = $this->makeGetRequest('/abstract-topics/program/' . $currentProgramId, [], false, false);
+
+            log_message('info', '[AbstractPaper::getAvailableTopics] API response received');
+            log_message('debug', '[AbstractPaper::getAvailableTopics] Topics data: ' . json_encode($topics));
+
+            $topicCount = is_array($topics) ? count($topics) : 0;
+            log_message('info', "[AbstractPaper::getAvailableTopics] Found {$topicCount} topics");
+
             return $topics;
         } catch (\Exception $e) {
-            // Handle error (e.g., log it)
-            log_message('error', 'Failed to fetch topics: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::getAvailableTopics] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::getAvailableTopics] Stack trace: ' . $e->getTraceAsString());
             return [];
         }
     }
-
     /**
      * Helper method to handle API errors and extract meaningful messages
      */
     private function handleApiError(\Exception $e, $defaultMessage = 'An error occurred. Please try again later.')
     {
-        log_message('error', 'API Error: ' . $e->getMessage());
+        log_message('error', '[AbstractPaper::handleApiError] Processing API error');
+        log_message('error', '[AbstractPaper::handleApiError] Exception message: ' . $e->getMessage());
+        log_message('error', '[AbstractPaper::handleApiError] Exception code: ' . $e->getCode());
+        log_message('debug', '[AbstractPaper::handleApiError] Stack trace: ' . $e->getTraceAsString());
 
         // First, check if message contains specific errors we can interpret
         $message = $e->getMessage();
@@ -613,6 +856,7 @@ class AbstractPaper extends BaseController
             strpos($message, 'timeout') !== false ||
             strpos($message, 'Connection timed out') !== false
         ) {
+            log_message('warning', '[AbstractPaper::handleApiError] Timeout error detected');
             return 'The server is taking too long to respond. This could be due to high traffic or connectivity issues. Please try again later.';
         }
 
@@ -621,33 +865,262 @@ class AbstractPaper extends BaseController
             strpos($message, 'Connection refused') !== false ||
             strpos($message, 'Could not resolve host') !== false
         ) {
+            log_message('warning', '[AbstractPaper::handleApiError] Connection error detected');
             return 'Unable to connect to the server. Please check your internet connection and try again later.';
         }
 
         // Check if the message contains JSON response
         if (strpos($message, '{') !== false) {
             try {
+                log_message('debug', '[AbstractPaper::handleApiError] Attempting to parse JSON from error message');
                 // Extract the JSON portion
                 preg_match('/{.*}/s', $message, $matches);
                 if (!empty($matches[0])) {
                     $responseData = json_decode($matches[0], true);
+                    log_message('debug', '[AbstractPaper::handleApiError] Parsed JSON: ' . json_encode($responseData));
 
                     // If we have a structured error message from the API
                     if (isset($responseData['message'])) {
+                        log_message('info', '[AbstractPaper::handleApiError] Using API message: ' . $responseData['message']);
                         return $responseData['message'];
                     } elseif (isset($responseData['error'])) {
+                        log_message('info', '[AbstractPaper::handleApiError] Using API error: ' . $responseData['error']);
                         return $responseData['error'];
                     } elseif (isset($responseData['errors']) && is_array($responseData['errors'])) {
                         // Join multiple errors
-                        return implode(', ', $responseData['errors']);
+                        $errorString = implode(', ', $responseData['errors']);
+                        log_message('info', '[AbstractPaper::handleApiError] Using API errors: ' . $errorString);
+                        return $errorString;
                     }
                 }
             } catch (\Exception $parseException) {
                 // If we can't parse the error, just use the default message
-                log_message('error', 'Failed to parse API error response: ' . $parseException->getMessage());
+                log_message('error', '[AbstractPaper::handleApiError] Failed to parse API error response: ' . $parseException->getMessage());
             }
         }
 
+        log_message('info', '[AbstractPaper::handleApiError] Using default error message');
         return $defaultMessage;
+    }
+
+    /**
+     * View abstract details (alias for edit method for better UX)
+     *
+     * @param int $id Abstract ID
+     * @return mixed
+     */
+    public function view($id)
+    {
+        log_message('info', "[AbstractPaper::view] Redirecting to edit view for abstract ID: {$id}");
+        // Redirect to edit method which serves as the detail view
+        return redirect()->to("/abstract-paper/edit/{$id}");
+    }
+
+    /**
+     * Compare two abstract versions
+     * 
+     * @param int $version1Id First version ID to compare
+     * @param int $version2Id Second version ID to compare
+     * @return mixed JSON response with comparison data
+     */
+    public function compareVersions($version1Id, $version2Id)
+    {
+        log_message('info', "[AbstractPaper::compareVersions] Starting comparison between versions {$version1Id} and {$version2Id}");
+        
+        // Additional check: Ensure user is authenticated
+        if (!session()->get('isLoggedIn') || !session()->has('jwt_token')) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Authentication required to access this feature.'
+                ])->setStatusCode(401);
+            }
+            return redirect()->to('/sign-in')->with('error', 'Please sign in to compare abstract versions.');
+        }
+        
+        // Check if this is an AJAX request for JSON response
+        if ($this->request->isAJAX()) {
+            return $this->compareVersionsAjax($version1Id, $version2Id);
+        }
+        
+        // Otherwise render the comparison view
+        return $this->renderComparisonView($version1Id, $version2Id);
+    }
+
+    /**
+     * Handle AJAX comparison request
+     * 
+     * @param int $version1Id First version ID to compare
+     * @param int $version2Id Second version ID to compare
+     * @return mixed JSON response with comparison data
+     */    private function compareVersionsAjax($version1Id, $version2Id)
+    {
+        // Validate input parameters
+        if (empty($version1Id) || empty($version2Id)) {
+            log_message('error', '[AbstractPaper::compareVersionsAjax] Missing version IDs');
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'error',
+                'message' => 'Both version IDs are required.',
+                'error_code' => 'MISSING_PARAMETERS'
+            ]);
+        }
+
+        if ($version1Id === $version2Id) {
+            log_message('error', '[AbstractPaper::compareVersionsAjax] Attempting to compare same version');
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'error',
+                'message' => 'Cannot compare a version with itself.',
+                'error_code' => 'SAME_VERSION'
+            ]);
+        }
+
+        try {
+            // Get participant ID from session for security verification
+            $participantId = session()->get('current_participant_id');
+            if (!$participantId) {
+                log_message('error', '[AbstractPaper::compareVersionsAjax] No participant ID in session');
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Authentication required. Please log in again.',
+                    'error_code' => 'AUTHENTICATION_REQUIRED'
+                ]);
+            }            log_message('info', "[AbstractPaper::compareVersionsAjax] Using comparison endpoint for versions {$version1Id} and {$version2Id}");            
+            // Use the existing comparison endpoint
+            $comparisonData = $this->makeGetRequest("/abstract-versions/compare/{$version1Id}/{$version2Id}", [], false);
+
+            if (!$comparisonData) {
+                log_message('error', '[AbstractPaper::compareVersionsAjax] Comparison endpoint returned no data');
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Could not retrieve comparison data. Versions may not exist or you may not have access.',
+                    'error_code' => 'COMPARISON_NOT_FOUND'
+                ]);
+            }
+
+            // Verify participant has access to this abstract by checking the primary_participant_id
+            $abstractData = $comparisonData['abstract'] ?? null;
+            if (!$abstractData || ($abstractData['primary_participant_id'] ?? null) != $participantId) {
+                log_message('error', "[AbstractPaper::compareVersionsAjax] Participant {$participantId} does not own this abstract");
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status' => 'error',
+                    'message' => 'You do not have permission to access these versions.',
+                    'error_code' => 'ACCESS_DENIED'
+                ]);
+            }
+
+            log_message('info', '[AbstractPaper::compareVersionsAjax] Comparison data retrieved successfully');
+            
+            // Format the response to match our expected structure
+            $response = [
+                'status' => 'success',
+                'message' => 'Version comparison generated successfully.',
+                'data' => $comparisonData
+            ];
+
+            log_message('info', '[AbstractPaper::compareVersionsAjax] Comparison completed successfully');
+            return $this->response->setJSON($response);
+
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::compareVersionsAjax] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::compareVersionsAjax] Stack trace: ' . $e->getTraceAsString());
+            
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'An unexpected error occurred while comparing versions.',
+                'error_code' => 'INTERNAL_ERROR',
+                'debug' => ENVIRONMENT === 'development' ? $e->getMessage() : null
+            ]);
+        }
+    }
+
+    /**
+     * Get comparison data without JSON wrapping
+     * 
+     * @param int $version1Id First version ID to compare
+     * @param int $version2Id Second version ID to compare
+     * @return array|null Comparison data or null if error
+     */
+    private function getComparisonData($version1Id, $version2Id)
+    {
+        // Validate input parameters
+        if (empty($version1Id) || empty($version2Id)) {
+            log_message('error', '[AbstractPaper::getComparisonData] Missing version IDs');
+            return null;
+        }
+
+        if ($version1Id === $version2Id) {
+            log_message('error', '[AbstractPaper::getComparisonData] Attempting to compare same version');
+            return null;
+        }
+
+        try {
+            // Get participant ID from session for security verification
+            $participantId = session()->get('current_participant_id');
+            if (!$participantId) {
+                log_message('error', '[AbstractPaper::getComparisonData] No participant ID in session');
+                return null;
+            }            log_message('info', "[AbstractPaper::getComparisonData] Using comparison endpoint for versions {$version1Id} and {$version2Id}");            
+            // Use the existing comparison endpoint
+            $comparisonData = $this->makeGetRequest("/abstract-versions/compare/{$version1Id}/{$version2Id}", [], false);
+
+            if (!$comparisonData) {
+                log_message('error', '[AbstractPaper::getComparisonData] Comparison endpoint returned no data');
+                return null;
+            }
+
+            // Verify participant has access to this abstract by checking the primary_participant_id
+            $abstractData = $comparisonData['abstract'] ?? null;
+            if (!$abstractData || ($abstractData['primary_participant_id'] ?? null) != $participantId) {
+                log_message('error', "[AbstractPaper::getComparisonData] Participant {$participantId} does not own this abstract");
+                return null;
+            }
+
+            log_message('info', '[AbstractPaper::getComparisonData] Comparison data retrieved successfully');
+            return $comparisonData;
+
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::getComparisonData] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::getComparisonData] Stack trace: ' . $e->getTraceAsString());
+            return null;
+        }
+    }
+
+    /**
+     * Render comparison view for browser requests
+     * 
+     * @param int $version1Id First version ID to compare
+     * @param int $version2Id Second version ID to compare
+     * @return mixed View response or redirect
+     */    private function renderComparisonView($version1Id, $version2Id)
+    {
+        try {
+            log_message('info', '[AbstractPaper::renderComparisonView] Starting renderComparisonView');
+            log_message('info', '[AbstractPaper::renderComparisonView] Request isAJAX: ' . ($this->request->isAJAX() ? 'true' : 'false'));
+            log_message('info', '[AbstractPaper::renderComparisonView] Request headers: ' . json_encode($this->request->getHeaders()));
+            
+            // Get the comparison data directly without JSON wrapping
+            $comparisonData = $this->getComparisonData($version1Id, $version2Id);
+            
+            if (!$comparisonData) {
+                log_message('error', '[AbstractPaper::renderComparisonView] No comparison data found');
+                return redirect()->to('/abstract-paper')->with('error', 'Unable to load comparison data. Please ensure the versions exist and you have access to them.');
+            }
+            
+            // Prepare view data
+            $viewData = [
+                'title' => 'Abstract Version Comparison',
+                'data' => $comparisonData
+            ];
+            
+            log_message('info', '[AbstractPaper::renderComparisonView] Rendering comparison view with data keys: ' . implode(', ', array_keys($viewData['data'])));
+            log_message('info', '[AbstractPaper::renderComparisonView] View file path: participant/abstract-paper/comparison');
+            
+            return $this->render('participant/abstract-paper/comparison', $viewData);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::renderComparisonView] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::renderComparisonView] Stack trace: ' . $e->getTraceAsString());
+            return redirect()->to('/abstract-paper')->with('error', 'An unexpected error occurred while loading the comparison.');
+        }
     }
 }

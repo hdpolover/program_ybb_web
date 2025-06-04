@@ -238,138 +238,186 @@ class AjaxHandler extends BaseController
     {
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
-            log_message('warning', 'compareAbstractVersions - Non-AJAX request received');
             return $this->response->setStatusCode(400)->setJSON([
                 'status' => 400,
                 'message' => 'Invalid request method. This endpoint only accepts AJAX requests.'
             ]);
         }
         
-        // Get version IDs from query parameters
+        // Get version IDs from request
         $version1Id = $this->request->getGet('version1');
         $version2Id = $this->request->getGet('version2');
         
-        log_message('debug', "compareAbstractVersions - Comparing versions: version1={$version1Id}, version2={$version2Id}");
-        
+        // Validate input
         if (empty($version1Id) || empty($version2Id)) {
-            log_message('warning', 'compareAbstractVersions - Missing version IDs');
             return $this->response->setStatusCode(400)->setJSON([
                 'status' => 400,
-                'message' => 'Missing required parameters. Both version1 and version2 must be provided.'
+                'message' => 'Both version1 and version2 parameters are required.'
             ]);
         }
         
-        // Get the current participant ID from the session
-        $participantId = session()->get('current_participant_id');
-        
-        if (!$participantId) {
-            log_message('warning', 'compareAbstractVersions - No participant ID in session');
-            return $this->response->setStatusCode(401)->setJSON([
-                'status' => 401,
-                'message' => 'Authentication required. Please log in again.'
+        if ($version1Id === $version2Id) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 400,
+                'message' => 'Cannot compare a version with itself.'
             ]);
         }
-        
-        log_message('debug', "compareAbstractVersions - Participant ID: {$participantId}");
         
         try {
-            // Make API request to get both versions
-            log_message('debug', "compareAbstractVersions - Fetching version 1 (ID: {$version1Id})");
-            $version1Response = $this->makeGetRequest('/abstract-versions/' . $version1Id);
-            log_message('debug', 'compareAbstractVersions - Version 1 response: ' . json_encode($version1Response));
+            // Get the current participant ID from session
+            $participantId = session()->get('current_participant_id');
             
-            log_message('debug', "compareAbstractVersions - Fetching version 2 (ID: {$version2Id})");
-            $version2Response = $this->makeGetRequest('/abstract-versions/' . $version2Id);
-            log_message('debug', 'compareAbstractVersions - Version 2 response: ' . json_encode($version2Response));
-            
-            if (!$version1Response || !$version2Response) {
-                log_message('error', 'compareAbstractVersions - Failed to retrieve one or both versions');
-                return $this->response->setStatusCode(500)->setJSON([
-                    'status' => 500,
-                    'message' => 'An error occurred while retrieving abstract versions for comparison.',
-                    'details' => 'One or both version responses were empty'
+            if (!$participantId) {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 401,
+                    'message' => 'Authentication required. Please log in again.'
                 ]);
             }
             
-            if (isset($version1Response['error']) || isset($version2Response['error'])) {
-                log_message('error', 'compareAbstractVersions - Error in version response');
-                $errorMessage = isset($version1Response['error']) 
-                    ? 'Error retrieving version 1: ' . $version1Response['error'] 
-                    : 'Error retrieving version 2: ' . $version2Response['error'];
-                
-                return $this->response->setStatusCode(500)->setJSON([
-                    'status' => 500,
-                    'message' => 'An error occurred while retrieving abstract versions for comparison.',
-                    'details' => $errorMessage
+            log_message('info', "[AjaxHandler::compareAbstractVersions] Comparing versions {$version1Id} and {$version2Id} for participant {$participantId}");
+            
+            // Fetch version data from external API
+            $version1Data = $this->makeGetRequest("/abstracts/versions/{$version1Id}");
+            $version2Data = $this->makeGetRequest("/abstracts/versions/{$version2Id}");
+            
+            // Verify both versions belong to the same participant
+            if (!$this->verifyVersionAccess($version1Data, $participantId) || 
+                !$this->verifyVersionAccess($version2Data, $participantId)) {
+                return $this->response->setStatusCode(403)->setJSON([
+                    'status' => 403,
+                    'message' => 'You do not have permission to access these versions.'
                 ]);
             }
             
-            // For demonstration/testing, we'll populate some mock data if needed
-            // This is useful for troubleshooting frontend issues even when the API isn't ready
-            $mockData = false;
-            if ($mockData || !isset($version1Response['abstract_id']) || !isset($version2Response['abstract_id'])) {
-                log_message('info', 'compareAbstractVersions - Using mock data for comparison');
-                
-                // Create mock data for testing
-                $mockVersion1 = [
-                    'id' => $version1Id,
-                    'abstract_id' => 1,
-                    'version_number' => 1,
-                    'title' => 'First Draft',
-                    'content' => '<p>This is the first version of the abstract with some basic content.</p>',
-                    'keywords' => 'research,draft,science',
-                    'status' => 'draft',
-                    'created_at' => date('Y-m-d H:i:s', strtotime('-2 days')),
-                    'updated_at' => date('Y-m-d H:i:s', strtotime('-2 days'))
-                ];
-                
-                $mockVersion2 = [
-                    'id' => $version2Id,
-                    'abstract_id' => 1,
-                    'version_number' => 2,
-                    'title' => 'Improved Version',
-                    'content' => '<p>This is the improved version with more detailed content and better structure.</p>',
-                    'keywords' => 'research,updated,science,methodology',
-                    'status' => 'submitted',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ];
-                
-                return $this->response->setStatusCode(200)->setJSON([
-                    'status' => 200,
-                    'message' => 'Abstract versions retrieved successfully for comparison (mock data).',
-                    'data' => [
-                        'version1' => $mockVersion1,
-                        'version2' => $mockVersion2
-                    ]
-                ]);
-            }
+            // Prepare comparison data
+            $comparisonData = [
+                'version1' => $this->formatVersionForComparison($version1Data),
+                'version2' => $this->formatVersionForComparison($version2Data),
+                'differences' => $this->calculateDifferences($version1Data, $version2Data)
+            ];
             
-            // Skip ownership validation for now to simplify the implementation
-            // We'll assume the participant has access to these versions
+            log_message('info', "[AjaxHandler::compareAbstractVersions] Comparison successful");
             
-            // Return success response with both versions
-            log_message('info', 'compareAbstractVersions - Successfully compared versions');
-            return $this->response->setStatusCode(200)->setJSON([
+            return $this->response->setJSON([
                 'status' => 200,
-                'message' => 'Abstract versions retrieved successfully for comparison.',
-                'data' => [
-                    'version1' => $version1Response,
-                    'version2' => $version2Response
-                ]
+                'message' => 'Version comparison retrieved successfully.',
+                'data' => $comparisonData
             ]);
+            
         } catch (\Exception $e) {
-            log_message('error', 'Error comparing abstract versions: ' . $e->getMessage());
-            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            log_message('error', "[AjaxHandler::compareAbstractVersions] Exception: " . $e->getMessage());
+            log_message('error', "[AjaxHandler::compareAbstractVersions] Stack trace: " . $e->getTraceAsString());
             
             return $this->response->setStatusCode(500)->setJSON([
                 'status' => 500,
-                'message' => 'An unexpected error occurred while comparing versions.',
-                'details' => $e->getMessage()
+                'message' => 'An error occurred while comparing versions: ' . $e->getMessage()
             ]);
         }
     }
     
+    /**
+     * Verify that a version belongs to the specified participant
+     * 
+     * @param array $versionData
+     * @param string $participantId
+     * @return bool
+     */
+    private function verifyVersionAccess($versionData, $participantId)
+    {
+        // Check if version data contains participant information
+        if (isset($versionData['participant_id'])) {
+            return $versionData['participant_id'] == $participantId;
+        }
+        
+        // If no direct participant ID, check if we can access via abstract
+        if (isset($versionData['abstract_id'])) {
+            try {
+                $abstractData = $this->makeGetRequest("/abstracts/{$versionData['abstract_id']}");
+                return isset($abstractData['participant_id']) && $abstractData['participant_id'] == $participantId;
+            } catch (\Exception $e) {
+                log_message('warning', "[AjaxHandler::verifyVersionAccess] Could not verify access: " . $e->getMessage());
+                return false;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Format version data for comparison display
+     * 
+     * @param array $versionData
+     * @return array
+     */
+    private function formatVersionForComparison($versionData)
+    {
+        return [
+            'id' => $versionData['id'] ?? '',
+            'version_number' => $versionData['version_number'] ?? '1',
+            'title' => $versionData['title'] ?? 'Untitled',
+            'content' => $versionData['content'] ?? '',
+            'keywords' => $versionData['keywords'] ?? '',
+            'refs' => $versionData['refs'] ?? '',
+            'status' => $versionData['status'] ?? 'draft',
+            'created_at' => $versionData['created_at'] ?? date('Y-m-d H:i:s'),
+            'updated_at' => $versionData['updated_at'] ?? date('Y-m-d H:i:s')
+        ];
+    }
+    
+    /**
+     * Calculate differences between two versions
+     * 
+     * @param array $version1
+     * @param array $version2
+     * @return array
+     */
+    private function calculateDifferences($version1, $version2)
+    {
+        $differences = [];
+        
+        // Fields to compare
+        $fieldsToCompare = ['title', 'content', 'keywords', 'refs', 'status'];
+        
+        foreach ($fieldsToCompare as $field) {
+            $value1 = $version1[$field] ?? '';
+            $value2 = $version2[$field] ?? '';
+            
+            if ($value1 !== $value2) {
+                $differences[$field] = [
+                    'changed' => true,
+                    'old_value' => $value1,
+                    'new_value' => $value2,
+                    'change_type' => $this->getChangeType($value1, $value2)
+                ];
+            } else {
+                $differences[$field] = [
+                    'changed' => false,
+                    'value' => $value1
+                ];
+            }
+        }
+        
+        return $differences;
+    }
+    
+    /**
+     * Determine the type of change between two values
+     * 
+     * @param string $oldValue
+     * @param string $newValue
+     * @return string
+     */
+    private function getChangeType($oldValue, $newValue)
+    {
+        if (empty($oldValue) && !empty($newValue)) {
+            return 'added';
+        } elseif (!empty($oldValue) && empty($newValue)) {
+            return 'removed';
+        } else {
+            return 'modified';
+        }
+    }
+
     /**
      * Test Abstract Version Creation API
      * 
