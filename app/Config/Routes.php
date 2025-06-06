@@ -125,7 +125,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->post('abstract-paper/update-author', 'dashboard\AbstractPaper::updateAuthor');
     $routes->post('abstract-paper/delete-author', 'dashboard\AbstractPaper::deleteAuthor');
     // Upload Agreement Letter
-    $routes->post('agreement_letter/upload', 'dashboard\Documents::addAgreement');
+    $routes->post('agreement_letter/upload', 'dashboard\Documents::addDocument');
     
     // payment
     $routes->get('payments', 'dashboard\Payments::index');

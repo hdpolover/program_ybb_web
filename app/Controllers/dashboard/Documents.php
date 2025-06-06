@@ -112,8 +112,9 @@ class Documents extends BaseController
         return $this->render('participant/documents/document-details', $data);
     }
 
-    public function addAgreement()
+    public function addDocument()
     {
+        date_default_timezone_set("Asia/Jakarta");
         $file = $this->request->getFile('participant_program_documents');
         $participantId = $this->request->getPost('participant_id');
         $programdocId = $this->request->getPost('program_document_id');
@@ -124,30 +125,44 @@ class Documents extends BaseController
             return redirect()->back();
         }
 
-        // Simpan file sementara untuk dikirim ke endpoint
-        $tempPath = WRITEPATH . 'temp_uploads/';
-        if (!is_dir($tempPath)) {
-            mkdir($tempPath, 0755, true);
+        // Buat nama file baru
+        $timestamp = date('Ymd');
+        $newFileName = "{$participantId}_{$timestamp}.pdf";
+
+        //Buat folder tujuan: writable/uploads/[program_id]/[nama_fileTanpaExt]/
+        // $fileNameWithoutExt = pathinfo($newFileName, PATHINFO_FILENAME);
+        $uploadPath = WRITEPATH . "../../storage.ybbfoundation.com/program-documents/{$programdocId}";
+
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
         }
-        $fileName = time() . '_' . $file->getRandomName();
-        $file->move($tempPath, $fileName);
+
+        // Jika file sudah ada, hapus dulu agar bisa direplace
+        if (file_exists($uploadPath.'/'.$newFileName)) {
+            unlink($uploadPath.'/'.$newFileName);
+        }
+        
+        // Pindahkan file ke folder baru
+        $file->move($uploadPath, $newFileName);
+        $fileurl = "https://storage.ybbfoundation.com/program-documents/{$programdocId}/".$newFileName;
         $agreementLeter = [
             'participant_id' => $participantId,
-            'program_document_id' => $programdocId
+            'program_document_id' => $programdocId,
+            'file_url' => $fileurl
         ];
+        
         $response = $this->makePostRequest('/program-documents/upload', $agreementLeter,[],false,false);
 
-        // Optional: Hapus file sementara
-        //unlink($tempPath . $fileName);
             // echo '<pre>';
             // var_dump($response);
+            // echo $fileurl;
             // echo '</pre>';
             // exit;
-        // if (!$response) {
-        //     return redirect()->to(base_url('documents/program'));
-        // } else {
-        //     return redirect()->to(base_url('dashboard'));
-        // }
+        if (!$response) {
+            return redirect()->to(base_url('documents/program'))->with('error', 'Uplod Error');
+        } else {
+            return redirect()->back()->with('Success', 'Upload Success');
+        }
     }
 
     // public function addAgreement()
