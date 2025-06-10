@@ -86,15 +86,22 @@ class Documents extends BaseController
         if (empty($id)) {
             return redirect()->to(base_url('documents/program'));
         }
-
+        $params = [
+            'participant_id' => session()->get('current_participant_id'),
+            'program_document_id' => $id
+        ];
         // Fetch specific document details from API
         $documentData = $this->makeGetRequest('/program-documents/' . $id, [], false);
+        $documentFile = $this->makePostRequest('/program-documents/participant-file',$params, [], false, false);
 
         if (empty($documentData)) {
             session()->setFlashdata('error', 'Document not found.');
             return redirect()->to(base_url('documents/program'));
         }
-
+            // echo '<pre>';
+            // var_dump($documentFile);
+            // echo '</pre>';
+            // exit;
         // if document is of type loa, then get the document details from the API
         if ($documentData['type'] === 'loa') {
             $loaTemplate = $this->makeGetRequest('/loa-templates/program-documents/' . $id, [], false);
@@ -105,9 +112,9 @@ class Documents extends BaseController
         $data = [
             'title' => 'Document Details',
             'document' => $documentData,
+            'files' => $documentFile,
             'loaTemplate' => isset($loaTemplate) ? $loaTemplate : null,
         ];
-
 
         return $this->render('participant/documents/document-details', $data);
     }
