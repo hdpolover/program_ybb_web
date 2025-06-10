@@ -474,14 +474,25 @@ class Auth extends BaseController
 
             // Log request for debugging
             log_message('debug', 'Auth request data: ' . json_encode($authData));
-
+            
+            
             // Use the correct endpoint /api/auth/sign-in-jwt
             // Pass false as the last parameter to send as form data instead of JSON
             $response = $this->makePostRequest('/auth/sign-in', $authData, [], false, false);
+            
+            // Untuk debugging manual (jangan di production)
+                // echo '<pre>';
+                // var_dump($authData);
+                // echo '</pre>';
+                // exit;
 
             // Log response for debugging
             log_message('debug', 'API Authentication Response: ' . json_encode($response));
-
+            // Untuk debugging manual (jangan di production)
+            // echo '<pre>';
+            // var_dump($response);
+            // echo '</pre>';
+            // exit;
             if (!$response) {
                 return redirect()->back()->with('error', 'Authentication failed. Please check your credentials.');
             }

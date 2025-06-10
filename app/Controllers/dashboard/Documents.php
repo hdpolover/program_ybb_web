@@ -112,6 +112,89 @@ class Documents extends BaseController
         return $this->render('participant/documents/document-details', $data);
     }
 
+    public function addDocument()
+    {
+        date_default_timezone_set("Asia/Jakarta");
+        $file = $this->request->getFile('participant_program_documents');
+        $participantId = $this->request->getPost('participant_id');
+        $programdocId = $this->request->getPost('program_document_id');
+
+        // Validasi file
+        if (!$file->isValid() || $file->getClientMimeType() !== 'application/pdf') {
+            session()->setFlashdata('error', 'Only PDF.');
+            return redirect()->back();
+        }
+
+        // Buat nama file baru
+        $timestamp = date('Ymd');
+        $newFileName = "{$participantId}_{$timestamp}.pdf";
+
+        //Buat folder tujuan: writable/uploads/[program_id]/[nama_fileTanpaExt]/
+        // $fileNameWithoutExt = pathinfo($newFileName, PATHINFO_FILENAME);
+        $uploadPath = WRITEPATH . "../../storage.ybbfoundation.com/program-documents/{$programdocId}";
+
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        // Jika file sudah ada, hapus dulu agar bisa direplace
+        if (file_exists($uploadPath.'/'.$newFileName)) {
+            unlink($uploadPath.'/'.$newFileName);
+        }
+        
+        // Pindahkan file ke folder baru
+        $file->move($uploadPath, $newFileName);
+        $fileurl = "https://storage.ybbfoundation.com/program-documents/{$programdocId}/".$newFileName;
+        $agreementLeter = [
+            'participant_id' => $participantId,
+            'program_document_id' => $programdocId,
+            'file_url' => $fileurl
+        ];
+        
+        $response = $this->makePostRequest('/program-documents/upload', $agreementLeter,[],false,false);
+
+            // echo '<pre>';
+            // var_dump($response);
+            // echo $fileurl;
+            // echo '</pre>';
+            // exit;
+        if (!$response) {
+            return redirect()->to(base_url('documents/program'))->with('error', 'Uplod Error');
+        } else {
+            return redirect()->back()->with('Success', 'Upload Success');
+        }
+    }
+
+    // public function addAgreement()
+    // {
+    //     $file = $this->request->getFile('participant_program_documents');
+    //     $participantId = $this->request->getPost('participant_id');
+    //     $programdocId = $this->request->getPost('program_document_id');
+
+    //     // Validasi file
+    //     if (!$file->isValid() || $file->getClientMimeType() !== 'application/pdf') {
+    //         session()->setFlashdata('error', 'Only PDF.');
+    //         return redirect()->back();
+    //     }
+
+    //     // Buat nama file baru
+    //     $timestamp = time();
+    //     $newFileName = "{$participantId}_{$timestamp}.pdf";
+
+    //     // Buat folder tujuan: writable/uploads/[program_id]/[nama_fileTanpaExt]/
+    //     $fileNameWithoutExt = pathinfo($newFileName, PATHINFO_FILENAME);
+    //     $uploadPath = WRITEPATH . "uploads/{$programdocId}/{$fileNameWithoutExt}/";
+
+    //     if (!is_dir($uploadPath)) {
+    //         mkdir($uploadPath, 0777, true);
+    //     }
+
+    //     // Pindahkan file ke folder baru
+    //     $file->move($uploadPath, $newFileName);
+
+    //     return redirect()->back()->with('success', 'Proposal berhasil diupload.');
+    // }
+
     public function certificates()
     {
         return $this->render('participant/documents/certificates');
