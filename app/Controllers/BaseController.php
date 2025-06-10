@@ -206,42 +206,27 @@ abstract class BaseController extends Controller
             // This will properly redirect and exit
             return redirect()->to(base_url('maintenance'))->send();
         }
-    }
-
-    /**
+    }    /**
      * Set the API base URL based on the current environment
      */
     protected function setApiBaseUrl()
     {
-        $host = $_SERVER['HTTP_HOST'] ?? 'unknown';
-        log_message('debug', 'Current HTTP_HOST: ' . $host);
+        // Check environment from .env file
+        $environment = ENVIRONMENT;
         
-        // Check if we're in development environment
-        if (ENVIRONMENT === 'development' || strpos($host, 'localhost') !== false) {
-            $this->apiBaseUrl = DEV_BASE_API_URL;
-            log_message('debug', 'Using DEV_BASE_API_URL: ' . DEV_BASE_API_URL . ' (Environment: ' . ENVIRONMENT . ', Host: ' . $host . ')');
+        if ($environment === 'development') {
+            // Use development API URL
+            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
+            log_message('info', "[BaseController::setApiBaseUrl] Development environment detected, using: {$this->apiBaseUrl}");
         } else {
-            // Use production URL for all other environments
-            $this->apiBaseUrl = BASE_API_URL;
-            log_message('debug', 'Using BASE_API_URL: ' . BASE_API_URL . ' (Environment: ' . ENVIRONMENT . ', Host: ' . $host . ')');
-            
-            // Make sure to test the API connection
-            try {
-                // Create a test connection to ensure API is reachable
-                $testUrl = $this->apiBaseUrl . '/ping';
-                $testContext = stream_context_create(['http' => ['timeout' => 5]]);
-                $testResponse = @file_get_contents($testUrl, false, $testContext);
-                
-                if ($testResponse === false) {
-                    log_message('error', 'API connection test failed - API might be unreachable');
-                } else {
-                    log_message('debug', 'API connection test successful: ' . $testResponse);
-                }
-            } catch (\Exception $e) {
-                log_message('error', 'API connection test exception: ' . $e->getMessage());
-            }
+            // Use production API URL
+            $this->apiBaseUrl = defined('BASE_API_URL') ? BASE_API_URL : 'https://admin.ybbfoundation.com/api';
+            log_message('info', "[BaseController::setApiBaseUrl] Production environment detected, using: {$this->apiBaseUrl}");
         }
-    }    /**
+        
+        log_message('debug', "[BaseController::setApiBaseUrl] Environment: {$environment}");
+        log_message('debug', "[BaseController::setApiBaseUrl] Final API base URL: {$this->apiBaseUrl}");
+    }/**
      * Process and prepare the topbar data for views
      */
     protected function prepareTopbarData()

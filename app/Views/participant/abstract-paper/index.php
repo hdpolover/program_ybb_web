@@ -33,9 +33,61 @@
                     <?php echo view('partials/page-title', array('pagetitle'=>'Participant', 'title'=>'Abstract & Paper')); ?>
 
                     <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body">                                <?php
+                        <div class="col-12">                            <div class="card">
+                                <div class="card-body">
+
+                                    <!-- Subtheme Highlight Section -->
+                                    <?php if (isset($subtheme_highlight) && !empty($subtheme_highlight)): ?>
+                                        <div class="alert alert-success border-left-success mb-4" style="border-left: 4px solid #1f9d55;">
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-shrink-0">
+                                                    <div class="avatar-sm">
+                                                        <div class="avatar-title rounded-circle bg-success">
+                                                            <i class="mdi mdi-check-circle-outline"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <h5 class="alert-heading mb-2">
+                                                        <i class="mdi mdi-flag-checkered text-success"></i> Selected Subtheme
+                                                    </h5>
+                                                    <h6 class="mb-1 text-success fw-bold"><?= esc($subtheme_highlight['name']) ?></h6>
+                                                    <?php if (!empty($subtheme_highlight['description'])): ?>
+                                                        <p class="mb-0 text-muted small"><?= esc($subtheme_highlight['description']) ?></p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <!-- Subtheme Warning Section -->
+                                    <?php if (isset($subtheme_warning) && !empty($subtheme_warning)): ?>
+                                        <div class="alert alert-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?> border-left-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?> mb-4" 
+                                             style="border-left: 4px solid <?= $subtheme_warning['type'] === 'warning' ? '#f1b44c' : ($subtheme_warning['type'] === 'error' ? '#f46a6a' : '#5156be') ?>;">
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-shrink-0">
+                                                    <div class="avatar-sm">
+                                                        <div class="avatar-title rounded-circle bg-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?>">
+                                                            <i class="mdi mdi-<?= $subtheme_warning['type'] === 'warning' ? 'alert-circle-outline' : ($subtheme_warning['type'] === 'error' ? 'close-circle-outline' : 'information-outline') ?>"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <h5 class="alert-heading mb-2"><?= esc($subtheme_warning['title']) ?></h5>
+                                                    <p class="mb-0"><?= esc($subtheme_warning['message']) ?></p>
+                                                    <?php if ($subtheme_warning['type'] === 'warning' && strpos($subtheme_warning['message'], 'subtheme') !== false): ?>
+                                                        <div class="mt-2">
+                                                            <a href="<?= base_url('dashboard/subtheme-selection') ?>" class="btn btn-warning btn-sm">
+                                                                <i class="mdi mdi-arrow-right"></i> Select Subtheme
+                                                            </a>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php
                                     // Check if participant is eligible for abstract submission
                                     if (!isset($participant_data['eligible_for_abstract']) || $participant_data['eligible_for_abstract'] === false): ?>
                                         <?= $this->include('participant/abstract-paper/components/not-eligible') ?>
@@ -76,26 +128,47 @@
     <script src="/assets/js/abstract-paper-view.js"></script>
       <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Enhanced success alert for abstract operations
-            <?php if (session()->has('abstract_success')): ?>
+            // Enhanced success alert for abstract operations            <?php if (session()->has('abstract_success')): ?>
                 <?php 
                 $successData = session('abstract_success');
                 $isDraft = $successData['is_draft'] ?? false;
-                $abstractId = $successData['id'] ?? null;
                 $abstractTitle = $successData['title'] ?? 'Your Abstract';
                 $status = $successData['status'] ?? 'unknown';
                 $message = $successData['message'] ?? '';
                 $versionNumber = $successData['version_number'] ?? null;
+                $createdAt = $successData['created_at'] ?? null;
+                $updatedAt = $successData['updated_at'] ?? null;
                 ?>
                   Swal.fire({
                     title: '<?= $isDraft ? "Draft Saved!" : "Abstract Submitted!" ?>',
                     html: `
                         <div class="text-start">
                             <h5 class="mb-3"><?= esc($abstractTitle) ?></h5>
-                            <p><strong>ID:</strong> <?= esc($abstractId) ?></p>
-                            <p><strong>Status:</strong> <span class="badge bg-<?= $isDraft ? 'warning' : 'success' ?>"><?= ucfirst(esc($status)) ?></span></p>
-                            <?php if ($versionNumber): ?>
-                            <p><strong>Version:</strong> <?= esc($versionNumber) ?></p>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p><strong>Status:</strong></p>
+                                    <span class="badge bg-<?= $isDraft ? 'warning' : 'success' ?> fs-6 px-3 py-2"><?= ucfirst(esc($status)) ?></span>
+                                </div>
+                                <?php if ($versionNumber): ?>
+                                <div class="col-6">
+                                    <p><strong>Version:</strong></p>
+                                    <span class="badge bg-info fs-6 px-3 py-2">v<?= esc($versionNumber) ?></span>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($createdAt || $updatedAt): ?>
+                            <div class="mt-3">
+                                <?php if ($createdAt && $createdAt === $updatedAt): ?>
+                                <p class="text-muted small mb-1"><i class="bx bx-time me-1"></i><strong>Created:</strong> <?= date('M j, Y \a\t g:i A', strtotime($createdAt)) ?></p>
+                                <?php else: ?>
+                                    <?php if ($createdAt): ?>
+                                    <p class="text-muted small mb-1"><i class="bx bx-time me-1"></i><strong>Created:</strong> <?= date('M j, Y \a\t g:i A', strtotime($createdAt)) ?></p>
+                                    <?php endif; ?>
+                                    <?php if ($updatedAt): ?>
+                                    <p class="text-muted small mb-1"><i class="bx bx-edit me-1"></i><strong>Last Updated:</strong> <?= date('M j, Y \a\t g:i A', strtotime($updatedAt)) ?></p>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
                             <?php endif; ?>
                             <hr>
                             <p><?= esc($message) ?></p>
@@ -130,19 +203,41 @@
                     confirmButtonColor: '#5156be'
                 });
             <?php endif; ?>
-            
-            // Handle create new abstract button
+              // Handle create new abstract button
             const createAbstractBtn = document.getElementById('create-abstract-btn');
             if (createAbstractBtn) {
                 createAbstractBtn.addEventListener('click', function() {
+                    // Check if button is disabled (no subtheme selected)
+                    if (createAbstractBtn.disabled) {
+                        Swal.fire({
+                            title: 'Subtheme Selection Required',
+                            html: `
+                                <div class="text-start">
+                                    <p>Before creating an abstract, you need to select a research subtheme.</p>
+                                    <p class="text-muted small">This helps us categorize your research and match it with appropriate reviewers.</p>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Select Subtheme',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#f1b44c'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = '<?= base_url('dashboard/subtheme-selection') ?>';
+                            }
+                        });
+                        return;
+                    }
+
+                    // Proceed to create abstract
                     window.location.href = '<?= base_url('abstract-paper/create') ?>';
                     
                     // Show loading indicator
                     Swal.fire({
                         title: 'Loading...',
                         html: `
-                            <div class="text-start">
-                                <p>Preparing the abstract creation form...</p>
+                            <div class="text-start">                                <p>Preparing the abstract creation form...</p>
                                 <div class="progress mt-3">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
                                 </div>

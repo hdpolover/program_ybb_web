@@ -124,7 +124,7 @@
                                     <p class="mb-0">This abstract is currently saved as a draft. You can continue editing and save as a draft again, or complete all required fields and submit when ready.</p>
                                     <hr>
                                     <p class="mb-0 small">
-                                        <i class="bx bx-info-circle me-1"></i> Topic and title are required to save a draft. All fields marked with <span class="text-danger">*</span> are required for final submission.
+                                        <i class="bx bx-info-circle me-1"></i> Only title is required to save a draft. All fields marked with <span class="text-danger">*</span> are required for final submission.
                                     </p>
                                 </div>
                             </div>
@@ -156,7 +156,7 @@
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h4 class="card-title mb-0"><?= $pageTitle ?></h4>
                                     <div class="text-muted small">
-                                        <i class="bx bx-info-circle me-1"></i> Fields marked with <span class="text-danger">*</span> are required for final submission. Only <strong>Topic</strong> and <strong>Title</strong> are required for saving as draft.
+                                        <i class="bx bx-info-circle me-1"></i> Fields marked with <span class="text-danger">*</span> are required for final submission. Only <strong>Title</strong> is required for saving as draft.
                                     </div>                                </div>
                                 <div class="card-body">
                                     <?php
@@ -214,24 +214,48 @@
                                             <input type="hidden" name="version_number" value="<?= $abstract['current_version']['version_number'] ?>">
                                         <?php endif; ?>
                                         <input type="hidden" name="program_id" value="<?= session()->get('current_program_id') ?>">
-                                        <input type="hidden" name="primary_participant_id" value="<?= session()->get('current_participant_id') ?>">
-                                        <div class="row mb-3">
+                                        <input type="hidden" name="primary_participant_id" value="<?= session()->get('current_participant_id') ?>">                                        <div class="row mb-3">
                                             <div class="col-lg-12">
-                                                <label for="abstract_topic_id" class="form-label">Topic <span class="text-danger">*</span></label>
-                                                <select class="form-select" id="abstract_topic_id" name="abstract_topic_id" required>
-                                                    <option value="">Select Topic</option>
-                                                    <?php if (isset($topics) && is_array($topics)): ?>
-                                                        <?php foreach ($topics as $topic): ?>
-                                                            <option value="<?= $topic['id'] ?>"
-                                                                data-description="<?= htmlspecialchars($topic['description'] ?? '') ?>"
-                                                                <?= (isset($abstract) && isset($abstract['abstract_topic_id']) && $abstract['abstract_topic_id'] == $topic['id']) ? 'selected' : '' ?>>
-                                                                <?= $topic['name'] ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    <?php endif; ?>
-                                                </select>
-                                                <div class="invalid-feedback">Please select a topic.</div>
-                                                <div id="topic-description" class="form-text text-muted mt-2"></div>
+                                                <!-- Selected Subtheme Display -->
+                                                <?php if (isset($selectedSubtheme) && !empty($selectedSubtheme)): ?>
+                                                    <label class="form-label">Research Subtheme</label>
+                                                    <div class="card border-success">
+                                                        <div class="card-body bg-light">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="flex-shrink-0">
+                                                                    <div class="avatar-sm">
+                                                                        <div class="avatar-title rounded-circle bg-success">
+                                                                            <i class="mdi mdi-flag-checkered"></i>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="flex-grow-1 ms-3">
+                                                                    <h6 class="mb-1 text-success fw-bold"><?= esc($selectedSubtheme['subtheme_name']) ?></h6>
+                                                                    <?php if (!empty($selectedSubtheme['subtheme_description'])): ?>
+                                                                        <p class="mb-0 text-muted small"><?= esc($selectedSubtheme['subtheme_description']) ?></p>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>                                                    <div class="form-text text-muted">
+                                                        <i class="bx bx-info-circle me-1"></i>Your abstract will be categorized under this subtheme.
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="alert alert-warning" role="alert">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="flex-shrink-0">
+                                                                <i class="mdi mdi-alert-circle-outline me-2"></i>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="alert-heading mb-1">Subtheme Selection Required</h6>
+                                                                <p class="mb-2">You need to select a research subtheme before creating an abstract.</p>
+                                                                <a href="<?= base_url('dashboard/subtheme-selection') ?>" class="btn btn-warning btn-sm">
+                                                                    <i class="mdi mdi-flag me-1"></i>Select Subtheme
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                         <div class="row mb-3">
@@ -298,7 +322,7 @@
                                             <div class="col-lg-12">
                                                 <div class="d-flex flex-column">
                                                     <div class="text-muted mb-3 ms-auto">
-                                                        <small><i class="bx bx-info-circle me-1"></i> You can save your work as a draft with just <strong>Topic</strong> and <strong>Title</strong> and complete it later.</small>
+                                                        <small><i class="bx bx-info-circle me-1"></i> You can save your work as a draft with just <strong>Title</strong> and complete it later.</small>
                                                     </div>
                                                     <div class="hstack gap-2 justify-content-end">
                                                         <button type="button" class="btn btn-secondary" id="save-draft-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Save your work without submitting">
@@ -715,15 +739,7 @@
 
                 // Clear all validation states first
                 document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-                document.getElementById('content-feedback').style.display = 'none';
-
-                let isValid = true;
-
-                // Topic is required for both draft and full submission
-                if (!document.getElementById('abstract_topic_id').value) {
-                    document.getElementById('abstract_topic_id').classList.add('is-invalid');
-                    isValid = false;
-                }
+                document.getElementById('content-feedback').style.display = 'none';                let isValid = true;
 
                 // Title is required for both draft and submission
                 const titleValue = document.getElementById('title').value.trim();
@@ -802,16 +818,13 @@
             // Save Draft button handler
             saveDraftBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log('Save Draft button clicked');
-
-                // Basic validation for draft
+                console.log('Save Draft button clicked');                // Basic validation for draft
                 const title = document.getElementById('title').value.trim();
-                const topicId = document.getElementById('abstract_topic_id').value;
 
-                if (!topicId || !title) {
+                if (!title) {
                     Swal.fire({
                         title: 'Form Error!',
-                        text: 'Please select a topic and provide a title for your draft.',
+                        text: 'Please provide a title for your draft.',
                         icon: 'error',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#5156be'
@@ -931,29 +944,9 @@
 
             // Clear editor validation on input
             quill.on('text-change', function() {
-                // Only clear validation state for content feedback, word count styling is handled separately
-                document.getElementById('content-feedback').style.display = 'none';
+                // Only clear validation state for content feedback, word count styling is handled separately                document.getElementById('content-feedback').style.display = 'none';
                 document.getElementById('content-feedback').textContent = 'Please enter abstract content.';
-            }); // Handle topic selection to show description
-            const topicSelect = document.getElementById('abstract_topic_id');
-            const topicDescription = document.getElementById('topic-description');
-
-            // Function to show/hide topic description
-            function updateTopicDescription() {
-                const selectedOption = topicSelect.options[topicSelect.selectedIndex];
-                const description = selectedOption.getAttribute('data-description');
-
-                // Simply update the text content directly
-                topicDescription.textContent = description || '';
-            }
-
-            // Update description on page load if a topic is already selected
-            if (topicSelect.value) {
-                updateTopicDescription();
-            }
-
-            // Add event listener for topic selection change
-            topicSelect.addEventListener('change', updateTopicDescription);
+            });
         });
     </script>
 

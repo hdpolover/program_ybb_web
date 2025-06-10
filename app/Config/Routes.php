@@ -89,6 +89,7 @@ $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 
 // Protected routes for logged in users
 $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API endpoints
     $routes->post('api/abstracts/(:num)/save-version', 'AjaxHandler::saveAbstractVersion/$1');
+    $routes->post('api/abstracts/(:num)/authors/validate', 'dashboard\AbstractPaper::validateAuthor/$1');
     $routes->get('api/abstracts/versions/compare', 'AjaxHandler::compareAbstractVersions');
     $routes->get('api/test/abstract-version-creation', 'AjaxHandler::testAbstractVersionCreation'); // Debug endpoint
 
@@ -116,14 +117,15 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->get('abstract-paper/create', 'dashboard\AbstractPaper::create');
     $routes->get('abstract-paper/view/(:num)', 'dashboard\AbstractPaper::view/$1'); // Detail view
     $routes->get('abstract-paper/edit/(:num)', 'dashboard\AbstractPaper::edit/$1');
-    $routes->get('abstract-paper/edit/(:num)/(:num)', 'dashboard\AbstractPaper::edit/$1/$2'); // Direct version access
-    $routes->get('abstract-paper/edit/(:num)/version/(:num)', 'dashboard\AbstractPaper::edit/$1/$2'); // With 'version' in URL
+    $routes->get('abstract-paper/edit/(:num)/(:num)', 'dashboard\AbstractPaper::edit/$1/$2'); // Direct version access    $routes->get('abstract-paper/edit/(:num)/version/(:num)', 'dashboard\AbstractPaper::edit/$1/$2'); // With 'version' in URL
     $routes->get('abstract-paper/compare/(:num)/(:num)', 'dashboard\AbstractPaper::compareVersions/$1/$2'); // Version comparison
     $routes->post('abstract-paper/save', 'dashboard\AbstractPaper::save');
-    $routes->post('abstract-paper/update/(:num)', 'dashboard\AbstractPaper::update/$1');
-    $routes->post('abstract-paper/add-author', 'dashboard\AbstractPaper::addAuthor');
+    $routes->post('abstract-paper/update/(:num)', 'dashboard\AbstractPaper::update/$1');    $routes->post('abstract-paper/add-author', 'dashboard\AbstractPaper::addAuthor');
     $routes->post('abstract-paper/update-author', 'dashboard\AbstractPaper::updateAuthor');
     $routes->post('abstract-paper/delete-author', 'dashboard\AbstractPaper::deleteAuthor');
+    $routes->post('abstract-paper/validate-author/(:num)', 'dashboard\AbstractPaper::validateAuthor/$1'); // Validate author email
+    $routes->post('abstract-paper/search-participant', 'dashboard\AbstractPaper::searchParticipant'); // Search for registered participants
+    $routes->get('abstract-paper/search-participant', 'dashboard\AbstractPaper::searchParticipant'); // Search for registered participants (GET)
 
     // payment
     $routes->get('payments', 'dashboard\Payments::index');

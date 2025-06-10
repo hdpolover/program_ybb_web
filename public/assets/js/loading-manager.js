@@ -16,6 +16,29 @@ function initLoadingManager() {
 
     // Add a listener to hide any overlay when the page has finished loading
     window.addEventListener('load', hideAllLoadingOverlays);
+    
+    // Add listener for page visibility changes to handle stuck loading states
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            // Page became visible again, check for stuck loading states
+            setTimeout(hideAllLoadingOverlays, 1000);
+        }
+    });
+
+    // Add keyboard shortcut (Escape key) to manually close stuck loading dialogs
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && typeof Swal !== 'undefined' && Swal.isVisible()) {
+            const currentTitle = document.querySelector('.swal2-title');
+            if (currentTitle && (
+                currentTitle.textContent.includes('Loading') || 
+                currentTitle.textContent.includes('Comparing') ||
+                currentTitle.textContent.includes('Preparing')
+            )) {
+                console.log('User pressed Escape - closing stuck loading dialog');
+                Swal.close();
+            }
+        }
+    });
 }
 
 /**
@@ -81,6 +104,19 @@ function hideAllLoadingOverlays() {
             el.style.visibility = 'hidden';
         }
     });
+
+    // Also close any SweetAlert loading dialogs that might be stuck
+    if (typeof Swal !== 'undefined' && Swal.isVisible()) {
+        const currentTitle = document.querySelector('.swal2-title');
+        if (currentTitle && (
+            currentTitle.textContent.includes('Loading') || 
+            currentTitle.textContent.includes('Comparing') ||
+            currentTitle.textContent.includes('Preparing')
+        )) {
+            console.log('Closing stuck SweetAlert loading dialog');
+            Swal.close();
+        }
+    }
 }
 
 /**

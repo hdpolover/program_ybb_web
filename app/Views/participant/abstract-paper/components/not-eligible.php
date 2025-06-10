@@ -10,16 +10,21 @@
                 </div>
                 <h5 class="font-size-16 mb-3">Registration Required</h5>
                 <p class="text-muted mb-4">
-                    You are not eligible to submit an abstract yet. To be eligible, you need to complete your registration
-                    and pay the registration fee.
+                    You are not eligible to submit an abstract yet. To be eligible, you need to complete your registration,
+                    pay the registration fee, and select a research subtheme.
                 </p>
-                <div class="d-flex justify-content-center gap-2">
-                    <a href="<?= base_url('submission') ?>" class="btn btn-primary waves-effect waves-light">
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="<?= base_url('submission') ?>" class="btn btn-primary waves-effect waves-light mb-2">
                         <i class="mdi mdi-clipboard-text-outline me-1"></i> Complete Registration
                     </a>
-                    <a href="<?= base_url('payments') ?>" class="btn btn-info waves-effect waves-light">
+                    <a href="<?= base_url('payments') ?>" class="btn btn-info waves-effect waves-light mb-2">
                         <i class="mdi mdi-credit-card-outline me-1"></i> Make Payment
                     </a>
+                    <?php if (!isset($selected_subtheme) || empty($selected_subtheme)): ?>
+                        <a href="<?= base_url('dashboard/subtheme-selection') ?>" class="btn btn-success waves-effect waves-light mb-2">
+                            <i class="mdi mdi-flag-outline me-1"></i> Select Subtheme
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -47,13 +52,12 @@
                                 2
                             </div>
                         </div>
-                    </div>
-                    <div class="flex-grow-1">
+                    </div>                    <div class="flex-grow-1">
                         <h5 class="font-size-14">Pay Registration Fee</h5>
                         <p class="text-muted mb-0">Complete payment to confirm your registration</p>
                     </div>
                 </div>
-                <div class="d-flex">
+                <div class="d-flex mb-3">
                     <div class="flex-shrink-0 me-3">
                         <div class="avatar-xs">
                             <div class="avatar-title rounded-circle bg-light text-primary">
@@ -62,8 +66,21 @@
                         </div>
                     </div>
                     <div class="flex-grow-1">
+                        <h5 class="font-size-14">Select Research Subtheme</h5>
+                        <p class="text-muted mb-0">Choose your research focus area from available subthemes</p>
+                    </div>
+                </div>
+                <div class="d-flex">
+                    <div class="flex-shrink-0 me-3">
+                        <div class="avatar-xs">
+                            <div class="avatar-title rounded-circle bg-light text-primary">
+                                4
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
                         <h5 class="font-size-14">Submit Abstract</h5>
-                        <p class="text-muted mb-0">Once registration is confirmed, you can submit your abstract</p>
+                        <p class="text-muted mb-0">Once all prerequisites are completed, you can submit your abstract</p>
                     </div>
                 </div>
             </div>

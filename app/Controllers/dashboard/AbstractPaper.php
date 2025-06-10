@@ -31,13 +31,60 @@ class AbstractPaper extends BaseController
             log_message('info', '[AbstractPaper::index] API Response received');
             log_message('debug', '[AbstractPaper::index] Participant Data: ' . json_encode($abstractData));
 
+            // Process subtheme data for highlighting and validation
+            $selectedSubtheme = null;
+            $subthemeHighlight = null;
+            $subthemeWarning = null;
+
+            if (isset($abstractData['selected_subtheme']) && !empty($abstractData['selected_subtheme'])) {
+                $selectedSubtheme = $abstractData['selected_subtheme'];
+                log_message('info', "[AbstractPaper::index] Selected subtheme found: {$selectedSubtheme['subtheme_name']}");
+
+                // Create highlight data for the selected subtheme
+                $subthemeHighlight = [
+                    'id' => $selectedSubtheme['id'],
+                    'name' => $selectedSubtheme['subtheme_name'],
+                    'description' => $selectedSubtheme['subtheme_description'] ?? '',
+                    'program_subtheme_id' => $selectedSubtheme['program_subtheme_id'],
+                    'is_active' => $selectedSubtheme['is_active'] ?? '1'
+                ];
+            } else {
+                log_message('warning', '[AbstractPaper::index] No selected subtheme found for participant');
+                $subthemeWarning = [
+                    'title' => 'Subtheme Selection Required',
+                    'message' => 'You have not selected a subtheme yet. Please select a subtheme before creating or managing your abstract.',
+                    'type' => 'warning'
+                ];
+            }
+
+            // Check if participant is eligible for abstract submission
+            $eligibleForAbstract = $abstractData['eligible_for_abstract'] ?? false;
+            if (!$eligibleForAbstract && !$subthemeWarning) {
+                $subthemeWarning = [
+                    'title' => 'Abstract Submission Not Available',
+                    'message' => 'You are not currently eligible for abstract submission. Please complete the required prerequisites.',
+                    'type' => 'info'
+                ];
+            }
+
             // Build view data
             $data = [
                 'title' => 'Abstract and Paper',
-                'participant_data' => $abstractData
+                'participant_data' => $abstractData,
+                'selected_subtheme' => $selectedSubtheme,
+                'subtheme_highlight' => $subthemeHighlight,
+                'subtheme_warning' => $subthemeWarning,
+                'eligible_for_abstract' => $eligibleForAbstract
             ];
 
-            log_message('info', '[AbstractPaper::index] Rendering view with data');
+            log_message('info', '[AbstractPaper::index] Rendering view with enhanced subtheme data');
+            if ($subthemeHighlight) {
+                log_message('info', "[AbstractPaper::index] Highlighting selected subtheme: {$subthemeHighlight['name']}");
+            }
+            if ($subthemeWarning) {
+                log_message('info', "[AbstractPaper::index] Showing subtheme warning: {$subthemeWarning['message']}");
+            }
+
             return $this->render('participant/abstract-paper/index', $data);
         } catch (\Exception $e) {
             log_message('error', '[AbstractPaper::index] Exception occurred: ' . $e->getMessage());
@@ -45,16 +92,12 @@ class AbstractPaper extends BaseController
             return redirect()->to('/dashboard')->with('error', 'Unable to load abstract data. Please try again later.');
         }
     }
+
     public function create()
     {
         log_message('info', '[AbstractPaper::create] Starting create method');
 
         try {
-            // Get available topics for abstract submission
-            log_message('info', '[AbstractPaper::create] Fetching available topics');
-            $topics = $this->getAvailableTopics();
-            log_message('info', '[AbstractPaper::create] Found ' . count($topics) . ' topics');
-            log_message('debug', '[AbstractPaper::create] Topics data: ' . json_encode($topics));
 
             // Get abstract settings for current program
             $programId = session()->get('current_program_id');
@@ -74,9 +117,28 @@ class AbstractPaper extends BaseController
                 log_message('warning', '[AbstractPaper::create] No program ID in session, using default abstract settings');
             }
 
+            // Get program subtheme selected for participant
+            $selectedSubtheme = null;
+            $participantId = session()->get('current_participant_id');
+            log_message('info', "[AbstractPaper::create] Getting participant subtheme for participant ID: {$participantId}");
+
+            if ($participantId) {
+                try {
+                    $response = $this->makeGetRequest('/participants/' . $participantId . '/subthemes', [], false);
+                    // The response is not an array, directly use it as selectedSubtheme
+                    $selectedSubtheme = $response;
+                    log_message('info', '[AbstractPaper::create] Participant subtheme retrieved successfully');
+                    log_message('debug', '[AbstractPaper::create] Participant subtheme: ' . json_encode($selectedSubtheme));
+                } catch (\Exception $e) {
+                    log_message('warning', '[AbstractPaper::create] Failed to fetch participant subtheme: ' . $e->getMessage());
+                }
+            } else {
+                log_message('warning', '[AbstractPaper::create] No participant ID in session, unable to fetch subtheme');
+            }
+
             $data = [
                 'title' => 'Create New Abstract',
-                'topics' => $topics,
+                'selectedSubtheme' => $selectedSubtheme,
                 'abstractSettings' => $abstractSettings
             ];
 
@@ -87,7 +149,9 @@ class AbstractPaper extends BaseController
             log_message('error', '[AbstractPaper::create] Stack trace: ' . $e->getTraceAsString());
             return redirect()->to('/abstract-paper')->with('error', 'Unable to load the create form. Please try again later.');
         }
-    }    public function edit($id, $versionId = 1)
+    }
+
+    public function edit($id, $versionId = 1)
     {
         // Add debug logging
         log_message('debug', "Edit method called with ID: {$id}, Version ID: {$versionId}");
@@ -106,14 +170,14 @@ class AbstractPaper extends BaseController
             $abstractStatus = strtolower($abstract['status'] ?? 'draft');
             $hasFeedback = !empty($abstract['reviewers']);
             $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-            
+
             if (!$canEdit) {
                 log_message('warning', "[AbstractPaper::edit] Edit access blocked - Abstract ID: {$id} is submitted without feedback");
                 return redirect()->to('/abstract-paper/view/' . $id)
                     ->with('warning', 'This abstract has been submitted and cannot be edited until reviewers provide feedback requiring revisions.')
                     ->with('warning_title', 'Editing Restricted');
             }
-            
+
             log_message('info', "[AbstractPaper::edit] Edit access granted - Status: {$abstractStatus}, Has feedback: " . ($hasFeedback ? 'yes' : 'no'));
 
             // Get abstract versions
@@ -166,22 +230,30 @@ class AbstractPaper extends BaseController
 
                 // Replace abstract data with the selected version data
                 $abstract['current_version'] = $currentVersion;
-            }
-
-            // Get available topics
-            $topics = $this->getAvailableTopics();
-
-            // abstract settings data
+            }            // abstract settings data
             $programId = $abstract['program_id'] ?? null;
 
             $abstractSettings = $this->makeGetRequest('/abstract-settings/program/' . $programId, [], false);
+
+            // Get participant subtheme data
+            $selectedSubtheme = null;
+            $participantId = session()->get('current_participant_id');
+            if ($participantId) {
+                try {
+                    $response = $this->makeGetRequest('/participants/' . $participantId . '/subthemes', [], false);
+                    $selectedSubtheme = $response;
+                    log_message('info', '[AbstractPaper::edit] Participant subtheme retrieved successfully');
+                } catch (\Exception $e) {
+                    log_message('warning', '[AbstractPaper::edit] Failed to fetch participant subtheme: ' . $e->getMessage());
+                }
+            }
 
             $data = [
                 'title' => 'Edit Abstract',
                 'abstract' => $abstract,
                 'abstractVersions' => $abstractVersions,
-                'topics' => $topics,
-                'abstractSettings' => $abstractSettings
+                'abstractSettings' => $abstractSettings,
+                'selectedSubtheme' => $selectedSubtheme
             ];
 
             log_message('debug', "Rendering edit view with data: " . json_encode([
@@ -197,6 +269,7 @@ class AbstractPaper extends BaseController
             return redirect()->to('/abstract-paper')->with('error', 'Unable to load abstract. Please try again later.');
         }
     }
+
     public function save()
     {
         log_message('info', '[AbstractPaper::save] Starting save method');
@@ -205,20 +278,16 @@ class AbstractPaper extends BaseController
 
         // Check if this is a draft
         $isDraft = $this->request->getPost('status') === 'draft';
-        log_message('info', "[AbstractPaper::save] Is draft: " . ($isDraft ? 'yes' : 'no'));
-
-        // Define validation rules based on whether it's a draft or final submission
+        log_message('info', "[AbstractPaper::save] Is draft: " . ($isDraft ? 'yes' : 'no'));        // Define validation rules based on whether it's a draft or final submission
         if ($isDraft) {
-            // For drafts, we only require topic and title
+            // For drafts, we only require title
             $rules = [
-                'abstract_topic_id' => 'required',
                 'title' => 'required'
             ];
             log_message('info', '[AbstractPaper::save] Using draft validation rules');
         } else {
             // For final submission, apply full validation
             $rules = [
-                'abstract_topic_id' => 'required',
                 'title' => 'required',
                 'content' => 'required',
                 'keywords' => 'required',
@@ -235,13 +304,10 @@ class AbstractPaper extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        log_message('info', '[AbstractPaper::save] Validation passed');
-
-        // Process form data using the required fields for API
+        log_message('info', '[AbstractPaper::save] Validation passed');        // Process form data using the required fields for API
         $data = [
             'program_id' => $this->request->getPost('program_id'),
             'primary_participant_id' => $this->request->getPost('primary_participant_id'),
-            'abstract_topic_id' => $this->request->getPost('abstract_topic_id'),
             'title' => $this->request->getPost('title'),
             'keywords' => $this->request->getPost('keywords'),
             'content' => $this->request->getPost('content'),
@@ -296,13 +362,17 @@ class AbstractPaper extends BaseController
 
             $message = $isDraft ?
                 'Your abstract draft has been saved and you can continue editing it later.' :
-                'Congratulations! Your abstract has been submitted and is now pending review.';            // Save comprehensive abstract details in flash data for enhanced SweetAlert
+                'Congratulations! Your abstract has been submitted and is now pending review.';
+
+            // Save comprehensive abstract details in flash data for enhanced SweetAlert
             session()->setFlashdata('abstract_success', [
-                'id' => $abstractId ?? 'N/A',
                 'title' => $abstractTitle,
                 'status' => $response['abstract']['status'] ?? ($isDraft ? 'draft' : 'submitted'),
                 'is_draft' => $isDraft,
-                'message' => $message
+                'message' => $message,
+                'version_number' => $currentVersion['version_number'] ?? '1',
+                'created_at' => $currentVersion['created_at'] ?? date('Y-m-d H:i:s'),
+                'updated_at' => $currentVersion['updated_at'] ?? date('Y-m-d H:i:s')
             ]);
 
             log_message('info', '[AbstractPaper::save] Redirecting to abstract-paper with enhanced success data');
@@ -317,6 +387,7 @@ class AbstractPaper extends BaseController
             return redirect()->back()->withInput()->with('error', $errorMessage)->with('error_title', $errorTitle);
         }
     }
+
     /**
      * Update an existing abstract
      *
@@ -332,23 +403,23 @@ class AbstractPaper extends BaseController
             // First, get the abstract to check its status and if editing is allowed
             log_message('info', "[AbstractPaper::update] Checking edit permissions for abstract ID: {$id}");
             $abstract = $this->makeGetRequest('/abstracts/' . $id, [], false);
-            
+
             if (!$abstract) {
                 log_message('error', "[AbstractPaper::update] Abstract not found with ID: {$id}");
                 return redirect()->to('/abstract-paper')->with('error', 'Abstract not found.');
             }
-            
+
             // Check if editing is allowed
             $abstractStatus = strtolower($abstract['status'] ?? 'draft');
             $hasFeedback = !empty($abstract['reviewers']);
             $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-            
+
             if (!$canEdit) {
                 log_message('warning', "[AbstractPaper::update] Edit attempt blocked - Abstract ID: {$id} is submitted without feedback");
                 return redirect()->to('/abstract-paper/view/' . $id)
                     ->with('error', 'This abstract has been submitted and cannot be edited until reviewers provide feedback requiring revisions.');
             }
-            
+
             log_message('info', "[AbstractPaper::update] Edit permission granted - Status: {$abstractStatus}, Has feedback: " . ($hasFeedback ? 'yes' : 'no'));
 
             // Get abstract versions to verify we're updating the latest version
@@ -384,20 +455,16 @@ class AbstractPaper extends BaseController
 
             // Check if this is a draft
             $isDraft = $this->request->getPost('status') === 'draft';
-            log_message('info', "[AbstractPaper::update] Is draft: " . ($isDraft ? 'yes' : 'no'));
-
-            // Define validation rules based on whether it's a draft or final submission
+            log_message('info', "[AbstractPaper::update] Is draft: " . ($isDraft ? 'yes' : 'no'));            // Define validation rules based on whether it's a draft or final submission
             if ($isDraft) {
-                // For drafts, we only require topic and title
+                // For drafts, we only require title
                 $rules = [
-                    'abstract_topic_id' => 'required',
                     'title' => 'required'
                 ];
                 log_message('info', '[AbstractPaper::update] Using draft validation rules');
             } else {
                 // For final submission, apply full validation (keywords are permit_empty according to API)
                 $rules = [
-                    'abstract_topic_id' => 'required',
                     'title' => 'required',
                     'content' => 'required',
                     'keywords' => 'required',
@@ -414,13 +481,10 @@ class AbstractPaper extends BaseController
                 return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
             }
 
-            log_message('info', '[AbstractPaper::update] Validation passed');
-
-            // Process form data using the required fields for API
+            log_message('info', '[AbstractPaper::update] Validation passed');            // Process form data using the required fields for API
             $data = [
                 'program_id' => $this->request->getPost('program_id'),
                 'primary_participant_id' => $this->request->getPost('primary_participant_id'),
-                'abstract_topic_id' => $this->request->getPost('abstract_topic_id'),
                 'title' => $this->request->getPost('title'),
                 'keywords' => $this->request->getPost('keywords'),
                 'content' => $this->request->getPost('content'),
@@ -485,12 +549,13 @@ class AbstractPaper extends BaseController
                 $message .= " (Version: {$versionNumber})";
             }            // Save comprehensive abstract details in flash data for enhanced SweetAlert
             session()->setFlashdata('abstract_success', [
-                'id' => $abstractId,
                 'title' => $abstractTitle,
                 'status' => $response['abstract']['status'] ?? $data['status'],
                 'is_draft' => $isDraft,
                 'message' => $message,
-                'version_number' => $versionNumber
+                'version_number' => $versionNumber,
+                'created_at' => $currentVersion['created_at'] ?? date('Y-m-d H:i:s'),
+                'updated_at' => $currentVersion['updated_at'] ?? date('Y-m-d H:i:s')
             ]);
 
             log_message('info', '[AbstractPaper::update] Redirecting to abstract-paper with enhanced success data');
@@ -507,44 +572,124 @@ class AbstractPaper extends BaseController
     }
 
     /**
+     * Validate Author (New endpoint)
+     * Validates if an author email can be added to an abstract
+     *
+     * @param int $abstractId Abstract ID
+     * @return mixed
+     */
+    public function validateAuthor($abstractId)
+    {
+        log_message('info', "[AbstractPaper::validateAuthor] Starting validateAuthor method for abstract ID: {$abstractId}");
+
+        // Check if this is an AJAX request
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'This endpoint only accepts AJAX requests.'
+            ]);
+        }
+
+        // Check if current user is the primary author and if editing is allowed
+        if (!$this->canManageAuthors($abstractId)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.'
+            ]);
+        }
+
+        // Validate email input
+        $email = $this->request->getPost('email');
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Please provide a valid email address.'
+            ]);
+        }        try {
+            // Make API request to validate author
+            $response = $this->makePostRequest('/abstracts/' . $abstractId . '/authors/validate', [
+                'email' => $email
+            ]);
+
+            log_message('debug', '[AbstractPaper::validateAuthor] API response: ' . json_encode($response));
+
+            // The external API returns the response directly, not wrapped in a status object
+            // Handle the case where the response contains conflict information
+            if (isset($response['can_add'])) {
+                if ($response['can_add']) {
+                    // Email can be added
+                    return $this->response->setJSON([
+                        'status' => 'success',
+                        'message' => 'Author can be added to this abstract',
+                        'data' => [
+                            'can_add' => true,
+                            'email' => $email,
+                            'abstract_id' => $abstractId
+                        ]
+                    ]);
+                } else {
+                    // Email cannot be added due to conflict
+                    $conflictMessage = 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.';
+                    
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => $conflictMessage,
+                        'data' => [
+                            'can_add' => false,
+                            'existing_abstract_id' => $response['existing_abstract_id'] ?? null,
+                            'conflict_reason' => $response['conflict_reason'] ?? 'email_already_in_program'
+                        ]
+                    ]);
+                }
+            }
+
+            // Handle other API errors
+            if (isset($response['error'])) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => $response['message'] ?? 'Validation failed'
+                ]);
+            }
+
+            // Return the validation result from the API as-is if it follows expected format
+            return $this->response->setJSON($response);
+
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::validateAuthor] Exception occurred: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'An error occurred while validating the author email. Please try again.'
+            ]);
+        }
+    }
+
+    /**
      * Add a new author to an abstract
      *
      * @return mixed
-     */    public function addAuthor()
+     */
+    public function addAuthor()
     {
+        log_message('info', '[AbstractPaper::addAuthor] Starting addAuthor method');
+
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $abstractId = $this->request->getPost('abstract_id');
-            
-            // Check if editing is allowed for this abstract
-            try {
-                $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
-                if ($abstract) {
-                    $abstractStatus = strtolower($abstract['status'] ?? 'draft');
-                    $hasFeedback = !empty($abstract['reviewers']);
-                    $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-                    
-                    if (!$canEdit) {
-                        return redirect()->to('/abstract-paper/view/' . $abstractId)
-                            ->with('error', 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.');
-                    }
-                }
-            } catch (\Exception $e) {
-                log_message('warning', "[AbstractPaper::addAuthor] Could not verify edit permissions: " . $e->getMessage());
-            }
 
-            // Validate input
+            // Check if current user is the primary author and if editing is allowed
+            if (!$this->canManageAuthors($abstractId)) {
+                return redirect()->to('/abstract-paper/view/' . $abstractId)
+                    ->with('error', 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.');
+            }            // Validate input
             $rules = [
                 'full_name' => 'required|min_length[3]|max_length[255]',
                 'email' => 'required|valid_email|max_length[255]',
                 'institution' => 'required|min_length[3]|max_length[255]',
-                'role' => 'required|in_list[co_author,presenting]',
             ];
 
             if (!$this->validate($rules)) {
-                // Return with validation errors
-                return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+                // Return with validation errors            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
             }
 
             // Prepare data for API
@@ -552,8 +697,7 @@ class AbstractPaper extends BaseController
                 'full_name' => $this->request->getPost('full_name'),
                 'email' => $this->request->getPost('email'),
                 'institution' => $this->request->getPost('institution'),
-                'address' => $this->request->getPost('address'),
-                'is_presenting' => ($this->request->getPost('role') === 'presenting') ? 1 : 0
+                'participant_id' => $this->request->getPost('participant_id') // Include participant_id if author is a registered participant
             ];
 
             // Make API request to add author
@@ -564,34 +708,22 @@ class AbstractPaper extends BaseController
             }
 
             return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to add author.');
-        }        // Handle AJAX request
-        $abstractId = $this->request->getPost('abstract_id');
-
-        // Check if editing is allowed for this abstract
-        try {
-            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
-            if ($abstract) {
-                $abstractStatus = strtolower($abstract['status'] ?? 'draft');
-                $hasFeedback = !empty($abstract['reviewers']);
-                $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-                
-                if (!$canEdit) {
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.'
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            log_message('warning', "[AbstractPaper::addAuthor] Could not verify edit permissions: " . $e->getMessage());
         }
 
-        // Validate input
+        // Handle AJAX request
+        $abstractId = $this->request->getPost('abstract_id');
+
+        // Check if current user is the primary author and if editing is allowed
+        if (!$this->canManageAuthors($abstractId)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.'
+            ]);
+        }        // Validate input
         $rules = [
             'full_name' => 'required|min_length[3]|max_length[255]',
             'email' => 'required|valid_email|max_length[255]',
             'institution' => 'required|min_length[3]|max_length[255]',
-            'role' => 'required|in_list[co_author,presenting]',
         ];
 
         if (!$this->validate($rules)) {
@@ -600,19 +732,33 @@ class AbstractPaper extends BaseController
                 'errors' => $this->validator->getErrors(),
                 'message' => 'Please fix the errors in the form.'
             ]);
-        }
-
-        // Prepare data for API
+        }        // Prepare data for API
         $authorData = [
             'full_name' => $this->request->getPost('full_name'),
             'email' => $this->request->getPost('email'),
             'institution' => $this->request->getPost('institution'),
-            'address' => $this->request->getPost('address'),
-            'is_presenting' => ($this->request->getPost('role') === 'presenting') ? 1 : 0
-        ];
-
-        // Make API request to add author
+            'participant_id' => $this->request->getPost('participant_id') // Include participant_id if author is a registered participant
+        ];        // Make API request to add author
         $response = $this->makePostRequest('/abstracts/' . $abstractId . '/authors', $authorData);
+
+        // Handle specific error cases for email conflicts
+        if (isset($response['error']) && isset($response['message'])) {
+            $errorMessage = $response['message'];
+            
+            // Check if it's an email conflict error
+            if (strpos($errorMessage, 'already assigned to another abstract') !== false ||
+                strpos($errorMessage, 'email_already_in_program') !== false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.'
+                ]);
+            }
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $errorMessage
+            ]);
+        }
 
         return $this->response->setJSON($response);
     }
@@ -621,39 +767,27 @@ class AbstractPaper extends BaseController
      * Update an existing author
      *
      * @return mixed
-     */    public function updateAuthor()
+     */
+    public function updateAuthor()
     {
+        log_message('info', '[AbstractPaper::updateAuthor] Starting updateAuthor method');
+
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $authorId = $this->request->getPost('author_id');
             $abstractId = $this->request->getPost('abstract_id');
 
-            // Check if editing is allowed for this abstract
-            try {
-                $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
-                if ($abstract) {
-                    $abstractStatus = strtolower($abstract['status'] ?? 'draft');
-                    $hasFeedback = !empty($abstract['reviewers']);
-                    $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-                    
-                    if (!$canEdit) {
-                        return redirect()->to('/abstract-paper/view/' . $abstractId)
-                            ->with('error', 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.');
-                    }
-                }
-            } catch (\Exception $e) {
-                log_message('warning', "[AbstractPaper::updateAuthor] Could not verify edit permissions: " . $e->getMessage());
-            }
-
-            // Validate input
+            // Check if current user is the primary author and if editing is allowed
+            if (!$this->canManageAuthors($abstractId)) {
+                return redirect()->to('/abstract-paper/view/' . $abstractId)
+                    ->with('error', 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.');
+            }            // Validate input
             $rules = [
                 'full_name' => 'required|min_length[3]|max_length[255]',
                 'email' => 'required|valid_email|max_length[255]',
                 'institution' => 'required|min_length[3]|max_length[255]',
-                'role' => 'permit_empty|in_list[co_author,presenting]',
             ];
-
             if (!$this->validate($rules)) {
                 // Return with validation errors
                 return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
@@ -664,13 +798,8 @@ class AbstractPaper extends BaseController
                 'full_name' => $this->request->getPost('full_name'),
                 'email' => $this->request->getPost('email'),
                 'institution' => $this->request->getPost('institution'),
-                'address' => $this->request->getPost('address')
+                'participant_id' => $this->request->getPost('participant_id') // Include participant_id if author is a registered participant
             ];
-
-            // Only update role if provided and not primary author
-            if ($this->request->getPost('role')) {
-                $authorData['is_presenting'] = ($this->request->getPost('role') === 'presenting') ? 1 : 0;
-            }
 
             // Make API request to update author
             $response = $this->makePutRequest('/abstracts/' . $abstractId . '/authors/' . $authorId, $authorData);
@@ -680,35 +809,23 @@ class AbstractPaper extends BaseController
             }
 
             return redirect()->back()->withInput()->with('error', $response['message'] ?? 'Failed to update author.');
-        }        // Handle AJAX request
+        }
+
+        // Handle AJAX request
         $authorId = $this->request->getPost('author_id');
         $abstractId = $this->request->getPost('abstract_id');
 
-        // Check if editing is allowed for this abstract
-        try {
-            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
-            if ($abstract) {
-                $abstractStatus = strtolower($abstract['status'] ?? 'draft');
-                $hasFeedback = !empty($abstract['reviewers']);
-                $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-                
-                if (!$canEdit) {
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'Cannot modify authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.'
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            log_message('warning', "[AbstractPaper::updateAuthor] Could not verify edit permissions: " . $e->getMessage());
-        }
-
-        // Validate input
+        // Check if current user is the primary author and if editing is allowed
+        if (!$this->canManageAuthors($abstractId)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.'
+            ]);
+        }        // Validate input
         $rules = [
             'full_name' => 'required|min_length[3]|max_length[255]',
             'email' => 'required|valid_email|max_length[255]',
             'institution' => 'required|min_length[3]|max_length[255]',
-            'role' => 'permit_empty|in_list[co_author,presenting]',
         ];
 
         if (!$this->validate($rules)) {
@@ -717,20 +834,13 @@ class AbstractPaper extends BaseController
                 'errors' => $this->validator->getErrors(),
                 'message' => 'Please fix the errors in the form.'
             ]);
-        }
-
-        // Prepare data for API
+        }        // Prepare data for API
         $authorData = [
             'full_name' => $this->request->getPost('full_name'),
             'email' => $this->request->getPost('email'),
             'institution' => $this->request->getPost('institution'),
-            'address' => $this->request->getPost('address')
+            'participant_id' => $this->request->getPost('participant_id') // Include participant_id if author is a registered participant
         ];
-
-        // Only update role if provided and not primary author
-        if ($this->request->getPost('role')) {
-            $authorData['is_presenting'] = ($this->request->getPost('role') === 'presenting') ? 1 : 0;
-        }
 
         // Make API request to update author
         $response = $this->makePutRequest('/abstracts/' . $abstractId . '/authors/' . $authorId, $authorData);
@@ -742,29 +852,21 @@ class AbstractPaper extends BaseController
      * Delete an author
      *
      * @return mixed
-     */    public function deleteAuthor()
+     */
+    public function deleteAuthor()
     {
+        log_message('info', '[AbstractPaper::deleteAuthor] Starting deleteAuthor method');
+
         // Check if this is an AJAX request
         if (!$this->request->isAJAX()) {
             // Regular form submission
             $authorId = $this->request->getPost('author_id');
             $abstractId = $this->request->getPost('abstract_id');
 
-            // Check if editing is allowed for this abstract
-            try {
-                $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
-                if ($abstract) {
-                    $abstractStatus = strtolower($abstract['status'] ?? 'draft');
-                    $hasFeedback = !empty($abstract['reviewers']);
-                    $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-                    
-                    if (!$canEdit) {
-                        return redirect()->to('/abstract-paper/view/' . $abstractId)
-                            ->with('error', 'Cannot delete authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.');
-                    }
-                }
-            } catch (\Exception $e) {
-                log_message('warning', "[AbstractPaper::deleteAuthor] Could not verify edit permissions: " . $e->getMessage());
+            // Check if current user is the primary author and if editing is allowed
+            if (!$this->canManageAuthors($abstractId)) {
+                return redirect()->to('/abstract-paper/view/' . $abstractId)
+                    ->with('error', 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.');
             }
 
             // Make API request to delete author
@@ -781,23 +883,12 @@ class AbstractPaper extends BaseController
         $authorId = $this->request->getPost('author_id');
         $abstractId = $this->request->getPost('abstract_id');
 
-        // Check if editing is allowed for this abstract
-        try {
-            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
-            if ($abstract) {
-                $abstractStatus = strtolower($abstract['status'] ?? 'draft');
-                $hasFeedback = !empty($abstract['reviewers']);
-                $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
-                
-                if (!$canEdit) {
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'Cannot delete authors. This abstract has been submitted and cannot be edited until reviewers provide feedback.'
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            log_message('warning', "[AbstractPaper::deleteAuthor] Could not verify edit permissions: " . $e->getMessage());
+        // Check if current user is the primary author and if editing is allowed
+        if (!$this->canManageAuthors($abstractId)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You do not have permission to manage authors for this abstract. Only the primary author can add, edit, or remove authors.'
+            ]);
         }
 
         // Make API request to delete author
@@ -805,39 +896,7 @@ class AbstractPaper extends BaseController
 
         return $this->response->setJSON($response);
     }
-    /**
-     * Get available topics for abstract submission
-     */
-    private function getAvailableTopics()
-    {
-        log_message('info', '[AbstractPaper::getAvailableTopics] Starting method');
 
-        // Get current program ID from session
-        $currentProgramId = session()->get('current_program_id');
-        log_message('info', "[AbstractPaper::getAvailableTopics] Current program ID: {$currentProgramId}");
-
-        if (!$currentProgramId) {
-            log_message('warning', '[AbstractPaper::getAvailableTopics] No program ID found in session');
-            return [];
-        }
-
-        try {
-            log_message('info', "[AbstractPaper::getAvailableTopics] Making API request to: /abstract-topics/program/{$currentProgramId}");
-            $topics = $this->makeGetRequest('/abstract-topics/program/' . $currentProgramId, [], false, false);
-
-            log_message('info', '[AbstractPaper::getAvailableTopics] API response received');
-            log_message('debug', '[AbstractPaper::getAvailableTopics] Topics data: ' . json_encode($topics));
-
-            $topicCount = is_array($topics) ? count($topics) : 0;
-            log_message('info', "[AbstractPaper::getAvailableTopics] Found {$topicCount} topics");
-
-            return $topics;
-        } catch (\Exception $e) {
-            log_message('error', '[AbstractPaper::getAvailableTopics] Exception occurred: ' . $e->getMessage());
-            log_message('error', '[AbstractPaper::getAvailableTopics] Stack trace: ' . $e->getTraceAsString());
-            return [];
-        }
-    }
     /**
      * Helper method to handle API errors and extract meaningful messages
      */
@@ -922,13 +981,38 @@ class AbstractPaper extends BaseController
      * @param int $version1Id First version ID to compare
      * @param int $version2Id Second version ID to compare
      * @return mixed JSON response with comparison data
-     */
-    public function compareVersions($version1Id, $version2Id)
+     */    public function compareVersions($version1Id, $version2Id)
     {
         log_message('info', "[AbstractPaper::compareVersions] Starting comparison between versions {$version1Id} and {$version2Id}");
-        
+
+        // Validate input parameters
+        if (empty($version1Id) || empty($version2Id)) {
+            log_message('error', '[AbstractPaper::compareVersions] Missing version IDs');
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Both version IDs are required.',
+                    'error_code' => 'MISSING_PARAMETERS'
+                ])->setStatusCode(400);
+            }
+            return redirect()->to('/abstract-paper')->with('error', 'Both version IDs are required for comparison.');
+        }
+
+        if ($version1Id === $version2Id) {
+            log_message('error', '[AbstractPaper::compareVersions] Attempting to compare same version');
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Cannot compare a version with itself.',
+                    'error_code' => 'SAME_VERSION'
+                ])->setStatusCode(400);
+            }
+            return redirect()->to('/abstract-paper')->with('error', 'Cannot compare a version with itself.');
+        }
+
         // Additional check: Ensure user is authenticated
         if (!session()->get('isLoggedIn') || !session()->has('jwt_token')) {
+            log_message('error', '[AbstractPaper::compareVersions] User not authenticated');
             if ($this->request->isAJAX()) {
                 return $this->response->setJSON([
                     'status' => 'error',
@@ -937,12 +1021,12 @@ class AbstractPaper extends BaseController
             }
             return redirect()->to('/sign-in')->with('error', 'Please sign in to compare abstract versions.');
         }
-        
+
         // Check if this is an AJAX request for JSON response
         if ($this->request->isAJAX()) {
             return $this->compareVersionsAjax($version1Id, $version2Id);
         }
-        
+
         // Otherwise render the comparison view
         return $this->renderComparisonView($version1Id, $version2Id);
     }
@@ -984,7 +1068,8 @@ class AbstractPaper extends BaseController
                     'message' => 'Authentication required. Please log in again.',
                     'error_code' => 'AUTHENTICATION_REQUIRED'
                 ]);
-            }            log_message('info', "[AbstractPaper::compareVersionsAjax] Using comparison endpoint for versions {$version1Id} and {$version2Id}");            
+            }
+            log_message('info', "[AbstractPaper::compareVersionsAjax] Using comparison endpoint for versions {$version1Id} and {$version2Id}");
             // Use the existing comparison endpoint
             $comparisonData = $this->makeGetRequest("/abstract-versions/compare/{$version1Id}/{$version2Id}", [], false);
 
@@ -1009,7 +1094,7 @@ class AbstractPaper extends BaseController
             }
 
             log_message('info', '[AbstractPaper::compareVersionsAjax] Comparison data retrieved successfully');
-            
+
             // Format the response to match our expected structure
             $response = [
                 'status' => 'success',
@@ -1019,11 +1104,10 @@ class AbstractPaper extends BaseController
 
             log_message('info', '[AbstractPaper::compareVersionsAjax] Comparison completed successfully');
             return $this->response->setJSON($response);
-
         } catch (\Exception $e) {
             log_message('error', '[AbstractPaper::compareVersionsAjax] Exception occurred: ' . $e->getMessage());
             log_message('error', '[AbstractPaper::compareVersionsAjax] Stack trace: ' . $e->getTraceAsString());
-            
+
             return $this->response->setStatusCode(500)->setJSON([
                 'status' => 'error',
                 'message' => 'An unexpected error occurred while comparing versions.',
@@ -1059,7 +1143,8 @@ class AbstractPaper extends BaseController
             if (!$participantId) {
                 log_message('error', '[AbstractPaper::getComparisonData] No participant ID in session');
                 return null;
-            }            log_message('info', "[AbstractPaper::getComparisonData] Using comparison endpoint for versions {$version1Id} and {$version2Id}");            
+            }
+            log_message('info', "[AbstractPaper::getComparisonData] Using comparison endpoint for versions {$version1Id} and {$version2Id}");
             // Use the existing comparison endpoint
             $comparisonData = $this->makeGetRequest("/abstract-versions/compare/{$version1Id}/{$version2Id}", [], false);
 
@@ -1077,50 +1162,237 @@ class AbstractPaper extends BaseController
 
             log_message('info', '[AbstractPaper::getComparisonData] Comparison data retrieved successfully');
             return $comparisonData;
-
         } catch (\Exception $e) {
             log_message('error', '[AbstractPaper::getComparisonData] Exception occurred: ' . $e->getMessage());
             log_message('error', '[AbstractPaper::getComparisonData] Stack trace: ' . $e->getTraceAsString());
             return null;
         }
     }
-
     /**
      * Render comparison view for browser requests
      * 
      * @param int $version1Id First version ID to compare
      * @param int $version2Id Second version ID to compare
      * @return mixed View response or redirect
-     */    private function renderComparisonView($version1Id, $version2Id)
+     */
+    public function renderComparisonView($version1Id, $version2Id)
     {
         try {
             log_message('info', '[AbstractPaper::renderComparisonView] Starting renderComparisonView');
             log_message('info', '[AbstractPaper::renderComparisonView] Request isAJAX: ' . ($this->request->isAJAX() ? 'true' : 'false'));
             log_message('info', '[AbstractPaper::renderComparisonView] Request headers: ' . json_encode($this->request->getHeaders()));
-            
+
             // Get the comparison data directly without JSON wrapping
             $comparisonData = $this->getComparisonData($version1Id, $version2Id);
-            
+
             if (!$comparisonData) {
                 log_message('error', '[AbstractPaper::renderComparisonView] No comparison data found');
                 return redirect()->to('/abstract-paper')->with('error', 'Unable to load comparison data. Please ensure the versions exist and you have access to them.');
             }
-            
+
+            // Verify we have the required data structure
+            if (!isset($comparisonData['version1']) || !isset($comparisonData['version2'])) {
+                log_message('error', '[AbstractPaper::renderComparisonView] Invalid comparison data structure');
+                return redirect()->to('/abstract-paper')->with('error', 'Invalid comparison data received. Please try again.');
+            }
+
             // Prepare view data
             $viewData = [
                 'title' => 'Abstract Version Comparison',
                 'data' => $comparisonData
             ];
-            
+
             log_message('info', '[AbstractPaper::renderComparisonView] Rendering comparison view with data keys: ' . implode(', ', array_keys($viewData['data'])));
             log_message('info', '[AbstractPaper::renderComparisonView] View file path: participant/abstract-paper/comparison');
-            
+
             return $this->render('participant/abstract-paper/comparison', $viewData);
-            
         } catch (\Exception $e) {
             log_message('error', '[AbstractPaper::renderComparisonView] Exception occurred: ' . $e->getMessage());
             log_message('error', '[AbstractPaper::renderComparisonView] Stack trace: ' . $e->getTraceAsString());
-            return redirect()->to('/abstract-paper')->with('error', 'An unexpected error occurred while loading the comparison.');
+            return redirect()->to('/abstract-paper')->with('error', 'An unexpected error occurred while loading the comparison. Please try again later.');
+        }
+    }
+
+    /**
+     * Search for participants by email and program ID
+     *
+     * @return mixed JSON response with participant data or null if not found
+     */    public function searchParticipant()
+    {
+        log_message('info', '[AbstractPaper::searchParticipant] Starting participant search');
+
+        // Check if this is an AJAX request
+        if (!$this->request->isAJAX()) {
+            log_message('error', '[AbstractPaper::searchParticipant] Non-AJAX request rejected');
+            return $this->response->setStatusCode(400)->setJSON([
+                'success' => false,
+                'message' => 'This endpoint only accepts AJAX requests.'
+            ]);
+        }
+
+        // Get request parameters from both GET and POST
+        $email = $this->request->getGet('email') ?: $this->request->getPost('email');
+        $programId = $this->request->getGet('program_id') ?: $this->request->getPost('program_id');
+        
+        // Log the request method and parameters
+        $method = $this->request->getMethod();
+        log_message('info', "[AbstractPaper::searchParticipant] Request method: {$method}");
+        log_message('info', "[AbstractPaper::searchParticipant] Email: {$email}, Program ID: {$programId}");
+
+        // Validate required parameters
+        if (empty($email)) {
+            log_message('warning', '[AbstractPaper::searchParticipant] Email parameter missing');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Email address is required.'
+            ]);
+        }
+
+        if (empty($programId)) {
+            log_message('warning', '[AbstractPaper::searchParticipant] Program ID parameter missing');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Program ID is required.'
+            ]);
+        }
+
+        // Validate email format
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            log_message('warning', "[AbstractPaper::searchParticipant] Invalid email format: {$email}");
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Please enter a valid email address.'
+            ]);
+        }try {
+            log_message('info', "[AbstractPaper::searchParticipant] Searching for participant with email: {$email} in program: {$programId}");
+
+            // Construct API URL and log it
+            $apiUrl = "/participants/search?email={$email}&program_id={$programId}";
+            log_message('info', "[AbstractPaper::searchParticipant] Making API call to: {$apiUrl}");
+            
+            // Call the API to search for participant
+            $response = $this->makeGetRequest($apiUrl, [], false);
+            
+            // Log the raw response for debugging
+            log_message('info', "[AbstractPaper::searchParticipant] Raw API response: " . json_encode($response));
+
+            // Check if we received a valid response
+            if ($response === null) {
+                log_message('error', "[AbstractPaper::searchParticipant] Received null response from API");
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'API request failed. Please check your connection and try again.'
+                ]);
+            }
+
+            // Check different response structures based on the API response format you provided
+            $participant = null;
+            
+            // Handle the response structure from your example: {"status": "success", "data": {"id": "52624", ...}}
+            if (isset($response['status']) && $response['status'] === 'success' && isset($response['data'])) {
+                $participant = $response['data'];
+                log_message('info', "[AbstractPaper::searchParticipant] Found participant in 'data' field");
+            }
+            // Handle alternative structure: {"participant": {...}}
+            elseif (isset($response['participant'])) {
+                $participant = $response['participant'];
+                log_message('info', "[AbstractPaper::searchParticipant] Found participant in 'participant' field");
+            }
+            // Handle direct participant data
+            elseif (isset($response['id']) && isset($response['full_name'])) {
+                $participant = $response;
+                log_message('info', "[AbstractPaper::searchParticipant] Found participant as direct response");
+            }
+
+            if ($participant) {
+                // Extract user email from nested user object if available
+                $participantEmail = $participant['email'] ?? ($participant['user']['email'] ?? $email);
+                $participantName = $participant['full_name'] ?? ($participant['user']['full_name'] ?? 'Unknown');
+                $participantInstitution = $participant['institution'] ?? '';
+                
+                log_message('info', "[AbstractPaper::searchParticipant] Participant found: {$participantName} ({$participantEmail})");
+                log_message('debug', "[AbstractPaper::searchParticipant] Full participant data: " . json_encode($participant));
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'found' => true,
+                    'participant' => [
+                        'id' => $participant['id'],
+                        'full_name' => $participantName,
+                        'email' => $participantEmail,
+                        'institution' => $participantInstitution
+                    ],
+                    'message' => 'Participant found and details loaded.'
+                ]);
+            } else {
+                log_message('info', "[AbstractPaper::searchParticipant] No participant found with email: {$email} in program: {$programId}");
+                log_message('debug', "[AbstractPaper::searchParticipant] Response structure: " . json_encode($response));
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'found' => false,
+                    'message' => 'No registered participant found with this email address in the current program.'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::searchParticipant] Exception occurred: ' . $e->getMessage());
+            log_message('error', '[AbstractPaper::searchParticipant] Stack trace: ' . $e->getTraceAsString());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'An error occurred while searching for the participant. Please try again.'
+            ]);
+        }
+    }
+
+    /**
+     * Check if the current user can manage authors for the given abstract
+     * Only the primary author can manage authors
+     *
+     * @param int $abstractId Abstract ID
+     * @return bool
+     */
+    private function canManageAuthors($abstractId)
+    {
+        log_message('info', "[AbstractPaper::canManageAuthors] Checking author management permissions for abstract ID: {$abstractId}");
+
+        // Get current participant ID from session
+        $currentParticipantId = session()->get('current_participant_id');
+        if (!$currentParticipantId) {
+            log_message('error', '[AbstractPaper::canManageAuthors] No current participant ID in session');
+            return false;
+        }
+
+        try {
+            // Get abstract data to check primary_participant_id
+            $abstract = $this->makeGetRequest('/abstracts/' . $abstractId, [], false);
+            if (!$abstract) {
+                log_message('error', "[AbstractPaper::canManageAuthors] Abstract not found with ID: {$abstractId}");
+                return false;
+            }
+
+            // Check if current user is the primary author
+            $primaryParticipantId = $abstract['primary_participant_id'] ?? null;
+            if ($currentParticipantId != $primaryParticipantId) {
+                log_message('warning', "[AbstractPaper::canManageAuthors] Access denied - Current participant {$currentParticipantId} is not the primary author {$primaryParticipantId}");
+                return false;
+            }
+
+            // Check if editing is allowed (abstract status and feedback)
+            $abstractStatus = strtolower($abstract['status'] ?? 'draft');
+            $hasFeedback = !empty($abstract['reviewers']);
+            $canEdit = ($abstractStatus !== 'submitted') || $hasFeedback;
+
+            if (!$canEdit) {
+                log_message('warning', "[AbstractPaper::canManageAuthors] Editing not allowed - Status: {$abstractStatus}, Has feedback: " . ($hasFeedback ? 'yes' : 'no'));
+                return false;
+            }
+
+            log_message('info', "[AbstractPaper::canManageAuthors] Access granted for participant {$currentParticipantId} to manage authors");
+            return true;
+        } catch (\Exception $e) {
+            log_message('error', '[AbstractPaper::canManageAuthors] Exception occurred: ' . $e->getMessage());
+            return false;
         }
     }
 }

@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Ensure the version compare modal exists
     ensureVersionCompareModalExists();
+
+    // Initialize author management
+    initializeAuthorManagement();
 });
 
 /**
@@ -174,6 +177,27 @@ function showLoading(e) {
 function compareVersions(versionId1, versionId2) {
     console.log('Compare function called with IDs:', versionId1, versionId2);
 
+    // Validate version IDs
+    if (!versionId1 || !versionId2) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Version IDs',
+            text: 'Both version IDs are required for comparison.',
+            confirmButtonColor: '#5156be'
+        });
+        return;
+    }
+
+    if (versionId1 === versionId2) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Same Version Selected',
+            text: 'Cannot compare a version with itself. Please select two different versions.',
+            confirmButtonColor: '#5156be'
+        });
+        return;
+    }
+
     // Close any existing modals
     const versionHistoryModal = document.getElementById('versionHistoryModal');
     if (versionHistoryModal) {
@@ -190,9 +214,20 @@ function compareVersions(versionId1, versionId2) {
 
     // Construct comparison URL
     const comparisonUrl = `/abstract-paper/compare/${versionId1}/${versionId2}`;
-    console.log('Redirecting to comparison page:', comparisonUrl);
+    console.log('Navigating to comparison page:', comparisonUrl);
 
-    // Show loading indicator and redirect
+    // Try the alternate AJAX approach first
+    tryAjaxComparison(versionId1, versionId2, comparisonUrl);
+}
+
+/**
+ * Try AJAX comparison first, fallback to navigation if needed
+ * @param {string} versionId1 - The ID of the first version
+ * @param {string} versionId2 - The ID of the second version
+ * @param {string} fallbackUrl - The URL to navigate to if AJAX fails
+ */
+function tryAjaxComparison(versionId1, versionId2, fallbackUrl) {
+    // Show loading indicator
     Swal.fire({
         title: 'Comparing Versions',
         html: `
@@ -201,20 +236,70 @@ function compareVersions(versionId1, versionId2) {
                 <div class="progress mt-3">
                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
                 </div>
+                <small class="text-muted mt-2">Press Escape to cancel</small>
             </div>
         `,
         showConfirmButton: false,
         allowOutsideClick: false,
-        allowEscapeKey: false,
-        willClose: () => {
-            // Handle cleanup when alert is closed
-            console.log('SweetAlert closing');
+        allowEscapeKey: true,
+        timer: 10000 // 10 second timeout
+    });
+
+    // Set up AJAX request with jQuery fallback
+    const ajaxUrl = `/abstract-paper/compare/${versionId1}/${versionId2}`;
+    
+    // Try using fetch API first
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for fetch
+
+    fetch(ajaxUrl, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
         },
-        didClose: () => {
-            // Navigate after alert is fully closed
-            window.location.href = comparisonUrl;
-        }
+        signal: controller.signal
     })
+    .then(response => {
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return response.text();
+    })
+    .then(html => {
+        // Successfully got HTML response, inject it
+        Swal.close();
+        
+        // Create a new page with the comparison content
+        const newDocument = document.open("text/html", "replace");
+        newDocument.write(html);
+        newDocument.close();
+        
+        // Update browser history
+        history.pushState(null, null, fallbackUrl);
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        console.log('AJAX comparison failed, falling back to navigation:', error);
+        
+        // Close loading and try direct navigation
+        Swal.close();
+        
+        // Show a brief transition message
+        Swal.fire({
+            title: 'Redirecting...',
+            text: 'Loading comparison page...',
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            timer: 500
+        }).then(() => {
+            window.location.href = fallbackUrl;
+        });
+    });
 }
 
 /**
@@ -801,4 +886,882 @@ function renderChangesSummary(differences) {
 function countWords(text) {
     if (!text || typeof text !== 'string') return 0;
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+}
+
+/**
+ * Author Management Functionality
+ */
+
+// Initialize author management when DOM is ready
+document.addEventListener('DOMContentLoaded', function () {
+    // ...existing initialization code...
+    
+    // Initialize author management
+    initializeAuthorManagement();
+});
+
+/**
+ * Initialize author management functionality
+ */
+function initializeAuthorManagement() {
+    console.log('Initializing author management...');
+    
+    // Check if modal exists
+    const modal = document.getElementById('addCoAuthorModal');
+    if (!modal) {
+        console.warn('Author modal not found. Author management features will not be available.');
+        return;
+    }
+    
+    // Check for required elements
+    const requiredElements = [
+        'search_participant_btn',
+        'search_email', 
+        'search_result',
+        'addAuthorForm',
+        'full_name',
+        'email',
+        'institution'
+    ];
+    
+    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+    if (missingElements.length > 0) {
+        console.warn('Missing required elements for author management:', missingElements);
+    }
+    
+    // Initialize author type selection cards
+    initializeAuthorTypeCards();
+    
+    // Initialize participant search
+    initializeParticipantSearch();
+    
+    // Initialize author form handling
+    initializeAuthorForm();
+    
+    // Initialize author action buttons
+    initializeAuthorActions();
+    
+    // Initialize modal event handlers
+    initializeModalHandlers();
+    
+    // Initialize Bootstrap tooltips
+    initializeTooltips();
+    
+    console.log('Author management initialization complete.');
+}
+
+/**
+ * Initialize modal event handlers
+ */
+function initializeModalHandlers() {
+    const modal = document.getElementById('addCoAuthorModal');
+    
+    if (modal) {
+        // Reset form when modal is hidden
+        modal.addEventListener('hidden.bs.modal', function () {
+            resetAuthorForm();
+        });
+        
+        // Initialize default state when modal is shown
+        modal.addEventListener('shown.bs.modal', function () {
+            // Set default to "New Author" and hide search section
+            const newAuthorCard = modal.querySelector('.author-type-card[data-type="new"]');
+            const participantCard = modal.querySelector('.author-type-card[data-type="participant"]');
+            const searchSection = document.getElementById('participant_search_section');
+            
+            if (newAuthorCard && participantCard && searchSection) {
+                // Remove selected from participant card and add to new author card
+                participantCard.classList.remove('selected');
+                newAuthorCard.classList.add('selected');
+                
+                // Check the correct radio button
+                document.getElementById('is_participant_no').checked = true;
+                document.getElementById('is_participant_yes').checked = false;
+                
+                // Hide search section
+                searchSection.style.display = 'none';
+            }
+            
+            // Focus on first input
+            const firstInput = modal.querySelector('#full_name');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 100);
+            }
+        });
+    }
+}
+
+/**
+ * Initialize Bootstrap tooltips
+ */
+function initializeTooltips() {
+    // Check if Bootstrap is available
+    if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) {
+        console.warn('Bootstrap Tooltip not available. Tooltips will not be initialized.');
+        return;
+    }
+    
+    try {
+        // Initialize tooltips for author action buttons
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        console.log('Tooltips initialized successfully.');
+    } catch (error) {
+        console.warn('Failed to initialize tooltips:', error);
+    }
+}
+
+/**
+ * Reset author form to initial state
+ */
+function resetAuthorForm() {
+    // Clear form fields
+    clearAuthorForm();
+    
+    // Clear search results
+    clearSearchResults();
+    
+    // Reset search input
+    const searchInput = document.getElementById('search_email');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    // Reset button states
+    setSearchButtonLoading(false);
+      // Reset to default tab
+    const authorListTab = document.querySelector('[href="#authorList"]');
+    if (authorListTab && typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+        try {
+            const tabInstance = new bootstrap.Tab(authorListTab);
+            tabInstance.show();
+        } catch (error) {
+            console.warn('Failed to reset to author list tab:', error);
+            // Fallback: manually trigger click
+            authorListTab.click();
+        }
+    }
+}
+
+/**
+ * Initialize author type selection cards
+ */
+function initializeAuthorTypeCards() {
+    const authorTypeCards = document.querySelectorAll('.author-type-card');
+    
+    authorTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove selected class from all cards
+            authorTypeCards.forEach(c => c.classList.remove('selected'));
+            
+            // Add selected class to clicked card
+            this.classList.add('selected');
+            
+            // Update radio button
+            const radioInput = this.querySelector('input[type="radio"]');
+            if (radioInput) {
+                radioInput.checked = true;
+            }
+            
+            // Show/hide participant search section
+            const searchSection = document.getElementById('participant_search_section');
+            const authorDetailsSection = document.getElementById('author_details_section');
+            
+            if (this.getAttribute('data-type') === 'participant') {
+                searchSection.style.display = 'block';
+                // Clear any previous search results
+                clearSearchResults();
+            } else {
+                searchSection.style.display = 'none';
+                // Clear form when switching to manual entry
+                clearAuthorForm();
+            }
+        });
+    });
+}
+
+/**
+ * Initialize participant search functionality
+ */
+function initializeParticipantSearch() {
+    const searchBtn = document.getElementById('search_participant_btn');
+    const searchInput = document.getElementById('search_email');
+    
+    if (searchBtn && searchInput) {
+        // Handle search button click
+        searchBtn.addEventListener('click', function() {
+            const email = searchInput.value.trim();
+            if (!email) {
+                showAlert('warning', 'Please enter an email address to search.');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showAlert('error', 'Please enter a valid email address.');
+                return;
+            }
+            
+            searchParticipant(email);
+        });
+        
+        // Handle Enter key in search input
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchBtn.click();
+            }
+        });
+    }
+}
+
+/**
+ * Search for participant by email
+ */
+function searchParticipant(email) {
+    const searchBtn = document.getElementById('search_participant_btn');
+    const searchResult = document.getElementById('search_result');
+    const programId = document.querySelector('input[name="program_id"]')?.value;
+    
+    console.log('[searchParticipant] Starting search for email:', email, 'in program:', programId);
+    
+    if (!programId) {
+        console.error('[searchParticipant] Program ID not found');
+        showAlert('error', 'Program ID not found. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Show loading state
+    setSearchButtonLoading(true);
+    clearSearchResults();
+    
+    // Construct the URL
+    const searchUrl = `/abstract-paper/search-participant?email=${encodeURIComponent(email)}&program_id=${encodeURIComponent(programId)}`;
+    console.log('[searchParticipant] Making request to:', searchUrl);
+    
+    // Make AJAX request
+    fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('[searchParticipant] Received response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('[searchParticipant] Received data:', data);
+        setSearchButtonLoading(false);
+        
+        if (data.success === false) {
+            console.error('[searchParticipant] Search failed:', data.message);
+            // Show error message
+            searchResult.innerHTML = `
+                <div class="alert alert-danger fade show">
+                    <i class="bx bx-error-circle me-2"></i>
+                    ${data.message || 'An error occurred while searching.'}
+                </div>
+            `;
+        } else if (data.found && data.participant) {
+            console.log('[searchParticipant] Participant found:', data.participant);
+            // Participant found - populate form
+            populateAuthorForm(data.participant);
+            searchResult.innerHTML = `
+                <div class="alert alert-success fade show">
+                    <i class="bx bx-check-circle me-2"></i>
+                    ${data.message || 'Participant found and details loaded.'}
+                </div>
+            `;
+        } else {
+            console.log('[searchParticipant] No participant found');
+            // No participant found
+            searchResult.innerHTML = `
+                <div class="alert alert-info fade show">
+                    <i class="bx bx-info-circle me-2"></i>
+                    ${data.message || 'No registered participant found with this email address.'}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('[searchParticipant] Request failed:', error);
+        setSearchButtonLoading(false);
+        searchResult.innerHTML = `
+            <div class="alert alert-danger fade show">
+                <i class="bx bx-error-circle me-2"></i>
+                An error occurred while searching. Please try again.
+            </div>
+        `;
+    });
+}
+
+/**
+ * Set search button loading state
+ */
+function setSearchButtonLoading(loading) {
+    const searchBtn = document.getElementById('search_participant_btn');
+    const btnText = searchBtn.querySelector('.btn-text');
+    const spinner = searchBtn.querySelector('.spinner-border');
+    
+    if (loading) {
+        searchBtn.disabled = true;
+        btnText.textContent = 'Searching...';
+        spinner.classList.remove('d-none');
+    } else {
+        searchBtn.disabled = false;
+        btnText.textContent = 'Search';
+        spinner.classList.add('d-none');
+    }
+}
+
+/**
+ * Populate author form with participant data
+ */
+function populateAuthorForm(participant) {
+    document.getElementById('full_name').value = participant.full_name || '';
+    document.getElementById('email').value = participant.email || '';
+    document.getElementById('institution').value = participant.institution || '';
+    document.getElementById('selected_participant_id').value = participant.id || '';
+}
+
+/**
+ * Clear author form
+ */
+function clearAuthorForm() {
+    document.getElementById('full_name').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('institution').value = '';
+    document.getElementById('selected_participant_id').value = '';
+}
+
+/**
+ * Clear search results
+ */
+function clearSearchResults() {
+    const searchResult = document.getElementById('search_result');
+    if (searchResult) {
+        searchResult.innerHTML = '';
+    }
+}
+
+/**
+ * Initialize author form handling
+ */
+function initializeAuthorForm() {
+    const form = document.getElementById('addAuthorForm');
+    const emailInput = document.getElementById('email');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Submit form via AJAX (validation is handled in submitAuthorForm)
+            submitAuthorForm();
+        });
+    }
+    
+    // Add real-time email validation
+    if (emailInput) {
+        let emailValidationTimeout;
+        
+        emailInput.addEventListener('input', function() {
+            const email = this.value.trim();
+            const abstractId = document.querySelector('input[name="abstract_id"]')?.value;
+            
+            // Clear previous validation feedback
+            this.classList.remove('is-valid', 'is-invalid');
+            const feedbackElement = document.getElementById('email_validation_feedback');
+            if (feedbackElement) {
+                feedbackElement.remove();
+            }
+            
+            // Clear previous timeout
+            if (emailValidationTimeout) {
+                clearTimeout(emailValidationTimeout);
+            }
+            
+            // Skip validation if email is empty or invalid format
+            if (!email || !isValidEmail(email)) {
+                return;
+            }
+              // Validate after a short delay to avoid too many API calls
+            emailValidationTimeout = setTimeout(() => {
+                validateAuthorEmail(email, abstractId, false) // Don't show SweetAlert during real-time validation
+                    .then(validation => {
+                        // Only show feedback if the email hasn't changed
+                        if (emailInput.value.trim() === email) {
+                            if (validation.valid) {
+                                showEmailValidationFeedback(true, 'Email can be added to this abstract.', email);
+                            } else {
+                                let message = validation.message;
+                                if (validation.conflict_reason === 'email_already_in_program') {
+                                    message = 'This email is already assigned to another abstract in this program.';
+                                }
+                                showEmailValidationFeedback(false, message, email);
+                                // Don't show SweetAlert here - only inline feedback
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Real-time email validation error:', error);
+                    });
+            }, 1000); // 1 second delay
+        });
+        
+        // Clear validation feedback when email loses focus if empty
+        emailInput.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.remove('is-valid', 'is-invalid');
+                const feedbackElement = document.getElementById('email_validation_feedback');
+                if (feedbackElement) {
+                    feedbackElement.remove();
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Validate author form
+ */
+function validateAuthorForm() {
+    const fullName = document.getElementById('full_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const institution = document.getElementById('institution').value.trim();
+    
+    if (!fullName) {
+        showAlert('error', 'Full name is required.');
+        document.getElementById('full_name').focus();
+        return false;
+    }
+    
+    if (!email) {
+        showAlert('error', 'Email address is required.');
+        document.getElementById('email').focus();
+        return false;
+    }
+    
+    if (!isValidEmail(email)) {
+        showAlert('error', 'Please enter a valid email address.');
+        document.getElementById('email').focus();
+        return false;
+    }
+    
+    if (!institution) {
+        showAlert('error', 'Institution is required.');
+        document.getElementById('institution').focus();
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Validate author email against existing authors in the program
+ */
+function validateAuthorEmail(email, abstractId, showSweetAlert = false) {
+    if (!email || !isValidEmail(email)) {
+        return Promise.resolve({ valid: false, message: 'Please enter a valid email address.' });
+    }
+
+    return new Promise((resolve) => {
+        fetch(`/api/abstracts/${abstractId}/authors/validate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                email: email
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                resolve({ 
+                    valid: data.data.can_add, 
+                    message: data.message,
+                    data: data.data,
+                    showSweetAlert: showSweetAlert
+                });
+            } else {
+                resolve({ 
+                    valid: false, 
+                    message: data.message || 'Email validation failed.',
+                    conflict_reason: data.data?.conflict_reason,
+                    showSweetAlert: showSweetAlert
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Email validation error:', error);
+            resolve({ 
+                valid: false, 
+                message: 'Unable to validate email. Please try again.',
+                showSweetAlert: showSweetAlert
+            });
+        });
+    });
+}
+
+/**
+ * Show email validation feedback
+ */
+function showEmailValidationFeedback(isValid, message, email) {
+    const emailInput = document.getElementById('email');
+    const feedbackElement = document.getElementById('email_validation_feedback');
+    
+    // Remove existing classes
+    emailInput.classList.remove('is-valid', 'is-invalid');
+    
+    if (feedbackElement) {
+        feedbackElement.remove();
+    }
+    
+    // Create feedback element
+    const feedback = document.createElement('div');
+    feedback.id = 'email_validation_feedback';
+    feedback.className = isValid ? 'valid-feedback' : 'invalid-feedback';
+    feedback.innerHTML = message;
+    
+    // Add appropriate class and insert feedback
+    emailInput.classList.add(isValid ? 'is-valid' : 'is-invalid');
+    emailInput.parentNode.appendChild(feedback);
+}
+
+/**
+ * Submit author form
+ */
+function submitAuthorForm() {
+    const form = document.getElementById('addAuthorForm');
+    const email = document.getElementById('email').value.trim();
+    const abstractId = document.querySelector('input[name="abstract_id"]')?.value;
+    
+    if (!abstractId) {
+        showAlert('error', 'Abstract ID not found. Please refresh the page and try again.');
+        return;
+    }
+    
+    // First validate the form locally
+    if (!validateAuthorForm()) {
+        return;
+    }
+    
+    // Check if email already has validation feedback showing an error
+    const emailInput = document.getElementById('email');
+    const isCurrentlyInvalid = emailInput.classList.contains('is-invalid');
+    
+    if (isCurrentlyInvalid) {
+        // Email is already known to be invalid, show SweetAlert immediately
+        Swal.fire({
+            icon: 'warning',
+            title: 'Email Already in Use',
+            text: 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.',
+            confirmButtonColor: '#5156be',
+            confirmButtonText: 'Understood'
+        });
+        return;
+    }
+    
+    // Show loading for email validation
+    Swal.fire({
+        title: 'Validating Email...',
+        html: 'Please wait while we check if this email can be added.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });    // Validate email against existing authors
+    validateAuthorEmail(email, abstractId, true) // Show SweetAlert during form submission
+        .then(validation => {
+            Swal.close();
+            
+            if (!validation.valid) {
+                // Show detailed error message with SweetAlert only during form submission
+                if (validation.showSweetAlert) {
+                    let title = 'Email Cannot Be Added';
+                    let message = validation.message;
+                    let icon = 'error';
+                    
+                    if (validation.conflict_reason === 'email_already_in_program') {
+                        title = 'Email Already in Use';
+                        message = 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.';
+                        icon = 'warning';
+                    }
+                    
+                    Swal.fire({
+                        icon: icon,
+                        title: title,
+                        text: message,
+                        confirmButtonColor: '#5156be',
+                        confirmButtonText: 'Understood'
+                    });
+                }
+                
+                showEmailValidationFeedback(false, validation.message, email);
+                return;
+            }
+            
+            // Email is valid, proceed with form submission
+            showEmailValidationFeedback(true, 'Email can be added to this abstract.', email);
+            
+            // Show loading for form submission
+            Swal.fire({
+                title: 'Adding Author...',
+                html: 'Please wait while we add the author to your abstract.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Submit via AJAX
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                
+                if (data.success) {
+                    // Success - show message and reload page
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Author Added Successfully!',
+                        text: data.message || 'The author has been added to your abstract.',
+                        confirmButtonColor: '#5156be'
+                    }).then(() => {
+                        // Close modal and reload page
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addCoAuthorModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        location.reload();
+                    });                } else {
+                    // Error - show detailed error message with SweetAlert
+                    let title = 'Unable to Add Author';
+                    let errorMessage = data.message || 'An error occurred while adding the author.';
+                    let icon = 'error';
+                    
+                    // Handle specific conflict errors that might still occur
+                    if (errorMessage.includes('already assigned to another abstract')) {
+                        title = 'Email Already in Use';
+                        errorMessage = 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.';
+                        icon = 'warning';
+                    }
+                    
+                    Swal.fire({
+                        icon: icon,
+                        title: title,
+                        text: errorMessage,
+                        confirmButtonColor: '#5156be',
+                        confirmButtonText: 'Understood'
+                    });
+                }
+            })            .catch(error => {
+                console.error('Submit error:', error);
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Network Error',
+                    text: 'An error occurred while adding the author. Please check your connection and try again.',
+                    confirmButtonColor: '#5156be'
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Email validation error:', error);
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: 'Unable to validate email. Please check your connection and try again.',
+                confirmButtonColor: '#5156be'
+            });
+        });
+}
+
+/**
+ * Initialize author action buttons (edit, delete, view)
+ */
+function initializeAuthorActions() {
+    // View author buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.view-author')) {
+            e.preventDefault();
+            const btn = e.target.closest('.view-author');
+            const authorData = JSON.parse(btn.getAttribute('data-author'));
+            viewAuthorDetails(authorData);
+        }
+        
+        if (e.target.closest('.edit-author')) {
+            e.preventDefault();
+            const btn = e.target.closest('.edit-author');
+            const authorData = JSON.parse(btn.getAttribute('data-author'));
+            editAuthorDetails(authorData);
+        }
+        
+        if (e.target.closest('.delete-author')) {
+            e.preventDefault();
+            const btn = e.target.closest('.delete-author');
+            const authorId = btn.getAttribute('data-author-id');
+            const authorName = btn.getAttribute('data-author-name');
+            deleteAuthor(authorId, authorName);
+        }
+    });
+}
+
+/**
+ * View author details
+ */
+function viewAuthorDetails(author) {
+    Swal.fire({
+        title: 'Author Details',
+        html: `
+            <div class="text-start">
+                <div class="mb-3">
+                    <strong>Name:</strong> ${author.full_name || 'N/A'}
+                </div>
+                <div class="mb-3">
+                    <strong>Email:</strong> ${author.email || 'N/A'}
+                </div>
+                <div class="mb-3">
+                    <strong>Institution:</strong> ${author.institution || 'N/A'}
+                </div>
+                <div class="mb-3">
+                    <strong>Type:</strong> ${author.is_participant == '1' ? 'Registered Participant' : 'External Author'}
+                </div>
+            </div>
+        `,
+        confirmButtonColor: '#5156be',
+        confirmButtonText: 'Close'
+    });
+}
+
+/**
+ * Edit author details (placeholder for future implementation)
+ */
+function editAuthorDetails(author) {
+    showAlert('info', 'Edit author functionality will be implemented soon.');
+}
+
+/**
+ * Delete author
+ */
+function deleteAuthor(authorId, authorName) {
+    Swal.fire({
+        title: 'Remove Author?',
+        text: `Are you sure you want to remove "${authorName}" from this abstract?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f46a6a',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Remove',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Perform delete action
+            performDeleteAuthor(authorId);
+        }
+    });
+}
+
+/**
+ * Perform delete author action
+ */
+function performDeleteAuthor(authorId) {
+    const abstractId = document.querySelector('input[name="abstract_id"]')?.value;
+    
+    if (!abstractId) {
+        showAlert('error', 'Abstract ID not found. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Show loading
+    Swal.fire({
+        title: 'Removing Author...',
+        html: 'Please wait while we remove the author.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('author_id', authorId);
+    formData.append('abstract_id', abstractId);
+    
+    // Submit delete request
+    fetch('/abstract-paper/delete-author', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        Swal.close();
+        
+        if (data.success) {
+            // Success
+            Swal.fire({
+                icon: 'success',
+                title: 'Author Removed!',
+                text: data.message || 'The author has been removed from your abstract.',
+                confirmButtonColor: '#5156be'
+            }).then(() => {
+                location.reload();
+            });
+        } else {
+            showAlert('error', data.message || 'An error occurred while removing the author.');
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        Swal.close();
+        showAlert('error', 'An error occurred while removing the author. Please try again.');
+    });
+}
+
+/**
+ * Utility function to validate email
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
+ * Utility function to show alerts
+ */
+function showAlert(type, message) {
+    const iconMap = {
+        'success': 'success',
+        'error': 'error',
+        'warning': 'warning',
+        'info': 'info'
+    };
+    
+    Swal.fire({
+        icon: iconMap[type] || 'info',
+        title: type.charAt(0).toUpperCase() + type.slice(1),
+        text: message,
+        confirmButtonColor: '#5156be'
+    });
 }
