@@ -1,9 +1,12 @@
 <?= $this->include('partials/main') ?>
 
-<head>
-
-    <!-- Title Meta -->
-    <?= $this->include('partials/title-meta', ['meta_title' => "Programs"]) ?>
+<head>    <!-- Title Meta -->    <?php
+    $siteName = env('DEFAULT_SITE_NAME', 'Japan Youth Summit');
+    echo view('partials/landing-meta', array(
+        'title' => 'Our Programs',
+        'meta_description' => 'Explore ' . $siteName . ' programs and opportunities. From cultural exchange to leadership development, discover programs designed for your personal and professional growth.',
+        'meta_keywords' => strtolower($siteName) . ' programs, ' . strtolower($siteName) . ' opportunities, cultural exchange japan, youth development programs'
+    )); ?>
 
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />

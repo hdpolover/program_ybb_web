@@ -316,7 +316,9 @@ class Submission extends BaseController
         // Check if request is AJAX
         if (!$this->request->isAJAX()) {
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid request method']);
-        }        // Get JSON data from request
+        }
+
+        // Get JSON data from request
         $requestData = $this->request->getJSON(true);
 
         // Get participant ID and program ID from session
@@ -347,34 +349,48 @@ class Submission extends BaseController
             'essays' => $requestData['essays'] ?? null,
         ];
 
-        // Check if essays array is valid - if essays is provided but empty or invalid, that's an error
-        // Only validate essays if they're present in the request data
-        if (isset($requestData['essays']) && (empty($participantData['essays']) || !is_array($participantData['essays']))) {
-            log_message('error', 'updateEntry - Invalid essays data: ' . json_encode($participantData['essays']));
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'No essay data was provided or data format is invalid.'
-            ]);
-        }        // Validate the essays structure if essays are present
-        if (isset($requestData['essays']) && is_array($requestData['essays'])) {
-            foreach ($participantData['essays'] as $essay) {
-                if (!isset($essay['program_essay_id']) || !isset($essay['answer'])) {
-                    log_message('error', 'updateEntry - Invalid essay structure: ' . json_encode($essay));
+        // Check if the program is a journal type
+        $isJournalType = isset($this->data['webSettings']['is_journal_type']) &&
+            $this->data['webSettings']['is_journal_type'] === true;
+
+        // For non-journal type programs, validate essays
+        if (!$isJournalType) {
+            // Check if essays array is valid - if essays is provided but empty or invalid, that's an error
+            if (isset($requestData['essays'])) {
+                if (empty($participantData['essays']) || !is_array($participantData['essays'])) {
+                    log_message('error', 'updateEntry - Invalid essays data: ' . json_encode($participantData['essays']));
                     return $this->response->setJSON([
                         'success' => false,
-                        'message' => 'One or more essays have an invalid format.'
+                        'message' => 'No essay data was provided or data format is invalid.'
                     ]);
                 }
 
-                // Log each essay to be saved
-                log_message('debug', 'updateEntry - Essay to be saved - ID: ' . $essay['program_essay_id'] . ', Content length: ' . strlen($essay['answer']) . ' characters');
+                // Validate the essays structure
+                foreach ($participantData['essays'] as $essay) {
+                    if (!isset($essay['program_essay_id']) || !isset($essay['answer'])) {
+                        log_message('error', 'updateEntry - Invalid essay structure: ' . json_encode($essay));
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'One or more essays have an invalid format.'
+                        ]);
+                    }
+
+                    // Log each essay to be saved
+                    log_message('debug', 'updateEntry - Essay to be saved - ID: ' . $essay['program_essay_id'] . ', Content length: ' . strlen($essay['answer']) . ' characters');
+                }
             }
         }
 
         // Log the participant data
-        log_message('debug', 'updateEntry - Participant Data: ' . json_encode($participantData));        // Update participant first
-        $participantResponse = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $participantData);        // Log the API response
-        log_message('debug', 'updateEntry - Participant Update Response: ' . json_encode($participantResponse));        // Check if we received any error response from the API
+        log_message('debug', 'updateEntry - Participant Data: ' . json_encode($participantData));
+
+        // Update participant first
+        $participantResponse = $this->makePostRequest('/submissions/participants/' . $participantId . '/update', $participantData);
+
+        // Log the API response
+        log_message('debug', 'updateEntry - Participant Update Response: ' . json_encode($participantResponse));
+
+        // Check if we received any error response from the API
         if (isset($participantResponse['error']) || (isset($participantResponse['message']) && !isset($participantResponse['essays']))) {
             log_message('error', 'Error saving entry data: ' . ($participantResponse['message'] ?? 'Unknown error'));
             return $this->response->setJSON([
@@ -383,8 +399,8 @@ class Submission extends BaseController
             ]);
         }
 
-        // Verify that essays were properly saved - only if essays were included in the request
-        $essaysNeeded = isset($requestData['essays']) && is_array($requestData['essays']) && !empty($requestData['essays']);
+        // Verify that essays were properly saved - only if essays were included in the request and it's not a journal type
+        $essaysNeeded = !$isJournalType && isset($requestData['essays']) && is_array($requestData['essays']) && !empty($requestData['essays']);
         $essaysSaved = isset($participantResponse['essays']) && is_array($participantResponse['essays']) && !empty($participantResponse['essays']);
 
         // Log essay validation results for debugging
@@ -400,7 +416,6 @@ class Submission extends BaseController
         }
 
         // Verify that competition_category and program_subtheme were properly saved
-        // Only if they were included in the request
         // Check if category was saved successfully (structure is nested in participant_competition_category)
         $categorySaved = isset($participantResponse['participant_competition_category']) &&
             isset($participantResponse['participant_competition_category']['competition_category_id']) &&
@@ -445,10 +460,15 @@ class Submission extends BaseController
                 ' with ' . (isset($participantResponse['essays']) ? count($participantResponse['essays']) : 0) . ' essays');
         }
 
+        // Prepare success message based on program type
+        $message = $isJournalType ?
+            'Entry information updated successfully. The selected program subtheme will be used to determine abstract contents.' :
+            'Entry information updated successfully';
+
         // Everything was successful
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Entry information updated successfully'
+            'message' => $message
         ]);
     }
 

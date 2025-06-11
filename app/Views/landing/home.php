@@ -7,7 +7,13 @@ $program_photos = $photos ?? [];
 
 <?= $this->include('partials/main') ?>
 
-<head>
+<head>    <?php 
+    $siteName = env('DEFAULT_SITE_NAME', 'Japan Youth Summit');
+    echo view('partials/landing-meta', array(
+        'title' => 'Home',
+        'meta_description' => 'Welcome to ' . $siteName . '. Connect with peers through cultural exchange programs and make a global impact. Join our community of young leaders and explore opportunities for international collaboration.',
+        'meta_keywords' => strtolower($siteName) . ', youth exchange program, cultural exchange japan, ' . strtolower($siteName) . ' program, international youth program'
+    )); ?>
     <?= $this->include('landing/home/home_head') ?>
     <?= $this->include('partials/head-css') ?>
 </head>

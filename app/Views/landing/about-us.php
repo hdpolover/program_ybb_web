@@ -1,18 +1,12 @@
 <?= $this->include('partials/main') ?>
 
-<head>
-
-    <?php echo view(
-        'partials/title-meta',
-        array(
-            'program_info' => $program_info,
-            'title' => $title,
-            'meta_title' => $title,
-            'meta_description' => $title,
-            'tags' => $title,
-            'slug' => $title
-        )
-    ); ?>
+<head>    <?php 
+    $siteName = env('DEFAULT_SITE_NAME', 'Japan Youth Summit');
+    echo view('partials/landing-meta', array(
+        'title' => $title,
+        'meta_description' => 'Learn about ' . $siteName . '. Our mission is to create meaningful connections between Japanese youth and global communities through innovative cultural exchange programs.',
+        'meta_keywords' => 'about ' . strtolower($siteName) . ', ' . strtolower($siteName) . ' mission, japanese cultural exchange program, youth development initiative'
+    )); ?>
 
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />

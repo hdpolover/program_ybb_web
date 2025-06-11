@@ -1,10 +1,18 @@
 <?php
+// Check and generate favicons if needed
+$faviconService = new \App\Services\FaviconService();
+if ($faviconService->shouldRegenerate()) {
+    $faviconService->generate();
+}
+
 // Define default values from environment variables with fallbacks
 $defaultSiteName = env('DEFAULT_SITE_NAME', 'Youth Break the Boundaries');
 $defaultTagline = env('DEFAULT_TAGLINE', 'Connecting youth across borders');
 $defaultLogoUrl = env('DEFAULT_LOGO_URL', 'https://ybbfoundation.com/assets/images/logo.png');
 $defaultLocation = env('DEFAULT_LOCATION', 'Tokyo, Japan');
 $defaultOrganizer = env('DEFAULT_ORGANIZER', 'Youth Break the Boundaries Foundation');
+$defaultThemeColor = env('DEFAULT_THEME_COLOR', '#ffffff');
+$defaultBgColor = env('DEFAULT_BG_COLOR', '#ffffff');
 
 // Create variables for easier use
 $siteName = $webSettings['name'] ?? $defaultSiteName;
@@ -13,91 +21,45 @@ $siteLogoUrl = $webSettings['logo_url'] ?? $defaultLogoUrl;
 $pageTitle = isset($meta_title) ? $meta_title : (isset($title) ? $title : 'YBB Program');
 $fullTitle = $pageTitle . ' | ' . $siteName;
 ?>
-
-<!-- Basic Meta Tags -->
-<meta charset="utf-8" />
-<title><?= $fullTitle ?></title>
+<meta charset="utf-8">
+<title><?= esc($fullTitle) ?></title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta content="<?= $siteTagline ?>" name="description" />
-<meta content="<?= isset($tags) ? $tags : 'default, keywords' ?>" name="keywords" />
-<meta content="<?= isset($slug) ? $slug : 'default-slug' ?>" name="slug" />
-<meta content="<?= $siteName ?>" name="author" />
-<meta name="robots" content="index, follow" />
-<meta name="csrf-token" content="<?= csrf_hash() ?>" />
-<meta name="theme-color" content="#ffffff" />
-<meta name="msapplication-TileColor" content="#ffffff" />
-<meta name="msapplication-TileImage" content="<?= $siteLogoUrl ?>" />
+<meta content="<?= esc($siteTagline) ?>" name="description">
+<meta content="<?= esc($defaultOrganizer) ?>" name="author">
 
-<!-- Open Graph Meta Tags (used by Facebook, Google, Twitter, and other platforms) -->
-<meta property="og:title" content="<?= $fullTitle ?>" />
-<meta property="og:description" content="<?= $siteTagline ?>" />
-<meta property="og:image" content="<?= $siteLogoUrl ?>" />
-<meta property="og:image:alt" content="<?= $siteName ?> logo" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="<?= current_url() ?>" />
-<meta property="og:site_name" content="<?= $siteName ?>" />
+<!-- App favicons and icons -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="shortcut icon" href="/favicon.ico">
+<meta name="msapplication-TileColor" content="<?= esc($defaultBgColor) ?>">
+<meta name="msapplication-config" content="/browserconfig.xml">
+<meta name="theme-color" content="<?= esc($defaultThemeColor) ?>">
 
-<!-- Twitter Card Meta Tags -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="<?= $fullTitle ?>" />
-<meta name="twitter:description" content="<?= $siteTagline ?>" />
-<meta name="twitter:image" content="<?= $siteLogoUrl ?>" />
+<!-- SEO and sharing meta tags -->
+<link rel="canonical" href="<?= current_url() ?>">
+<meta property="og:type" content="website">
+<meta property="og:url" content="<?= current_url() ?>">
+<meta property="og:site_name" content="<?= esc($siteName) ?>">
+<meta property="og:title" content="<?= esc($fullTitle) ?>">
+<meta property="og:description" content="<?= esc($siteTagline) ?>">
+<meta property="og:image" content="/android-chrome-512x512.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= esc($fullTitle) ?>">
+<meta name="twitter:description" content="<?= esc($siteTagline) ?>">
+<meta name="twitter:image" content="/android-chrome-512x512.png">
+
+<!-- Additional meta -->
+<meta name="application-name" content="<?= esc($siteName) ?>">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black" />
-<meta name="apple-mobile-web-app-title" content="<?= $webSettings['name'] ?? $defaultSiteName; ?>" />
-<meta name="application-name" content="<?= $webSettings['name'] ?? $defaultSiteName; ?>" />
-<meta name="msapplication-TileColor" content="#ffffff" />
-<meta name="msapplication-TileImage" content="<?= $webSettings['logo_url'] ?? $defaultLogoUrl; ?>" />
-<meta property="og:url" content="<?= current_url(); ?>" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="<?= isset($meta_title) ? $meta_title : 'YBB Program' ?> | <?= $webSettings['name'] ?? $defaultSiteName; ?>" />
-<meta property="og:description" content="<?= isset($meta_description) ? $meta_description : 'A Program organized by Youth Break the Boundaries Foundation' ?>" />
-<meta property="og:image" content="<?= isset($img_url) && !empty($img_url) ? $img_url : ($webSettings['logo_url'] ?? $defaultLogoUrl); ?>" />
-<meta property="og:site_name" content="<?= $webSettings['name'] ?? $defaultSiteName; ?>" />
-<link rel="canonical" href="<?= current_url(); ?>" />
-
-<!-- App favicon -->
-<?php 
-// Use dynamic logo from web settings if available, otherwise use default favicon
-$dynamicLogoUrl = $webSettings['logo_url'] ?? $siteLogoUrl ?? null;
-
-// Always use the dynamic logo URL which is what we want
-echo '<link rel="shortcut icon" href="' . $dynamicLogoUrl . '">';
-echo '<link rel="icon" type="image/png" href="' . $dynamicLogoUrl . '">';
-?>
-
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "Event",
-    "name": "<?= $webSettings['name'] ?? $defaultSiteName; ?>",
-    "description": "<?= $webSettings['tagline'] ?? $defaultTagline; ?>",
-    "startDate": "<?= date('c', strtotime($webSettings['event_start_date'] ?? date('Y-m-d'))); ?>",
-    "endDate": "<?= date('c', strtotime($webSettings['event_end_date'] ?? date('Y-m-d', strtotime('+3 days')))); ?>",
-    "eventStatus": "https://schema.org/EventScheduled",
-    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-    "location": {
-        "@type": "Place",
-        "name": "<?= $webSettings['location'] ?? $defaultLocation; ?>",
-        "address": "<?= $webSettings['location'] ?? $defaultLocation; ?>"
-    },
-    "image": "<?= $webSettings['logo_url'] ?? $defaultLogoUrl; ?>",
-    "organizer": {
-        "@type": "Organization",
-        "name": "Youth Break the Boundaries Foundation",
-        "url": "<?= current_url(); ?>"
-    },
-    "performer": {
-        "@type": "Organization",
-        "name": "Youth Break the Boundaries Foundation"
-    },
-    "offers": {
-        "@type": "Offer",
-        "url": "<?= current_url(); ?>",
-        "price": "0",
-        "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock",
-        "validFrom": "<?= date('c', strtotime('-30 days')); ?>"
-    }
-}
-</script>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="<?= esc($siteName) ?>">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="<?= esc($defaultThemeColor) ?>">

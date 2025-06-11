@@ -1,8 +1,10 @@
 <?= $this->include('partials/main') ?>
 
-<head>
-
-    <?php echo view('partials/title-meta', array('title' => 'Sign Up')); ?>
+<head>    <?php echo view('partials/landing-meta', array(
+        'title' => 'Sign Up as Participant',
+        'meta_description' => 'Join Japan Youth Summit as a participant. Register for our cultural exchange program and start your journey.',
+        'meta_keywords' => 'japan youth summit registration, participant signup, youth program registration, jys application'
+    )); ?>
 
     <?= $this->include('partials/head-css') ?>
 

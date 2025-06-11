@@ -1,8 +1,17 @@
 <?= $this->include('partials/main') ?>
 
-<head>
-    <!-- Title Meta -->
-    <?= $this->include('partials/title-meta', ['meta_title' => "Program Details"]) ?>
+<head>    <?php 
+    $siteName = env('DEFAULT_SITE_NAME', 'Japan Youth Summit');
+    // Get program info from the view data
+    $programTitle = isset($program['title']) ? $program['title'] : 'Program Details';
+    $programDesc = isset($program['description']) ? 
+        substr(strip_tags($program['description']), 0, 160) :
+        "Discover the details of this " . $siteName . " program. Learn about the unique opportunities, requirements, and benefits of participating.";
+    echo view('partials/landing-meta', array(
+        'title' => $programTitle,
+        'meta_description' => $programDesc,
+        'meta_keywords' => strtolower($siteName) . ' program details, ' . strtolower($siteName) . ' opportunity, cultural exchange program, youth development japan'
+    )); ?>
 
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />

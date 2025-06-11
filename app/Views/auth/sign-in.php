@@ -1,8 +1,12 @@
 <?= $this->include('partials/main') ?>
 
-<head>
-
-    <?php echo view('partials/title-meta', array('title' => 'Sign In')); ?>
+<head> <?php
+        $siteName = env('DEFAULT_SITE_NAME', 'Japan Youth Summit');
+        echo view('partials/landing-meta', array(
+            'title' => 'Sign In',
+            'meta_description' => 'Sign in to your ' . $siteName . ' account. Access your program details, connect with participants, and manage your profile.',
+            'meta_keywords' => strtolower($siteName) . ' login, sign in portal, ' . strtolower($siteName) . ' participant, program access'
+        )); ?>
 
     <?= $this->include('partials/head-css') ?>
 
