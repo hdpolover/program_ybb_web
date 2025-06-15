@@ -1,10 +1,10 @@
 <?= $this->include('partials/main') ?>
 
-<head>    <?php echo view('partials/landing-meta', array(
-        'title' => 'Sign Up as Participant',
-        'meta_description' => 'Join Japan Youth Summit as a participant. Register for our cultural exchange program and start your journey.',
-        'meta_keywords' => 'japan youth summit registration, participant signup, youth program registration, jys application'
-    )); ?>
+<head> <?php echo view('partials/landing-meta', array(
+            'title' => 'Sign Up as Participant',
+            'meta_description' => 'Join Japan Youth Summit as a participant. Register for our cultural exchange program and start your journey.',
+            'meta_keywords' => 'japan youth summit registration, participant signup, youth program registration, jys application'
+        )); ?>
 
     <?= $this->include('partials/head-css') ?>
 
@@ -163,8 +163,8 @@
     <script src="/assets/js/pages/passowrd-create.init.js"></script>
 
     <!-- Add SweetAlert2 library for better user notifications -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- Custom script for password confirmation validation -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -224,7 +224,7 @@
             }
         });
     </script>
-    
+
     <!-- Custom styles for SweetAlert loading -->
     <style>
         .animated-popup {
@@ -232,16 +232,16 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
             border: 1px solid rgba(0, 128, 0, 0.1) !important;
         }
-        
+
         .swal-title {
             font-weight: 600 !important;
             color: #2f55d4 !important;
         }
-        
+
         .swal-icon {
             border-color: #2f55d4 !important;
         }
-        
+
         .swal2-loader {
             border-color: #2f55d4 transparent #2f55d4 transparent !important;
         }

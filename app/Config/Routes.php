@@ -89,7 +89,6 @@ $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 
 // Protected routes for logged in users
 $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API endpoints
     $routes->post('api/abstracts/(:num)/save-version', 'AjaxHandler::saveAbstractVersion/$1');
-    $routes->post('api/abstracts/(:num)/authors/validate', 'dashboard\AbstractPaper::validateAuthor/$1');
     $routes->get('api/abstracts/versions/compare', 'AjaxHandler::compareAbstractVersions');
     $routes->get('api/test/abstract-version-creation', 'AjaxHandler::testAbstractVersionCreation'); // Debug endpoint
 
@@ -125,10 +124,17 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->post('abstract-paper/update/(:num)', 'dashboard\AbstractPaper::update/$1');
     $routes->post('abstract-paper/add-author', 'dashboard\AbstractPaper::addAuthor');
     $routes->post('abstract-paper/update-author', 'dashboard\AbstractPaper::updateAuthor');
-    $routes->post('abstract-paper/delete-author', 'dashboard\AbstractPaper::deleteAuthor');
-    $routes->post('abstract-paper/validate-author/(:num)', 'dashboard\AbstractPaper::validateAuthor/$1'); // Validate author email
+    $routes->post('abstract-paper/delete-author', 'dashboard\AbstractPaper::deleteAuthor');    $routes->post('abstract-paper/validate-author/(:num)', 'dashboard\AbstractPaper::validateAuthor/$1'); // Validate author email
     $routes->post('abstract-paper/search-participant', 'dashboard\AbstractPaper::searchParticipant'); // Search for registered participants
     $routes->get('abstract-paper/search-participant', 'dashboard\AbstractPaper::searchParticipant'); // Search for registered participants (GET)
+    
+    // Paper upload routes
+    $routes->post('abstract-paper/upload-paper/(:num)', 'dashboard\AbstractPaper::uploadPaper/$1'); // Upload paper
+    $routes->post('abstract-paper/update-paper/(:num)', 'dashboard\AbstractPaper::updatePaper/$1'); // Update paper
+    $routes->post('abstract-paper/replace-paper/(:num)', 'dashboard\AbstractPaper::replacePaper/$1'); // Replace paper
+    $routes->delete('abstract-paper/delete-paper/(:num)', 'dashboard\AbstractPaper::deletePaper/$1'); // Delete paper
+    $routes->post('abstract-paper/delete-paper/(:num)', 'dashboard\AbstractPaper::deletePaper/$1'); // Delete paper (POST with _method)
+    $routes->get('abstract-paper/download-paper/(:num)', 'dashboard\AbstractPaper::downloadPaper/$1'); // Download paper
 
     // Upload Agreement Letter
     $routes->post('agreement_letter/upload', 'dashboard\Documents::addDocument');

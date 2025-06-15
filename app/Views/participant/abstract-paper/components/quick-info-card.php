@@ -123,8 +123,48 @@ if ($state === 'normal') {
                         <small class="text-muted">Version:</small>
                         <small class="fw-semibold">v<?= $version ?></small>
                     </div>
-                <?php endif; ?>
-            </div>
+                <?php endif; ?>            </div>
+
+            <!-- Abstract Settings (if available) -->
+            <?php if (isset($data['abstract_settings']) && !empty($data['abstract_settings'])): ?>
+                <?php $settings = $data['abstract_settings']; ?>
+                <div class="mb-3">
+                    <h6 class="fw-bold text-success mb-2 small text-uppercase">Important Information</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <?php if (!empty($settings['abstract_submission_deadline'])): ?>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Abstract Deadline:</small>
+                                <small class="fw-semibold text-danger"><?= date('M d, Y', strtotime($settings['abstract_submission_deadline'])) ?></small>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($settings['full_paper_submission_deadline'])): ?>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Paper Deadline:</small>
+                                <small class="fw-semibold text-warning"><?= date('M d, Y', strtotime($settings['full_paper_submission_deadline'])) ?></small>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($settings['abstract_template_url'])): ?>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Abstract Template:</small>
+                                <a href="<?= esc($settings['abstract_template_url']) ?>" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2">
+                                    <i class="bx bx-download fs-6"></i>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($settings['paper_template_url'])): ?>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Paper Template:</small>
+                                <a href="<?= esc($settings['paper_template_url']) ?>" target="_blank" class="btn btn-sm btn-outline-info py-0 px-2">
+                                    <i class="bx bx-download fs-6"></i>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <!-- Quick Links -->
             <div>

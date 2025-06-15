@@ -267,7 +267,7 @@
                                                 <div class="d-flex justify-content-between">
                                                     <div class="invalid-feedback">Please enter the abstract title.</div>
                                                     <small class="text-muted mt-1 word-count-info">
-                                                        <span class="current-word-count" id="title-word-count">0</span> / <?= isset($abstractSettings['title_length']) ? $abstractSettings['title_length'] : 15 ?> words
+                                                        <span class="current-word-count" id="title-word-count">0</span> / <?= isset($abstractSettings['title_length']) ? $abstractSettings['title_length'] : 30 ?> words
                                                     </small>
                                                 </div>
                                                 <div class="form-text text-muted">A good title should clearly represent the content and focus of your research.</div>
@@ -282,7 +282,7 @@
                                                 <div class="d-flex justify-content-between">
                                                     <div class="invalid-feedback">Please enter keywords.</div>
                                                     <small class="text-muted mt-1 word-count-info">
-                                                        <span class="current-word-count" id="keywords-word-count">0</span> / <?= isset($abstractSettings['keywords_length']) ? $abstractSettings['keywords_length'] : 5 ?> words
+                                                        <span class="current-word-count" id="keywords-word-count">0</span> / <?= isset($abstractSettings['keywords_length']) ? $abstractSettings['keywords_length'] : 30 ?> words
                                                     </small>
                                                 </div>
                                                 <div class="form-text text-muted">Enter keywords separated by commas (e.g., research, medicine, science)</div>
@@ -298,7 +298,7 @@
                                                 <div class="d-flex justify-content-between">
                                                     <div class="invalid-feedback" id="content-feedback">Please enter abstract content.</div>
                                                     <small class="text-muted mt-1 word-count-info">
-                                                        <span class="current-word-count" id="content-word-count">0</span> / <?= isset($abstractSettings['content_length']) ? $abstractSettings['content_length'] : 500 ?> words
+                                                        <span class="current-word-count" id="content-word-count">0</span> / <?= isset($abstractSettings['content_length']) ? $abstractSettings['content_length'] : 30 ?> words
                                                     </small>
                                                 </div>
                                             </div>
@@ -311,7 +311,7 @@
                                                 <div class="d-flex justify-content-between">
                                                     <div class="invalid-feedback">Please enter references.</div>
                                                     <small class="text-muted mt-1 word-count-info">
-                                                        <span class="current-word-count" id="refs-word-count">0</span> / <?= isset($abstractSettings['refs_length']) ? $abstractSettings['refs_length'] : 120 ?> words
+                                                        <span class="current-word-count" id="refs-word-count">0</span> / <?= isset($abstractSettings['refs_length']) ? $abstractSettings['refs_length'] : 30 ?> words
                                                     </small>
                                                 </div>
                                                 <div class="form-text text-muted">Include all references cited in your abstract following the conference's citation format</div>
@@ -323,10 +323,11 @@
                                                 <div class="d-flex flex-column">
                                                     <div class="text-muted mb-3 ms-auto">
                                                         <small><i class="bx bx-info-circle me-1"></i> You can save your work as a draft with just <strong>Title</strong> and complete it later.</small>
-                                                    </div>
-                                                    <div class="hstack gap-2 justify-content-end">
+                                                    </div>                                                    <div class="hstack gap-2 justify-content-end">
                                                         <button type="button" class="btn btn-secondary" id="save-draft-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Save your work without submitting">
-                                                            <i class="bx bx-save me-1"></i> Save Draft                                                        </button> <button type="button" class="btn btn-primary" id="submit-btn">
+                                                            <i class="bx bx-save me-1"></i> Save Draft
+                                                        </button>
+                                                        <button type="button" class="btn btn-primary" id="submit-btn">
                                                             <i class="bx bx-check-circle me-1"></i> Submit Abstract
                                                         </button>
                                                     </div>
@@ -375,14 +376,13 @@
             console.log('jQuery available:', typeof $ !== 'undefined');
             console.log('SweetAlert available:', typeof Swal !== 'undefined');
             console.log('setupNewAbstractHandlers function:', typeof setupNewAbstractHandlers);
-            
-            // Word count limits from abstract settings (dynamic from controller)
+              // Word count limits from abstract settings (dynamic from controller)
             const WORD_LIMITS = {
-                title: <?= isset($abstractSettings['title_length']) ? $abstractSettings['title_length'] : 15 ?>,
-                keywords: <?= isset($abstractSettings['keywords_length']) ? $abstractSettings['keywords_length'] : 5 ?>,
-                content: <?= isset($abstractSettings['content_length']) ? $abstractSettings['content_length'] : 500 ?>,
-                refs: <?= isset($abstractSettings['refs_length']) ? $abstractSettings['refs_length'] : 120 ?>
-            }; // Word counting function
+                title: <?= isset($abstractSettings['title_length']) ? $abstractSettings['title_length'] : 30 ?>,
+                keywords: <?= isset($abstractSettings['keywords_length']) ? $abstractSettings['keywords_length'] : 30 ?>,
+                content: <?= isset($abstractSettings['content_length']) ? $abstractSettings['content_length'] : 30 ?>,
+                refs: <?= isset($abstractSettings['refs_length']) ? $abstractSettings['refs_length'] : 30 ?>
+            };// Word counting function
             function countWords(text) {
                 if (!text || text.trim() === '') return 0;
                 return text.trim().split(/\s+/).length;
@@ -646,8 +646,7 @@
                         alert('Pasting this text would exceed the maximum word count of ' + WORD_LIMITS.refs + ' words.');
                     }
                 }
-            });            // Show SweetAlert messages if there are flash messages
-            <?php if (session()->has('abstract_success')): ?>
+            });            // Show SweetAlert messages if there are flash messages            <?php if (session()->has('abstract_success')): ?>
                 <?php 
                 $successData = session('abstract_success');
                 $abstractId = $successData['id'] ?? null;
@@ -655,6 +654,12 @@
                 $status = $successData['status'] ?? 'unknown';
                 $isDraft = $successData['is_draft'] ?? false;
                 $message = $successData['message'] ?? '';
+                $versionNumber = $successData['version_number'] ?? '1';
+                $createdAt = $successData['created_at'] ?? date('Y-m-d H:i:s');
+                $updatedAt = $successData['updated_at'] ?? $createdAt;
+                
+                // Format the date for display
+                $formattedDate = date('M j, Y \a\t g:i A', strtotime($updatedAt));
                 ?>                Swal.fire({
                     title: '<?= $isDraft ? "Draft Saved!" : "Abstract Submitted!" ?>',
                     html: `
@@ -665,11 +670,22 @@
                                 <div class="card-body p-3">
                                     <h6 class="card-title">Abstract Details</h6>
                                     <ul class="list-unstyled mb-0">
+                                        <?php if ($abstractId): ?>
                                         <li><strong>ID:</strong> <?= esc($abstractId) ?></li>
+                                        <?php endif; ?>
                                         <li><strong>Title:</strong> <?= esc($abstractTitle) ?></li>
-                                        <li><strong>Status:</strong> <span class="badge bg-<?= $isDraft ? 'warning' : 'success' ?>"><?= ucfirst(esc($status)) ?></span></li>
+                                        <li><strong>Status:</strong> 
+                                            <span class="badge bg-<?= $isDraft ? 'warning' : 'success' ?>">
+                                                <?= ucfirst(esc($status)) ?>
+                                            </span>
+                                        </li>
+                                        <li><strong>Version:</strong> v<?= esc($versionNumber) ?></li>
+                                        <li><strong>Created:</strong> <?= esc($formattedDate) ?></li>
                                     </ul>
                                 </div>
+                            </div>                            <div class="mt-2 text-muted small">
+                                <i class="bx bx-info-circle me-1"></i>
+                                Your abstract draft has been <?= $isDraft ? 'saved' : 'submitted' ?> and you can continue editing it later. (Version: v<?= esc($versionNumber) ?>)
                             </div>
                         </div>
                     `,
@@ -797,9 +813,7 @@
                 }
 
                 return isValid;
-            }
-
-            // Initialize form elements
+            }            // Initialize form elements
             const abstractForm = document.getElementById('abstractForm');
             const submitBtn = document.getElementById('submit-btn');
             const saveDraftBtn = document.getElementById('save-draft-btn');
@@ -810,8 +824,16 @@
                 saveDraftBtn: saveDraftBtn !== null
             });
 
-            if (!abstractForm || !submitBtn || !saveDraftBtn) {
-                console.error('Critical form elements not found!');
+            if (!abstractForm) {
+                console.error('Abstract form not found!');
+                return;
+            }
+            if (!submitBtn) {
+                console.error('Submit button not found!');
+                return;
+            }
+            if (!saveDraftBtn) {
+                console.error('Save draft button not found!');
                 return;
             }
 
@@ -940,11 +962,10 @@
                         this.classList.remove('is-invalid');
                     }
                 });
-            });
-
-            // Clear editor validation on input
+            });            // Clear editor validation on input
             quill.on('text-change', function() {
-                // Only clear validation state for content feedback, word count styling is handled separately                document.getElementById('content-feedback').style.display = 'none';
+                // Only clear validation state for content feedback, word count styling is handled separately
+                document.getElementById('content-feedback').style.display = 'none';
                 document.getElementById('content-feedback').textContent = 'Please enter abstract content.';
             });
         });

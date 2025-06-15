@@ -973,8 +973,7 @@ function initializeModalHandlers() {
                 // Remove selected from participant card and add to new author card
                 participantCard.classList.remove('selected');
                 newAuthorCard.classList.add('selected');
-                
-                // Check the correct radio button
+                  // Check the correct radio button
                 document.getElementById('is_participant_no').checked = true;
                 document.getElementById('is_participant_yes').checked = false;
                 
@@ -1043,6 +1042,69 @@ function resetAuthorForm() {
             authorListTab.click();
         }
     }
+}
+
+/**
+ * Reset modal for adding new author
+ */
+function resetAuthorModal() {
+    const form = document.getElementById('addAuthorForm');
+    const modalTitle = document.querySelector('#addCoAuthorModal .modal-title');
+    
+    // Reset modal title and form action
+    modalTitle.textContent = 'Add Co-Author';
+    form.action = '/abstract-paper/add-author';
+    
+    // Remove edit author ID field if it exists
+    const authorIdField = document.getElementById('edit_author_id');
+    if (authorIdField) {
+        authorIdField.remove();
+    }
+    
+    // Clear all form fields
+    form.reset();
+    
+    // Reset to default state (new author)
+    document.getElementById('is_participant_yes').checked = false;
+    document.getElementById('is_participant_no').checked = true;
+    
+    // Update card selection visually
+    const participantCard = document.querySelector('[data-type="participant"]');
+    const newAuthorCard = document.querySelector('[data-type="new"]');
+    
+    if (participantCard) participantCard.classList.remove('selected');
+    if (newAuthorCard) newAuthorCard.classList.add('selected');
+    
+    // Enable email field and remove any restrictions
+    const emailField = document.getElementById('email');
+    if (emailField) {
+        emailField.readOnly = false;
+        emailField.classList.remove('bg-light');
+    }
+    
+    // Remove any email notes
+    const emailNote = document.getElementById('participant_email_note');
+    if (emailNote) {
+        emailNote.remove();
+    }
+    
+    // Clear participant_id
+    const participantIdField = document.getElementById('selected_participant_id');
+    if (participantIdField) {
+        participantIdField.value = '';
+    }
+    
+    // Clear any validation feedback
+    const feedbackElement = document.getElementById('email_validation_feedback');
+    if (feedbackElement) {
+        feedbackElement.remove();
+    }
+    
+    // Remove validation classes
+    const inputs = form.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.classList.remove('is-valid', 'is-invalid');
+    });
 }
 
 /**
@@ -1253,6 +1315,7 @@ function clearSearchResults() {
 function initializeAuthorForm() {
     const form = document.getElementById('addAuthorForm');
     const emailInput = document.getElementById('email');
+    const modal = document.getElementById('addCoAuthorModal');
     
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -1263,62 +1326,15 @@ function initializeAuthorForm() {
         });
     }
     
-    // Add real-time email validation
-    if (emailInput) {
-        let emailValidationTimeout;
-        
-        emailInput.addEventListener('input', function() {
-            const email = this.value.trim();
-            const abstractId = document.querySelector('input[name="abstract_id"]')?.value;
-            
-            // Clear previous validation feedback
-            this.classList.remove('is-valid', 'is-invalid');
-            const feedbackElement = document.getElementById('email_validation_feedback');
-            if (feedbackElement) {
-                feedbackElement.remove();
-            }
-            
-            // Clear previous timeout
-            if (emailValidationTimeout) {
-                clearTimeout(emailValidationTimeout);
-            }
-            
-            // Skip validation if email is empty or invalid format
-            if (!email || !isValidEmail(email)) {
-                return;
-            }
-              // Validate after a short delay to avoid too many API calls
-            emailValidationTimeout = setTimeout(() => {
-                validateAuthorEmail(email, abstractId, false) // Don't show SweetAlert during real-time validation
-                    .then(validation => {
-                        // Only show feedback if the email hasn't changed
-                        if (emailInput.value.trim() === email) {
-                            if (validation.valid) {
-                                showEmailValidationFeedback(true, 'Email can be added to this abstract.', email);
-                            } else {
-                                let message = validation.message;
-                                if (validation.conflict_reason === 'email_already_in_program') {
-                                    message = 'This email is already assigned to another abstract in this program.';
-                                }
-                                showEmailValidationFeedback(false, message, email);
-                                // Don't show SweetAlert here - only inline feedback
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Real-time email validation error:', error);
-                    });
-            }, 1000); // 1 second delay
-        });
-        
-        // Clear validation feedback when email loses focus if empty
-        emailInput.addEventListener('blur', function() {
-            if (!this.value.trim()) {
-                this.classList.remove('is-valid', 'is-invalid');
-                const feedbackElement = document.getElementById('email_validation_feedback');
-                if (feedbackElement) {
-                    feedbackElement.remove();
-                }
+    // Add modal event listeners
+    if (modal) {
+        // Reset modal when opened via "Add Co-Author" button (not edit)
+        modal.addEventListener('show.bs.modal', function(event) {
+            // Check if this is triggered by the add button (not edit)
+            const button = event.relatedTarget;
+            if (!button || !button.classList.contains('edit-author')) {
+                // This is for adding a new author, so reset the modal
+                setTimeout(() => resetAuthorModal(), 50); // Small delay to ensure modal is fully initialized
             }
         });
     }
@@ -1360,76 +1376,11 @@ function validateAuthorForm() {
 }
 
 /**
- * Validate author email against existing authors in the program
+ * Simplified email validation (basic format check only)
  */
-function validateAuthorEmail(email, abstractId, showSweetAlert = false) {
-    if (!email || !isValidEmail(email)) {
-        return Promise.resolve({ valid: false, message: 'Please enter a valid email address.' });
-    }
-
-    return new Promise((resolve) => {
-        fetch(`/api/abstracts/${abstractId}/authors/validate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: new URLSearchParams({
-                email: email
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                resolve({ 
-                    valid: data.data.can_add, 
-                    message: data.message,
-                    data: data.data,
-                    showSweetAlert: showSweetAlert
-                });
-            } else {
-                resolve({ 
-                    valid: false, 
-                    message: data.message || 'Email validation failed.',
-                    conflict_reason: data.data?.conflict_reason,
-                    showSweetAlert: showSweetAlert
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Email validation error:', error);
-            resolve({ 
-                valid: false, 
-                message: 'Unable to validate email. Please try again.',
-                showSweetAlert: showSweetAlert
-            });
-        });
-    });
-}
-
-/**
- * Show email validation feedback
- */
-function showEmailValidationFeedback(isValid, message, email) {
-    const emailInput = document.getElementById('email');
-    const feedbackElement = document.getElementById('email_validation_feedback');
-    
-    // Remove existing classes
-    emailInput.classList.remove('is-valid', 'is-invalid');
-    
-    if (feedbackElement) {
-        feedbackElement.remove();
-    }
-    
-    // Create feedback element
-    const feedback = document.createElement('div');
-    feedback.id = 'email_validation_feedback';
-    feedback.className = isValid ? 'valid-feedback' : 'invalid-feedback';
-    feedback.innerHTML = message;
-    
-    // Add appropriate class and insert feedback
-    emailInput.classList.add(isValid ? 'is-valid' : 'is-invalid');
-    emailInput.parentNode.appendChild(feedback);
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 /**
@@ -1437,8 +1388,9 @@ function showEmailValidationFeedback(isValid, message, email) {
  */
 function submitAuthorForm() {
     const form = document.getElementById('addAuthorForm');
-    const email = document.getElementById('email').value.trim();
     const abstractId = document.querySelector('input[name="abstract_id"]')?.value;
+    const authorId = document.getElementById('edit_author_id')?.value;
+    const isEditing = !!authorId;
     
     if (!abstractId) {
         showAlert('error', 'Abstract ID not found. Please refresh the page and try again.');
@@ -1450,147 +1402,97 @@ function submitAuthorForm() {
         return;
     }
     
-    // Check if email already has validation feedback showing an error
-    const emailInput = document.getElementById('email');
-    const isCurrentlyInvalid = emailInput.classList.contains('is-invalid');
-    
-    if (isCurrentlyInvalid) {
-        // Email is already known to be invalid, show SweetAlert immediately
-        Swal.fire({
-            icon: 'warning',
-            title: 'Email Already in Use',
-            text: 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.',
-            confirmButtonColor: '#5156be',
-            confirmButtonText: 'Understood'
-        });
-        return;
-    }
-    
-    // Show loading for email validation
+    // Show loading for form submission
+    const actionText = isEditing ? 'Updating' : 'Adding';
     Swal.fire({
-        title: 'Validating Email...',
-        html: 'Please wait while we check if this email can be added.',
+        title: `${actionText} Author...`,
+        html: `Please wait while we ${actionText.toLowerCase()} the author ${isEditing ? 'information' : 'to your abstract'}.`,
         allowOutsideClick: false,
         allowEscapeKey: false,
         showConfirmButton: false,
         willOpen: () => {
             Swal.showLoading();
         }
-    });    // Validate email against existing authors
-    validateAuthorEmail(email, abstractId, true) // Show SweetAlert during form submission
-        .then(validation => {
-            Swal.close();
+    });
+      // Submit via AJAX
+    const formData = new FormData(form);
+    
+    // Ensure is_participant field is correctly set based on radio selection
+    const isParticipantYes = document.getElementById('is_participant_yes').checked;
+    const isParticipantNo = document.getElementById('is_participant_no').checked;
+    
+    // Set the correct value: "1" for participant, "0" for new author
+    if (isParticipantYes) {
+        formData.set('is_participant', '1');
+        // Note: participant_id should be set by participant search functionality
+        // Backend will only include participant_id in API call if is_participant="1" AND participant_id is provided
+    } else if (isParticipantNo) {
+        formData.set('is_participant', '0');
+        // Note: participant_id is not needed for new authors (is_participant="0")
+    } else {
+        // Default to "0" (new author) if neither is selected
+        formData.set('is_participant', '0');
+    }
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())    .then(data => {
+        Swal.close();
+          // Handle both success formats: data.success (our format) or data.status === 'success' (API format)
+        if (data.success === true || data.status === 'success') {
+            // Success - show message and reload page
+            const successTitle = isEditing ? 'Author Updated Successfully!' : 'Author Added Successfully!';
+            const successText = data.message || (isEditing ? 'The author information has been updated.' : 'The author has been added to your abstract.');
             
-            if (!validation.valid) {
-                // Show detailed error message with SweetAlert only during form submission
-                if (validation.showSweetAlert) {
-                    let title = 'Email Cannot Be Added';
-                    let message = validation.message;
-                    let icon = 'error';
-                    
-                    if (validation.conflict_reason === 'email_already_in_program') {
-                        title = 'Email Already in Use';
-                        message = 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.';
-                        icon = 'warning';
-                    }
-                    
-                    Swal.fire({
-                        icon: icon,
-                        title: title,
-                        text: message,
-                        confirmButtonColor: '#5156be',
-                        confirmButtonText: 'Understood'
-                    });
+            Swal.fire({
+                icon: 'success',
+                title: successTitle,
+                text: successText,
+                confirmButtonColor: '#5156be'
+            }).then(() => {
+                // Close modal and reload page
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addCoAuthorModal'));
+                if (modal) {
+                    modal.hide();
                 }
-                
-                showEmailValidationFeedback(false, validation.message, email);
-                return;
+                location.reload();
+            });
+        } else {            // Error - show detailed error message with SweetAlert
+            let title = isEditing ? 'Unable to Update Author' : 'Unable to Add Author';
+            let errorMessage = data.message || (isEditing ? 'An error occurred while updating the author.' : 'An error occurred while adding the author.');
+            let icon = 'error';
+            
+            // Handle specific conflict errors that might still occur
+            if (errorMessage.includes('already assigned to another abstract')) {
+                title = 'Email Already in Use';
+                errorMessage = 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.';
+                icon = 'warning';
             }
             
-            // Email is valid, proceed with form submission
-            showEmailValidationFeedback(true, 'Email can be added to this abstract.', email);
-            
-            // Show loading for form submission
             Swal.fire({
-                title: 'Adding Author...',
-                html: 'Please wait while we add the author to your abstract.',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
+                icon: icon,
+                title: title,
+                text: errorMessage,
+                confirmButtonColor: '#5156be',
+                confirmButtonText: 'Understood'
             });
-            
-            // Submit via AJAX
-            const formData = new FormData(form);
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                Swal.close();
-                
-                if (data.success) {
-                    // Success - show message and reload page
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Author Added Successfully!',
-                        text: data.message || 'The author has been added to your abstract.',
-                        confirmButtonColor: '#5156be'
-                    }).then(() => {
-                        // Close modal and reload page
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('addCoAuthorModal'));
-                        if (modal) {
-                            modal.hide();
-                        }
-                        location.reload();
-                    });                } else {
-                    // Error - show detailed error message with SweetAlert
-                    let title = 'Unable to Add Author';
-                    let errorMessage = data.message || 'An error occurred while adding the author.';
-                    let icon = 'error';
-                    
-                    // Handle specific conflict errors that might still occur
-                    if (errorMessage.includes('already assigned to another abstract')) {
-                        title = 'Email Already in Use';
-                        errorMessage = 'This author email is already assigned to another abstract in the same program. One participant can only be assigned to one abstract at a time per program.';
-                        icon = 'warning';
-                    }
-                    
-                    Swal.fire({
-                        icon: icon,
-                        title: title,
-                        text: errorMessage,
-                        confirmButtonColor: '#5156be',
-                        confirmButtonText: 'Understood'
-                    });
-                }
-            })            .catch(error => {
-                console.error('Submit error:', error);
-                Swal.close();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Network Error',
-                    text: 'An error occurred while adding the author. Please check your connection and try again.',
-                    confirmButtonColor: '#5156be'
-                });
-            });
-        })
-        .catch(error => {
-            console.error('Email validation error:', error);
-            Swal.close();
-            Swal.fire({
-                icon: 'error',
-                title: 'Validation Error',
-                text: 'Unable to validate email. Please check your connection and try again.',
-                confirmButtonColor: '#5156be'
-            });
+        }
+    })
+    .catch(error => {
+        console.error('Submit error:', error);
+        Swal.close();
+        Swal.fire({
+            icon: 'error',
+            title: 'Network Error',
+            text: 'An error occurred while adding the author. Please check your connection and try again.',
+            confirmButtonColor: '#5156be'
         });
+    });
 }
 
 /**
@@ -1651,10 +1553,97 @@ function viewAuthorDetails(author) {
 }
 
 /**
- * Edit author details (placeholder for future implementation)
+ * Edit author details
  */
 function editAuthorDetails(author) {
-    showAlert('info', 'Edit author functionality will be implemented soon.');
+    // Reuse the add modal for editing
+    const modal = new bootstrap.Modal(document.getElementById('addCoAuthorModal'));
+    const form = document.getElementById('addAuthorForm');
+    const modalTitle = document.querySelector('#addCoAuthorModal .modal-title');
+    
+    // Change modal title and form action for editing
+    modalTitle.textContent = 'Edit Co-Author';
+    form.action = '/abstract-paper/update-author';
+    
+    // Add hidden fields for author ID
+    let authorIdField = document.getElementById('edit_author_id');
+    if (!authorIdField) {
+        authorIdField = document.createElement('input');
+        authorIdField.type = 'hidden';
+        authorIdField.name = 'author_id';
+        authorIdField.id = 'edit_author_id';
+        form.appendChild(authorIdField);
+    }
+    authorIdField.value = author.id;
+    
+    // Populate form fields
+    document.getElementById('full_name').value = author.full_name || '';
+    document.getElementById('email').value = author.email || '';
+    document.getElementById('institution').value = author.institution || '';
+    
+    // Handle participant vs non-participant
+    const isParticipant = author.is_participant === '1' || author.is_participant === 1;
+    
+    if (isParticipant) {
+        // Select participant card and disable email field
+        document.getElementById('is_participant_yes').checked = true;
+        document.getElementById('is_participant_no').checked = false;
+        
+        // Update card selection visually
+        const participantCard = document.querySelector('[data-type="participant"]');
+        const newAuthorCard = document.querySelector('[data-type="new"]');
+        
+        participantCard.classList.add('selected');
+        newAuthorCard.classList.remove('selected');
+        
+        // Disable email field for participants (their email is managed in participant system)
+        const emailField = document.getElementById('email');
+        emailField.readOnly = true;
+        emailField.classList.add('bg-light');
+        
+        // Add note about email
+        let emailNote = document.getElementById('participant_email_note');
+        if (!emailNote) {
+            emailNote = document.createElement('small');
+            emailNote.id = 'participant_email_note';
+            emailNote.className = 'text-muted';
+            emailNote.innerHTML = '<i class="bx bx-info-circle me-1"></i>Email cannot be changed for registered participants.';
+            emailField.parentNode.appendChild(emailNote);
+        }
+        
+        // Set participant_id if available
+        if (author.participant_id) {
+            document.getElementById('selected_participant_id').value = author.participant_id;
+        }
+    } else {
+        // Select new author card and enable email field
+        document.getElementById('is_participant_yes').checked = false;
+        document.getElementById('is_participant_no').checked = true;
+        
+        // Update card selection visually
+        const participantCard = document.querySelector('[data-type="participant"]');
+        const newAuthorCard = document.querySelector('[data-type="new"]');
+        
+        participantCard.classList.remove('selected');
+        newAuthorCard.classList.add('selected');
+        
+        // Enable email field for new authors
+        const emailField = document.getElementById('email');
+        emailField.readOnly = false;
+        emailField.classList.remove('bg-light');
+        
+        // Remove email note if it exists
+        const emailNote = document.getElementById('participant_email_note');
+        if (emailNote) {
+            emailNote.remove();
+        }
+        
+        // Clear participant_id
+        document.getElementById('selected_participant_id').value = '';
+    }
+    
+    // Show the modal
+    modal.show();
 }
 
 /**
@@ -1739,13 +1728,6 @@ function performDeleteAuthor(authorId) {
     });
 }
 
-/**
- * Utility function to validate email
- */
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
 
 /**
  * Utility function to show alerts

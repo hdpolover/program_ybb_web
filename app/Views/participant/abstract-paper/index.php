@@ -2,14 +2,51 @@
 
 <head>
 
-     <?php echo view('partials/title-meta', array('title' => 'Abstract and Paper')); ?>    <!-- Sweet Alert css-->
+    <?php echo view('partials/title-meta', array('title' => 'Abstract and Paper')); ?> <!-- Sweet Alert css-->
     <link href="/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
 
     <!-- swiper css -->
-    <link rel="stylesheet" href="/assets/libs/swiper/swiper-bundle.min.css">
-
-    <!-- Version Comparison CSS -->
+    <link rel="stylesheet" href="/assets/libs/swiper/swiper-bundle.min.css"> <!-- Version Comparison CSS -->
     <link href="/assets/css/version-comparison.css" rel="stylesheet" type="text/css" />
+
+    <!-- Enhanced layout CSS for abstract paper view -->
+    <style>
+        /* Ensure full-width utilization and equal height cards */
+        .card.h-100 {
+            height: 100% !important;
+        }
+
+        .row.mb-4 {
+            margin-bottom: 2rem !important;
+        }
+
+        /* Remove any unwanted margins on cards */
+        .card {
+            margin-bottom: 0;
+        }
+
+        /* Ensure proper spacing between rows */
+        .abstract-layout .row+.row {
+            margin-top: 1.5rem;
+        }
+
+        /* Better card body padding for content */
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 991px) {
+            .card.h-100 {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Improve visual separation between sections */
+        .main-content .page-content {
+            padding-bottom: 2rem;
+        }
+    </style>
 
     <?= $this->include('partials/head-css') ?>
 
@@ -30,11 +67,12 @@
             <div class="page-content">
                 <div class="container-fluid">
 
-                    <?php echo view('partials/page-title', array('pagetitle'=>'Participant', 'title'=>'Abstract & Paper')); ?>
+                    <?php echo view('partials/page-title', array('pagetitle' => 'Participant', 'title' => 'Abstract & Paper')); ?>
 
                     <div class="row">
-                        <div class="col-12">                            <div class="card">
-                                <div class="card-body">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body p-4">
 
                                     <!-- Subtheme Highlight Section -->
                                     <?php if (isset($subtheme_highlight) && !empty($subtheme_highlight)): ?>
@@ -62,8 +100,8 @@
 
                                     <!-- Subtheme Warning Section -->
                                     <?php if (isset($subtheme_warning) && !empty($subtheme_warning)): ?>
-                                        <div class="alert alert-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?> border-left-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?> mb-4" 
-                                             style="border-left: 4px solid <?= $subtheme_warning['type'] === 'warning' ? '#f1b44c' : ($subtheme_warning['type'] === 'error' ? '#f46a6a' : '#5156be') ?>;">
+                                        <div class="alert alert-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?> border-left-<?= $subtheme_warning['type'] === 'warning' ? 'warning' : ($subtheme_warning['type'] === 'error' ? 'danger' : 'info') ?> mb-4"
+                                            style="border-left: 4px solid <?= $subtheme_warning['type'] === 'warning' ? '#f1b44c' : ($subtheme_warning['type'] === 'error' ? '#f46a6a' : '#5156be') ?>;">
                                             <div class="d-flex align-items-center">
                                                 <div class="flex-shrink-0">
                                                     <div class="avatar-sm">
@@ -87,20 +125,22 @@
                                         </div>
                                     <?php endif; ?>
 
-                                    <?php
-                                    // Check if participant is eligible for abstract submission
-                                    if (!isset($participant_data['eligible_for_abstract']) || $participant_data['eligible_for_abstract'] === false): ?>
-                                        <?= $this->include('participant/abstract-paper/components/not-eligible') ?>
-                                    <?php 
-                                    // Participant is eligible but hasn't submitted an abstract yet
-                                    elseif ($participant_data['eligible_for_abstract'] === true && empty($participant_data['abstract'])): ?>
-                                        <?= $this->include('participant/abstract-paper/components/empty-state') ?>
-                                    <?php 
-                                    // Participant is eligible and has submitted an abstract
-                                    else: ?>
-                                        <?= $this->include('participant/abstract-paper/components/abstract-view') ?>
-                                    <?php endif; ?>
-                                    
+                                    <!-- Main Content Area -->
+                                    <div class="abstract-paper-content">
+                                        <?php
+                                        // Check if participant is eligible for abstract submission
+                                        if (!isset($participant_data['eligible_for_abstract']) || $participant_data['eligible_for_abstract'] === false): ?>
+                                            <?= $this->include('participant/abstract-paper/components/not-eligible') ?>
+                                        <?php
+                                        // Participant is eligible but hasn't submitted an abstract yet
+                                        elseif ($participant_data['eligible_for_abstract'] === true && empty($participant_data['abstract'])): ?>
+                                            <?= $this->include('participant/abstract-paper/components/empty-state') ?>
+                                        <?php                        // Participant is eligible and has submitted an abstract
+                                        else: ?>
+                                            <?= $this->include('participant/abstract-paper/components/abstract-view') ?>
+                                        <?php endif; ?>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
@@ -116,20 +156,21 @@
         <!-- end main content-->
 
     </div>
-    <!-- END layout-wrapper -->    <?= $this->include('partials/vendor-scripts') ?>
+    <!-- END layout-wrapper --> <?= $this->include('partials/vendor-scripts') ?>
 
     <!-- Sweet Alert js-->
     <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
-    
+
     <!-- jQuery -->
     <script src="/assets/libs/jquery/jquery.min.js"></script>
-    
+
     <!-- Abstract Paper View JS -->
     <script src="/assets/js/abstract-paper-view.js"></script>
-      <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Enhanced success alert for abstract operations            <?php if (session()->has('abstract_success')): ?>
-                <?php 
+            // Enhanced success alert for abstract operations           
+            <?php if (session()->has('abstract_success')): ?>
+                <?php
                 $successData = session('abstract_success');
                 $isDraft = $successData['is_draft'] ?? false;
                 $abstractTitle = $successData['title'] ?? 'Your Abstract';
@@ -139,7 +180,7 @@
                 $createdAt = $successData['created_at'] ?? null;
                 $updatedAt = $successData['updated_at'] ?? null;
                 ?>
-                  Swal.fire({
+                Swal.fire({
                     title: '<?= $isDraft ? "Draft Saved!" : "Abstract Submitted!" ?>',
                     html: `
                         <div class="text-start">
@@ -203,7 +244,7 @@
                     confirmButtonColor: '#5156be'
                 });
             <?php endif; ?>
-              // Handle create new abstract button
+            // Handle create new abstract button
             const createAbstractBtn = document.getElementById('create-abstract-btn');
             if (createAbstractBtn) {
                 createAbstractBtn.addEventListener('click', function() {
@@ -232,7 +273,7 @@
 
                     // Proceed to create abstract
                     window.location.href = '<?= base_url('abstract-paper/create') ?>';
-                    
+
                     // Show loading indicator
                     Swal.fire({
                         title: 'Loading...',
@@ -249,10 +290,8 @@
                     });
                 });
             }
-        });    </script>
-
-    <!-- Abstract Paper View JS -->
-    <script src="/assets/js/abstract-paper-view.js"></script>
+        });
+    </script>
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>
