@@ -240,7 +240,42 @@
                             <?php if ($document['type']=='agreement') {?>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="text-muted fw-semibold mb-3">Upload Document:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="text-muted text-start fw-semibold mb-3">Upload Document:</h6>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-muted text-end fw-semibold mb-3">
+                                                <a href="" data-bs-toggle="modal"
+                                                    data-bs-target="#exampleModalScrollable">Preview</a>
+                                            </h6>
+
+                                            <div class="modal fade" id="exampleModalScrollable" tabindex="-1"
+                                                role="dialog" aria-labelledby="exampleModalScrollableTitle"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="exampleModalScrollableTitle">
+                                                                <?= $document['name'] ?? 'Document' ?>
+                                                            </h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close">
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <embed type="application/pdf" src="<?=$files['file_url']?>"
+                                                                width="100%" height="500"></embed>
+                                                        </div>
+                                                        <!-- <div class="modal-footer">
+                                                            <button type="button" class="btn btn-light"
+                                                                data-bs-dismiss="modal">Close</button>
+                                                        </div> -->
+                                                    </div><!-- /.modal-content -->
+                                                </div><!-- /.modal-dialog -->
+                                            </div><!-- /.modal -->
+                                        </div>
+                                    </div>
                                     <form action="<?= base_url('agreement_letter/upload') ?>" method="POST"
                                         enctype="multipart/form-data">
                                         <input type="hidden" value="<?=session()->get('current_participant_id')?>"
