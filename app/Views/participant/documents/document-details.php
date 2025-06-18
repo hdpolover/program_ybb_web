@@ -245,6 +245,7 @@
                                             <h6 class="text-muted text-start fw-semibold mb-3">Upload Document:</h6>
                                         </div>
                                         <div class="col-md-6">
+                                            <?php if (!empty($files['file_url'])){ ?>
                                             <h6 class="text-muted text-end fw-semibold mb-3">
                                                 <a href="" data-bs-toggle="modal"
                                                     data-bs-target="#exampleModalScrollable">Preview</a>
@@ -264,16 +265,26 @@
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
+                                                            <?php 
+                                                            if($files['status'] == 'under_review'){
+                                                                $stat = '<span class="badge bg-info">Under Review</span>';
+                                                            }elseif($files['status'] == 'accepted'){
+                                                                $stat = '<span class="badge bg-success">Accepted</span>';
+                                                            }elseif($files['status'] == 'rejected'){
+                                                                $stat = '<span class="badge bg-danger">Rejected</span>';
+                                                            }
+                                                            ?>
+                                                            <h6 class="text-muted text-start fw-semibold mb-3">
+                                                                Status: <?=$stat?>
+                                                            </h6>
                                                             <embed type="application/pdf" src="<?=$files['file_url']?>"
                                                                 width="100%" height="500"></embed>
+
                                                         </div>
-                                                        <!-- <div class="modal-footer">
-                                                            <button type="button" class="btn btn-light"
-                                                                data-bs-dismiss="modal">Close</button>
-                                                        </div> -->
                                                     </div><!-- /.modal-content -->
                                                 </div><!-- /.modal-dialog -->
                                             </div><!-- /.modal -->
+                                            <?php } ?>
                                         </div>
                                     </div>
                                     <form action="<?= base_url('agreement_letter/upload') ?>" method="POST"
