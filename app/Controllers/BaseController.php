@@ -92,8 +92,8 @@ abstract class BaseController extends Controller
         $this->setApiBaseUrl();
 
         // Make sure image helper is loaded
-        helper('image_helper');        
-        
+        helper('image_helper');
+
         // get base domain
         $baseDomain = getBaseDomain();
         $host = $_SERVER['HTTP_HOST'] ?? 'unknown';
@@ -102,8 +102,8 @@ abstract class BaseController extends Controller
 
         // Handle special cases for localhost and different environments
         if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
-            $this->currentUrl = "youthacademicforum.com";
-            log_message('debug', 'Detected localhost, setting currentUrl to youthacademicforum.com');
+            $this->currentUrl = "middleeastyouthsummit.com";
+            log_message('debug', 'Detected localhost, setting currentUrl to middleeastyouthsummit.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
             // Check both baseDomain and HTTP_HOST to be safe
@@ -206,14 +206,15 @@ abstract class BaseController extends Controller
             // This will properly redirect and exit
             return redirect()->to(base_url('maintenance'))->send();
         }
-    }    /**
+    }
+    /**
      * Set the API base URL based on the current environment
      */
     protected function setApiBaseUrl()
     {
         // Check environment from .env file
         $environment = ENVIRONMENT;
-        
+
         if ($environment === 'development') {
             // Use development API URL
             $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
@@ -223,10 +224,11 @@ abstract class BaseController extends Controller
             $this->apiBaseUrl = defined('BASE_API_URL') ? BASE_API_URL : 'https://admin.ybbfoundation.com/api';
             log_message('info', "[BaseController::setApiBaseUrl] Production environment detected, using: {$this->apiBaseUrl}");
         }
-        
+
         log_message('debug', "[BaseController::setApiBaseUrl] Environment: {$environment}");
         log_message('debug', "[BaseController::setApiBaseUrl] Final API base URL: {$this->apiBaseUrl}");
-    }/**
+    }
+    /**
      * Process and prepare the topbar data for views
      */
     protected function prepareTopbarData()
@@ -241,10 +243,10 @@ abstract class BaseController extends Controller
         if (isset($this->data['webSettings']['program_category_id'])) {
             $programCategoryId = $this->data['webSettings']['program_category_id'];
             log_message('debug', 'BaseController - Getting program_type_id for program_category_id: ' . $programCategoryId);
-            
+
             // Get program type ID based on program category ID
             $programTypeId = $this->getProgramTypeId($programCategoryId);
-            
+
             // Add program type ID to webSettings
             if ($programTypeId !== null) {
                 $this->data['webSettings']['program_type_id'] = $programTypeId;
@@ -271,7 +273,8 @@ abstract class BaseController extends Controller
         // Merge global data with view-specific data
         $data = array_merge($this->data, $data);
         return view($view, $data);
-    }    /**
+    }
+    /**
      * Get program type ID for a given program category ID
      * 
      * @param int $programCategoryId The program category ID
@@ -287,10 +290,10 @@ abstract class BaseController extends Controller
         try {
             // Make API request to get program category details
             $programCategory = $this->makeGetRequest('/program-categories/' . $programCategoryId, [], false);
-            
+
             // Log for debugging
             log_message('debug', 'BaseController - Program Category details: ' . json_encode($programCategory));
-            
+
             // Return the program type ID if available
             if (isset($programCategory['program_type_id'])) {
                 log_message('debug', 'BaseController - Found program_type_id: ' . $programCategory['program_type_id'] . ' for program_category_id: ' . $programCategoryId);
@@ -301,7 +304,8 @@ abstract class BaseController extends Controller
             }
         } catch (\Exception $e) {
             log_message('error', 'BaseController - Failed to get program type ID: ' . $e->getMessage());
-            return null;        }
+            return null;
+        }
     }
 
     // create a fucntion for get requests that accepts endpoint and headers and returns response as json
@@ -310,7 +314,7 @@ abstract class BaseController extends Controller
         try {
             // combine endpoint with base url
             $url = $this->apiBaseUrl . $endpoint;
-            
+
             // Log the request URL for debugging
             log_message('debug', 'Making GET request to: ' . $url);
 
@@ -325,13 +329,13 @@ abstract class BaseController extends Controller
             $response = $this->client->request('GET', $url, [
                 'headers' => array_merge($this->defaultHeaders, $headers),
             ]);
-            
+
             // Log the response status code
             $statusCode = $response->getStatusCode();
             log_message('debug', 'API response status code: ' . $statusCode);
 
             $bodyDecoded = json_decode($response->getBody(), true);
-            
+
             // Log the full response for debugging
             log_message('debug', 'API response body: ' . json_encode($bodyDecoded));
 
@@ -355,11 +359,11 @@ abstract class BaseController extends Controller
             // Handle HTTP-specific exceptions
             $statusCode = $e->getCode();
             log_message('error', 'HTTP Error: ' . $e->getMessage() . ' (Status Code: ' . $statusCode . ')');
-            
+
             if ($statusCode == 404) {
                 log_message('error', 'API endpoint not found: ' . $endpoint);
             }
-            
+
             return null;
         } catch (\Exception $e) {
             // Log the error or handle it as needed
@@ -430,11 +434,12 @@ abstract class BaseController extends Controller
                 // Explicitly remove Content-Type if it exists to let Guzzle handle it
                 if (isset($options['headers']['Content-Type'])) {
                     unset($options['headers']['Content-Type']);
-                }            } else if ($asJson) {
+                }
+            } else if ($asJson) {
                 // Use JSON format
                 $options['body'] = is_array($data) ? json_encode($data) : $data;
                 $options['headers'] = array_merge($this->defaultHeaders, $headers);
-                
+
                 // Explicitly ensure Content-Type is set for JSON
                 $options['headers']['Content-Type'] = 'application/json';
                 log_message('debug', 'POST as JSON with Content-Type: application/json');
@@ -471,34 +476,34 @@ abstract class BaseController extends Controller
             try {
                 // Make the request
                 $response = $this->client->request('POST', $url, $options);
-                  // Get response body
+                // Get response body
                 $responseBody = $response->getBody();
                 $bodyText = '';
-                
+
                 // Safely read the response body
                 if ($responseBody) {
                     $bodyText = (string)$responseBody;
                 }
-                
+
                 $bodyDecoded = null;
                 if (!empty($bodyText)) {
                     $bodyDecoded = json_decode($bodyText, true);
                 }
-                
+
                 // Get HTTP status code
                 $statusCode = $response->getStatusCode();
                 log_message('debug', "POST Response Status Code: " . $statusCode);
-                
+
                 // Log response body for debugging
                 log_message('debug', "POST Response Body: " . ($bodyText ?: 'empty'));
-                
+
                 // Check if response is valid JSON
                 if ($bodyText && json_last_error() !== JSON_ERROR_NONE) {
                     log_message('error', "POST Response is not valid JSON: " . json_last_error_msg());
                     // Try to return something useful even if it's not JSON
                     return ['error' => 'Invalid JSON response', 'raw_response' => $bodyText];
                 }
-                
+
                 // Return the data or full response based on response structure                
                 if ($bodyDecoded && isset($bodyDecoded['data'])) {
                     return $bodyDecoded['data'];
@@ -507,10 +512,10 @@ abstract class BaseController extends Controller
                 }
             } catch (\Exception $e) {
                 // Handle all connection errors (timeouts, DNS failures, etc.)
-                $isConnectionError = (strpos($e->getMessage(), 'Connection') !== false || 
-                                    strpos($e->getMessage(), 'timeout') !== false ||
-                                    strpos($e->getMessage(), 'DNS') !== false);
-                
+                $isConnectionError = (strpos($e->getMessage(), 'Connection') !== false ||
+                    strpos($e->getMessage(), 'timeout') !== false ||
+                    strpos($e->getMessage(), 'DNS') !== false);
+
                 if ($isConnectionError) {
                     log_message('error', 'POST Request Connection Error: ' . $e->getMessage());
                     log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
@@ -521,18 +526,20 @@ abstract class BaseController extends Controller
                     log_message('error', 'POST Request Error: ' . $errorMessage);
                     log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
                     log_message('error', 'Exception trace: ' . $e->getTraceAsString());
-                    
+
                     return ['error' => 'request_failed', 'message' => $errorMessage];
                 }
-            }        } catch (\Exception $e) {
+            }
+        } catch (\Exception $e) {
             // Outer catch block for any unexpected errors
             $errorMessage = $e->getMessage();
             log_message('error', 'Unexpected POST Request Error: ' . $errorMessage);
             log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
-            log_message('error', 'Exception trace: ' . $e->getTraceAsString());            
+            log_message('error', 'Exception trace: ' . $e->getTraceAsString());
             return ['error' => 'unexpected_error', 'message' => $errorMessage];
         }
-    }    /**
+    }
+    /**
      * Make a POST request to an API endpoint and return the full response (not just data)
      * 
      * @param string $endpoint The API endpoint
@@ -599,7 +606,7 @@ abstract class BaseController extends Controller
                 // Use JSON format
                 $options['body'] = is_array($data) ? json_encode($data) : $data;
                 $options['headers'] = array_merge($this->defaultHeaders, $headers);
-                
+
                 // Explicitly ensure Content-Type is set for JSON
                 $options['headers']['Content-Type'] = 'application/json';
                 log_message('debug', 'POST as JSON with Content-Type: application/json');
@@ -637,44 +644,43 @@ abstract class BaseController extends Controller
             // Make the request
             try {
                 $response = $this->client->request('POST', $url, $options);
-                
+
                 // Get response body
                 $responseBody = $response->getBody();
                 $bodyText = '';
-                
+
                 // Safely read the response body
                 if ($responseBody) {
                     $bodyText = (string)$responseBody;
                 }
-                
+
                 $bodyDecoded = null;
                 if (!empty($bodyText)) {
                     $bodyDecoded = json_decode($bodyText, true);
                 }
-                
+
                 // Get HTTP status code
                 $statusCode = $response->getStatusCode();
                 log_message('debug', "POST Response Status Code: " . $statusCode);
-                
+
                 // Log response body for debugging
                 log_message('debug', "POST Response Body: " . ($bodyText ?: 'empty'));
-                
+
                 // Check if response is valid JSON
                 if ($bodyText && json_last_error() !== JSON_ERROR_NONE) {
                     log_message('error', "POST Response is not valid JSON: " . json_last_error_msg());
                     // Try to return something useful even if it's not JSON
                     return ['error' => 'Invalid JSON response', 'raw_response' => $bodyText];
                 }
-                
+
                 // Return the FULL response, not just the data portion
                 return $bodyDecoded ?: ['error' => 'empty_response', 'status_code' => $statusCode];
-                
             } catch (\Exception $e) {
                 // Handle all connection errors (timeouts, DNS failures, etc.)
-                $isConnectionError = (strpos($e->getMessage(), 'Connection') !== false || 
-                                    strpos($e->getMessage(), 'timeout') !== false ||
-                                    strpos($e->getMessage(), 'DNS') !== false);
-                
+                $isConnectionError = (strpos($e->getMessage(), 'Connection') !== false ||
+                    strpos($e->getMessage(), 'timeout') !== false ||
+                    strpos($e->getMessage(), 'DNS') !== false);
+
                 if ($isConnectionError) {
                     log_message('error', 'POST Request Connection Error: ' . $e->getMessage());
                     log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
@@ -685,7 +691,7 @@ abstract class BaseController extends Controller
                     log_message('error', 'POST Request Error: ' . $errorMessage);
                     log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
                     log_message('error', 'Exception trace: ' . $e->getTraceAsString());
-                    
+
                     return ['error' => 'request_failed', 'message' => $errorMessage];
                 }
             }
@@ -694,10 +700,11 @@ abstract class BaseController extends Controller
             $errorMessage = $e->getMessage();
             log_message('error', 'Unexpected POST Request Error: ' . $errorMessage);
             log_message('error', 'POST Request to URL: ' . ($url ?? 'unknown'));
-            log_message('error', 'Exception trace: ' . $e->getTraceAsString());            
+            log_message('error', 'Exception trace: ' . $e->getTraceAsString());
             return ['error' => 'unexpected_error', 'message' => $errorMessage];
         }
-    }    /**
+    }
+    /**
      * Make a PUT request to an API endpoint with optional JWT authentication
      * 
      * @param string $endpoint The API endpoint
@@ -711,7 +718,7 @@ abstract class BaseController extends Controller
     {
         try {
             $url = $this->apiBaseUrl . $endpoint;
-            
+
             // Log the request details (without sensitive information)
             $logData = $data;
             if (isset($logData['password'])) $logData['password'] = '***';
@@ -739,7 +746,8 @@ abstract class BaseController extends Controller
                 return $bodyDecoded['data'];
             } else {
                 return $bodyDecoded; // Return the whole response if 'data' key is not present
-            }        } catch (\Exception $e) {
+            }
+        } catch (\Exception $e) {
             log_message('error', 'PUT Request Error: ' . $e->getMessage());
             if ($returnException) {
                 return $e;

@@ -279,7 +279,19 @@ class Payments extends BaseController
             $notes = $inputs['notes'] ?? '';
             $paymentDate = $inputs['payment_date'] ?? '';
 
-            // Get the file with the correct field name matching the API            
+            // Calculate IDR amount using the conversion rate from webSettings for manual payments
+            $usdToIdrRate = $this->data['webSettings']['usd_in_idr'] ?? null;
+
+            if (empty($usdToIdrRate) || $usdToIdrRate <= 0) {
+                log_message('error', 'Invalid USD to IDR conversion rate for manual payment: ' . ($usdToIdrRate ?? 'null'));
+                return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                    ->with('error', 'Currency conversion rate not available. Please contact support.');
+            }
+
+            $idrAmount = $paymentAmount * $usdToIdrRate;
+            log_message('debug', 'Manual payment USD to IDR conversion: ' . $paymentAmount . ' USD * ' . $usdToIdrRate . ' = ' . $idrAmount . ' IDR');
+
+            // Get the file with the correct field name matching the API
             $proof = $this->request->getFile('proof_url');
 
             // Check if we have a valid file
@@ -294,7 +306,6 @@ class Payments extends BaseController
 
                 // Set up cURL
                 $curl = curl_init();
-
                 // Build the multipart/form-data payload
                 $payload = [
                     'participant_id' => $participantId,
@@ -304,6 +315,8 @@ class Payments extends BaseController
                     'account_name' => $accountName,
                     'notes' => $notes,
                     'payment_date' => $paymentDate,
+                    'idr_amount' => $idrAmount,
+                    'usd_amount' => $paymentAmount,
                     'proof' => curl_file_create(
                         $proof->getTempName(),
                         $proof->getMimeType(),
@@ -368,6 +381,8 @@ class Payments extends BaseController
                     'account_name' => $accountName,
                     'notes' => $notes,
                     'payment_date' => $paymentDate,
+                    'idr_amount' => $idrAmount,
+                    'usd_amount' => $paymentAmount,
                 ];
 
                 log_message('debug', 'Making payment request with data (no file): ' . json_encode($formData));
@@ -414,10 +429,33 @@ class Payments extends BaseController
                 }
             }
 
+            // Calculate IDR amount using the conversion rate from webSettings
+            $usdToIdrRate = $this->data['webSettings']['usd_in_idr'] ?? null;
+
+            if (empty($usdToIdrRate) || $usdToIdrRate <= 0) {
+                log_message('error', 'Invalid USD to IDR conversion rate: ' . ($usdToIdrRate ?? 'null'));
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => 'Currency conversion rate not available. Please contact support.'
+                    ]);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('error', 'Currency conversion rate not available. Please contact support.');
+                }
+            }
+
+            $idrAmount = $paymentAmount * $usdToIdrRate;
+
+            log_message('debug', 'USD to IDR conversion: ' . $paymentAmount . ' USD * ' . $usdToIdrRate . ' = ' . $idrAmount . ' IDR');
+
             $paymentData = [
                 'participant_id' => $participantId,
                 'program_payment_id' => $programPaymentId,
                 'payment_method_id' => $paymentMethodId,
+                'idr_amount' => $idrAmount,
+                'usd_amount' => $paymentAmount,
             ];
 
             log_message('debug', 'Gateway payment data: ' . json_encode($paymentData));
