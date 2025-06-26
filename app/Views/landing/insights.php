@@ -76,7 +76,7 @@
                                         <h2 class="counter-value mb-0" data-target="<?= $totalCountries ?? 0 ?>">0</h2>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
-                                        <div class="avatar-title bg-primary text-white rounded-circle fs-3">
+                                        <div class="avatar-title bg-danger text-white rounded-circle fs-3">
                                             <i class="ri-global-line"></i>
                                         </div>
                                     </div>
@@ -85,6 +85,158 @@
                         </div>
                     </div>
 
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card card-animate border-0 overflow-hidden">
+                            <div class="card-body bg-soft-success">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h5 class="fs-15 text-uppercase fw-semibold mb-3">Program Status</h5>
+                                        <h6 class="mb-0 text-uppercase">
+                                            <?php if (isset($program['is_registration_open']) && $program['is_registration_open']): ?>
+                                                <span class="badge bg-success fs-12">Registration Open</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary fs-12">Registration Closed</span>
+                                            <?php endif; ?>
+                                        </h6>
+                                    </div>
+                                    <div class="avatar-sm flex-shrink-0">
+                                        <div class="avatar-title bg-success text-white rounded-circle fs-3">
+                                            <i class="ri-calendar-check-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card card-animate border-0 overflow-hidden">
+                            <div class="card-body bg-soft-warning">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h5 class="fs-15 text-uppercase fw-semibold mb-3">Program Duration</h5>
+                                        <h6 class="mb-0 text-muted fs-13">
+                                            <?php if (isset($program['start_date']) && isset($program['end_date'])): ?>
+                                                <?= date('M j', strtotime($program['start_date'])) ?> - <?= date('M j, Y', strtotime($program['end_date'])) ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not specified</span>
+                                            <?php endif; ?>
+                                        </h6>
+                                    </div>
+                                    <div class="avatar-sm flex-shrink-0">
+                                        <div class="avatar-title bg-warning text-white rounded-circle fs-3">
+                                            <i class="ri-calendar-2-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Program Details Section -->
+                <div class="row mb-4">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <div class="card-header align-items-center d-flex">
+                                <h4 class="card-title mb-0 flex-grow-1">Program Details</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Theme Section -->
+                                    <div class="col-lg-12 mb-4">
+                                        <div class="p-4 border rounded bg-soft-primary">
+                                            <h4 class="text-primary mb-3">
+                                                <i class="ri-bookmark-line me-2"></i>Program Theme
+                                            </h4>
+                                            <p class="text-dark mb-0 fs-16 fw-medium">
+                                                <?= $program['theme'] ?? 'No theme specified' ?>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Program Dates -->
+                                    <div class="col-lg-12 mb-4">
+                                        <div class="p-3 border rounded">
+                                            <h5 class="text-secondary mb-2">
+                                                <i class="ri-calendar-line me-2"></i>Program Schedule
+                                            </h5>
+                                            <div class="fs-14">
+                                                <?php if (isset($program['start_date']) && isset($program['end_date'])): ?>
+                                                    <?php 
+                                                    $startDate = strtotime($program['start_date']);
+                                                    $endDate = strtotime($program['end_date']);
+                                                    $startMonth = date('F', $startDate);
+                                                    $endMonth = date('F', $endDate);
+                                                    $startDay = date('j', $startDate);
+                                                    $endDay = date('j', $endDate);
+                                                    $startYear = date('Y', $startDate);
+                                                    $endYear = date('Y', $endDate);
+                                                    
+                                                    if ($startYear == $endYear && $startMonth == $endMonth) {
+                                                        // Same month and year: "August 20 - 27, 2025"
+                                                        $dateRange = $startMonth . ' ' . $startDay . ' - ' . $endDay . ', ' . $startYear;
+                                                    } elseif ($startYear == $endYear) {
+                                                        // Same year: "August 20 - September 3, 2025"
+                                                        $dateRange = date('F j', $startDate) . ' - ' . date('F j', $endDate) . ', ' . $startYear;
+                                                    } else {
+                                                        // Different years: "December 20, 2024 - January 15, 2025"
+                                                        $dateRange = date('F j, Y', $startDate) . ' - ' . date('F j, Y', $endDate);
+                                                    }
+                                                    ?>
+                                                    <p class="text-muted mb-0 fw-medium"><?= $dateRange ?></p>
+                                                <?php else: ?>
+                                                    <p class="text-muted mb-0">Schedule not specified</p>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Subthemes Section -->
+                                    <div class="col-lg-12 mb-3">
+                                        <div class="p-3 border rounded">
+                                            <h5 class="text-success mb-3">
+                                                <i class="ri-list-check-2 me-2"></i>Program Subthemes
+                                            </h5>
+                                            <?php if (!empty($program['program_subthemes'])): ?>
+                                                <div class="row g-3">
+                                                    <?php foreach ($program['program_subthemes'] as $index => $subtheme): ?>
+                                                        <div class="col-lg-6 col-md-6">
+                                                            <div class="card border shadow-sm h-100">
+                                                                <div class="card-body p-3">
+                                                                    <div class="d-flex align-items-start">
+                                                                        <div class="flex-shrink-0 me-3">
+                                                                            <div class="avatar-xs">
+                                                                                <div class="avatar-title rounded-circle bg-success text-white fs-14 fw-bold">
+                                                                                    <?= $index + 1 ?>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="flex-grow-1">
+                                                                            <h6 class="mb-2 fs-14 fw-semibold text-dark"><?= htmlspecialchars($subtheme['name']) ?></h6>
+                                                                            <?php if (!empty($subtheme['desc'])): ?>
+                                                                                <p class="text-muted mb-0 fs-13 lh-base"><?= htmlspecialchars($subtheme['desc']) ?></p>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="text-center py-4">
+                                                    <i class="ri-file-list-3-line text-muted" style="font-size: 2rem;"></i>
+                                                    <p class="text-muted mb-0 mt-2 fs-14">No subthemes available for this program.</p>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- World Map Visualization -->
@@ -130,34 +282,122 @@
                     <div class="col-lg-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Participants by Country</h4>
+                                <h4 class="card-title mb-0 flex-grow-1">
+                                    <i class="ri-earth-line me-2 text-primary"></i>Participants by Country
+                                </h4>
+                                <div class="flex-shrink-0">
+                                    <span class="badge bg-soft-primary text-primary fs-12">
+                                        <?= count($countriesData ?? []) ?> Countries
+                                    </span>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <table id="participants-country-datatable" class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Nationality</th>
-                                            <th>Participant Count</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($countriesData ?? [
-                                            [
-                                                "nationality" => null,
-                                                "participants_count" => "5"
-                                            ],
-                                            [
-                                                "nationality" => "Pakistan",
-                                                "participants_count" => "1"
-                                            ]
-                                        ] as $country): ?>
+                                <div class="table-responsive">
+                                    <table id="participants-country-datatable" class="table table-hover table-nowrap align-middle mb-0" style="width:100%">
+                                        <thead class="table-light">
                                             <tr>
-                                                <td><?= $country['nationality'] ?? 'Undefined' ?></td>
-                                                <td><?= $country['participants_count'] ?></td>
+                                                <th class="fw-semibold">
+                                                    <i class="ri-flag-line me-1"></i>Country
+                                                </th>
+                                                <th class="fw-semibold text-center">
+                                                    <i class="ri-user-3-line me-1"></i>Participants
+                                                </th>
+                                                <th class="fw-semibold text-center">
+                                                    <i class="ri-pie-chart-line me-1"></i>Percentage
+                                                </th>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            <?php 
+                                            $totalParticipantsInTable = array_sum(array_column($countriesData ?? [], 'participant_count'));
+                                            foreach ($countriesData ?? [
+                                                [
+                                                    "country" => null,
+                                                    "participant_count" => 5
+                                                ],
+                                                [
+                                                    "country" => "Pakistan",
+                                                    "participant_count" => 1
+                                                ]
+                                            ] as $index => $country): 
+                                                $countryName = $country['country'] ?? 'Undefined';
+                                                $participantCount = $country['participant_count'];
+                                                $percentage = $totalParticipantsInTable > 0 ? round(($participantCount / $totalParticipantsInTable) * 100, 1) : 0;
+                                            ?>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="flex-shrink-0 me-2">
+                                                                <div class="avatar-xs">
+                                                                    <div class="avatar-title rounded-circle bg-soft-primary text-primary fs-12">
+                                                                        <?= $index + 1 ?>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="mb-0 fs-14 fw-medium">
+                                                                    <?php if ($countryName === 'Undefined'): ?>
+                                                                        <i class="ri-question-line me-1 text-muted"></i>
+                                                                        <span class="text-muted">Undefined Country</span>
+                                                                    <?php else: ?>
+                                                                        <i class="ri-map-pin-line me-1 text-success"></i>
+                                                                        <?= htmlspecialchars($countryName) ?>
+                                                                    <?php endif; ?>
+                                                                </h6>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-soft-success text-success fs-13 px-3 py-2">
+                                                            <?= number_format($participantCount) ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="d-flex align-items-center justify-content-center">
+                                                            <div class="flex-grow-1 me-2">
+                                                                <div class="progress progress-sm">
+                                                                    <div class="progress-bar bg-primary" role="progressbar" 
+                                                                         style="width: <?= $percentage ?>%" 
+                                                                         aria-valuenow="<?= $percentage ?>" 
+                                                                         aria-valuemin="0" 
+                                                                         aria-valuemax="100">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-shrink-0">
+                                                                <small class="text-muted fw-medium"><?= $percentage ?>%</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Table Summary -->
+                                <div class="row mt-4 pt-3 border-top">
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Total Countries</h6>
+                                            <h4 class="mb-0 text-primary"><?= count($countriesData ?? []) ?></h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Total Participants</h6>
+                                            <h4 class="mb-0 text-success"><?= number_format($totalParticipantsInTable) ?></h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 border rounded">
+                                            <h6 class="text-muted mb-1">Average per Country</h6>
+                                            <h4 class="mb-0 text-info">
+                                                <?= count($countriesData ?? []) > 0 ? round($totalParticipantsInTable / count($countriesData), 1) : 0 ?>
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -283,12 +523,12 @@
         // Parse countries data
         var countriesData = <?= json_encode($countriesData ?? [
                     [
-                        "nationality" => null,
-                        "participants_count" => "5"
+                        "country" => null,
+                        "participant_count" => 5
                     ],
                     [
-                        "nationality" => "Pakistan",
-                        "participants_count" => "1"
+                        "country" => "Pakistan",
+                        "participant_count" => 1
                     ]
                 ]) ?>;
                 
@@ -353,9 +593,9 @@
             
             // Transform country data for visualization
             countriesData.forEach(function(item) {
-                var countryName = item.nationality ? item.nationality : "Undefined";
-                var countryCode = getCountryCode(countryName);
-                var count = parseInt(item.participants_count);
+                var countryName = item.country ? item.country : "Undefined";
+                var countryCode = item.country_code || getCountryCode(countryName);
+                var count = parseInt(item.participant_count || 0);
                 
                 if(countryCode && countryName !== "Undefined") {
                     mapData[countryCode] = count;
@@ -589,14 +829,14 @@
                     worldMap.setSelectedRegions([firstCountryCode]);
                     updateCountryDetails(firstCountryCode);
                 }, 500);
-            } else if (countriesData.length > 0 && countriesData[0].nationality === null) {
-                // If we only have undefined nationality data
+            } else if (countriesData.length > 0 && countriesData[0].country === null) {
+                // If we only have undefined country data
                 const detailsSection = document.getElementById('country-details');
                 const countryNameElement = detailsSection.querySelector('.country-name');
                 const participantsElement = detailsSection.querySelector('.country-participants');
                 
-                countryNameElement.textContent = "Undefined Nationality";
-                participantsElement.textContent = parseInt(countriesData[0].participants_count) + ' participants';
+                countryNameElement.textContent = "Undefined Country";
+                participantsElement.textContent = parseInt(countriesData[0].participant_count || 0) + ' participants';
                 
                 detailsSection.classList.remove('d-none');
             }
@@ -605,9 +845,15 @@
             $('#participants-country-datatable').DataTable({
                 responsive: true,
                 lengthChange: false,
-                pageLength: 7,
-                info: false,
+                pageLength: 10,
+                info: true,
                 searching: true,
+                ordering: true,
+                order: [[1, 'desc']], // Sort by participant count (descending)
+                columnDefs: [
+                    { orderable: false, targets: [2] }, // Disable sorting for percentage column
+                    { className: "text-center", targets: [1, 2] }
+                ],
                 language: {
                     search: '<i class="ri-search-line"></i>',
                     searchPlaceholder: "Search countries...",
@@ -615,12 +861,19 @@
                         previous: "<i class='mdi mdi-chevron-left'>",
                         next: "<i class='mdi mdi-chevron-right'>"
                     },
-                    emptyTable: "No country data available"
+                    emptyTable: "No country data available",
+                    info: "Showing _START_ to _END_ of _TOTAL_ countries",
+                    infoEmpty: "Showing 0 to 0 of 0 countries",
+                    infoFiltered: "(filtered from _MAX_ total countries)"
                 },
                 drawCallback: function() {
                     $('.dataTables_paginate > .pagination').addClass('pagination-rounded');
                     $('.dataTables_filter input').addClass('form-control-sm');
                     $('.dataTables_wrapper .row:first-child').addClass('mb-3');
+                    
+                    // Add custom styling to search and info elements
+                    $('.dataTables_filter').addClass('d-flex justify-content-end');
+                    $('.dataTables_info').addClass('text-muted fs-12');
                 }
             });
         });

@@ -29,7 +29,25 @@
                         <div class="col-lg-12">
                             <div class="card">
                                 <div class="card-header">
-                                    <h4 class="card-title mb-0">Available Program Documents</h4>
+                                    <div class="d-flex align-items-center">
+                                        <h4 class="card-title mb-0 flex-grow-1">Available Program Documents</h4>
+                                        <div class="flex-shrink-0">
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-soft-secondary btn-sm" id="btn-all">
+                                                    All
+                                                </button>
+                                                <button type="button" class="btn btn-soft-info btn-sm" id="btn-upload">
+                                                    Upload Required
+                                                </button>
+                                                <button type="button" class="btn btn-soft-primary btn-sm" id="btn-generate">
+                                                    Can Generate
+                                                </button>
+                                                <button type="button" class="btn btn-soft-success btn-sm" id="btn-reference">
+                                                    Reference
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="card-body">
@@ -42,6 +60,7 @@
                                                     <tr>
                                                         <th scope="col">#</th>
                                                         <th scope="col">Document Name</th>
+                                                        <th scope="col">Description</th>
                                                         <th scope="col">Type</th>
                                                         <th scope="col">Action</th>
                                                     </tr>
@@ -56,9 +75,20 @@
                                                             if ($document['visibility'] == 1):
                                                                 $hasVisibleDocs = true;
                                                     ?>
-                                                                <tr>
+                                                                <tr class="document-row" data-type="<?= $document['is_upload'] ? 'upload-required' : ($document['is_generated'] ? 'can-generate' : 'reference') ?>">
                                                                     <td><?= $counter++ ?></td>
-                                                                    <td><?= $document['name'] ?? 'Program Document' ?></td>
+                                                                    <td>
+                                                                        <h6 class="mb-1"><?= $document['name'] ?? 'Program Document' ?></h6>
+                                                                    </td>
+                                                                    <td>
+                                                                        <p class="text-muted mb-0">
+                                                                            <?php if (!empty($document['desc'])): ?>
+                                                                                <?= substr($document['desc'], 0, 80) ?><?= strlen($document['desc']) > 80 ? '...' : '' ?>
+                                                                            <?php else: ?>
+                                                                                Important program document for participants
+                                                                            <?php endif; ?>
+                                                                        </p>
+                                                                    </td>
                                                                     <td>
                                                                         <?php if ($document['is_upload']): ?>
                                                                             <span class="badge bg-info">Upload Required</span>
@@ -97,7 +127,7 @@
                                                     if (!$hasVisibleDocs):
                                                         ?>
                                                         <tr>
-                                                            <td colspan="4" class="text-center">
+                                                            <td colspan="5" class="text-center">
                                                                 <div class="py-4">
                                                                     <div class="avatar-sm mx-auto mb-3">
                                                                         <div class="avatar-title bg-light text-secondary rounded-circle fs-24">
@@ -135,6 +165,51 @@
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simple filter functionality to match existing app style
+            const filterButtons = document.querySelectorAll('[id^="btn-"]');
+            const documentRows = document.querySelectorAll('.document-row');
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-soft-secondary');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.remove('btn-soft-secondary');
+                    this.classList.add('btn-primary');
+                    
+                    const filterType = this.id.replace('btn-', '');
+                    
+                    documentRows.forEach(row => {
+                        if (filterType === 'all') {
+                            row.style.display = '';
+                        } else {
+                            const rowType = row.getAttribute('data-type');
+                            if (filterType === 'upload' && rowType === 'upload-required') {
+                                row.style.display = '';
+                            } else if (filterType === 'generate' && rowType === 'can-generate') {
+                                row.style.display = '';
+                            } else if (filterType === 'reference' && rowType === 'reference') {
+                                row.style.display = '';
+                            } else if (filterType !== 'all') {
+                                row.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // Set "All" as default active
+            document.getElementById('btn-all').classList.remove('btn-soft-secondary');
+            document.getElementById('btn-all').classList.add('btn-primary');
+        });
+    </script>
 </body>
 
 </html>
