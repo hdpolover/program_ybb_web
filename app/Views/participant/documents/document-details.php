@@ -240,7 +240,7 @@
                             <?php if ($document['type']=='agreement') {?>
                             <div class="card">
                                 <div class="card-body">
-                                    <div class="row">
+                                    <!-- <div class="row">
                                         <div class="col-md-6">
                                             <h6 class="text-muted text-start fw-semibold mb-3">Upload Document:</h6>
                                         </div>
@@ -281,9 +281,10 @@
                                                                 width="100%" height="500"></embed>
 
                                                         </div>
-                                                    </div><!-- /.modal-content -->
-                                                </div><!-- /.modal-dialog -->
-                                            </div><!-- /.modal -->
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <?php } ?>
                                         </div>
                                     </div>
@@ -297,7 +298,98 @@
                                         <button type="submit" class="btn btn-info w-100 mt-3">
                                             <i class="ri-external-link-line align-middle me-1"></i>
                                             Submit </button>
+                                    </form> -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="text-muted text-start fw-semibold mb-3">Upload Document:</h6>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <?php if (!empty($files['file_url']) && ($files['status'] == 'under_review')){ ?>
+                                            <h6 class="text-muted text-end fw-semibold mb-3">
+                                                <a href="" data-bs-toggle="modal"
+                                                    data-bs-target="#exampleModalScrollable" class="btn btn-info">
+                                                    <i class="ri-upload-2-line align-middle me-1"></i> Edit
+                                                    Document
+                                                </a>
+                                            </h6>
+                                            <?php }else if (!empty($files['file_url']) && ($files['status'] == 'rejected')){ ?>
+                                            <h6 class="text-muted text-end fw-semibold mb-3">
+                                                <a href="" data-bs-toggle="modal"
+                                                    data-bs-target="#exampleModalScrollable" class="btn btn-warning">
+                                                    <i class="ri-upload-2-line align-middle me-1"></i> Edit
+                                                    Document
+                                                </a>
+                                            </h6>
+                                            <?php } ?>
+                                            <div class="modal fade" id="exampleModalScrollable" tabindex="-1"
+                                                role="dialog" aria-labelledby="exampleModalScrollableTitle"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="exampleModalScrollableTitle">
+                                                                <?= $document['name'] ?? 'Document' ?>
+                                                            </h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close">
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <form action="<?= base_url('agreement_letter/upload') ?>"
+                                                                method="POST" enctype="multipart/form-data">
+                                                                <input type="hidden"
+                                                                    value="<?=session()->get('current_participant_id')?>"
+                                                                    name="participant_id">
+                                                                <input type="hidden" value="<?=$document['id']?>"
+                                                                    name="program_document_id">
+                                                                <input type="file" class="dropify"
+                                                                    accept="application/pdf" data-height="300"
+                                                                    name="participant_program_documents" required />
+                                                                <button type="submit" class="btn btn-info w-100 mt-3">
+                                                                    <i
+                                                                        class="ri-external-link-line align-middle me-1"></i>
+                                                                    Submit </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <?php 
+                                    if (!empty($files['file_url'])){
+                                        if($files['status'] == 'under_review'){
+                                            $stat = '<span class="badge bg-info">Under Review</span>';
+                                            $show = 'display:none';
+                                        }elseif($files['status'] == 'accepted'){
+                                            $stat = '<span class="badge bg-success">Accepted</span>';
+                                            $show = 'display:none';
+                                        }elseif($files['status'] == 'rejected'){
+                                            $stat = '<span class="badge bg-danger">Rejected</span>';
+                                            $show = '';
+                                        }?>
+                                    <h6 class="text-muted text-start fw-semibold mb-3">
+                                        Status: <?=$stat?>
+                                    </h6>
+                                    <div style="<?=$show?>" class="alert alert-danger mb-3" role="alert">
+                                        <?=$files['notes']?>
+                                    </div>
+                                    <embed type="application/pdf" src="<?=$files['file_url']?>" width="100%"
+                                        height="500"></embed>
+                                    <?php }else { ?>
+                                    <form action="<?= base_url('agreement_letter/upload') ?>" method="POST"
+                                        enctype="multipart/form-data">
+                                        <input type="hidden" value="<?=session()->get('current_participant_id')?>"
+                                            name="participant_id">
+                                        <input type="hidden" value="<?=$document['id']?>" name="program_document_id">
+                                        <input type="file" class="dropify" accept="application/pdf" data-height="300"
+                                            name="participant_program_documents" required />
+                                        <button type="submit" class="btn btn-info w-100 mt-3">
+                                            <i class="ri-external-link-line align-middle me-1"></i>
+                                            Submit </button>
                                     </form>
+                                    <?php } ?>
                                 </div>
                                 <!-- end card body -->
                             </div>

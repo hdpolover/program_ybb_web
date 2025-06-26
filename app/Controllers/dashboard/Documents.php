@@ -160,15 +160,15 @@ class Documents extends BaseController
         
         $response = $this->makePostRequest('/program-documents/upload', $agreementLeter,[],false,false);
 
-            // echo '<pre>';
-            // var_dump($response);
-            // echo $fileurl;
-            // echo '</pre>';
-            // exit;
+        // echo '<pre>';
+        // var_dump($response);
+        // echo $fileurl;
+        // echo '</pre>';
+        // exit;
         if (!$response) {
             return redirect()->to(base_url('documents/program'))->with('error', 'Uplod Error');
         } else {
-            return redirect()->back()->with('Success', 'Upload Success');
+            return redirect()->back()->with('success', 'Upload Success');
         }
     }
 
