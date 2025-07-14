@@ -147,6 +147,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->get('documents/program', 'dashboard\Documents::index');
     $routes->get('documents/program/details/(:num)', 'dashboard\Documents::details/$1');
     $routes->get('documents/certificates', 'dashboard\Documents::certificates');
+    $routes->post('api/certificates/generate', 'dashboard\Documents::generateCertificate');
     // generate loa
     $routes->get('documents/generate-loa/(:num)/(:num)', 'dashboard\Documents::generateLoa/$1/$2');
 

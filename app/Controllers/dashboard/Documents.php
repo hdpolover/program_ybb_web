@@ -92,16 +92,16 @@ class Documents extends BaseController
         ];
         // Fetch specific document details from API
         $documentData = $this->makeGetRequest('/program-documents/' . $id, [], false);
-        $documentFile = $this->makePostRequest('/program-documents/participant-file',$params, [], false, false);
+        $documentFile = $this->makePostRequest('/program-documents/participant-file', $params, [], false, false);
 
         if (empty($documentData)) {
             session()->setFlashdata('error', 'Document not found.');
             return redirect()->to(base_url('documents/program'));
         }
-            // echo '<pre>';
-            // var_dump($documentFile);
-            // echo '</pre>';
-            // exit;
+        // echo '<pre>';
+        // var_dump($documentFile);
+        // echo '</pre>';
+        // exit;
         // if document is of type loa, then get the document details from the API
         if ($documentData['type'] === 'loa') {
             $loaTemplate = $this->makeGetRequest('/loa-templates/program-documents/' . $id, [], false);
@@ -145,20 +145,20 @@ class Documents extends BaseController
         }
 
         // Jika file sudah ada, hapus dulu agar bisa direplace
-        if (file_exists($uploadPath.'/'.$newFileName)) {
-            unlink($uploadPath.'/'.$newFileName);
+        if (file_exists($uploadPath . '/' . $newFileName)) {
+            unlink($uploadPath . '/' . $newFileName);
         }
-        
+
         // Pindahkan file ke folder baru
         $file->move($uploadPath, $newFileName);
-        $fileurl = "https://storage.ybbfoundation.com/program-documents/{$programdocId}/".$newFileName;
+        $fileurl = "https://storage.ybbfoundation.com/program-documents/{$programdocId}/" . $newFileName;
         $agreementLeter = [
             'participant_id' => $participantId,
             'program_document_id' => $programdocId,
             'file_url' => $fileurl
         ];
-        
-        $response = $this->makePostRequest('/program-documents/upload', $agreementLeter,[],false,false);
+
+        $response = $this->makePostRequest('/program-documents/upload', $agreementLeter, [], false, false);
 
         // echo '<pre>';
         // var_dump($response);
@@ -204,7 +204,95 @@ class Documents extends BaseController
 
     public function certificates()
     {
-        return $this->render('participant/documents/certificates');
+        // Get current participant ID from session
+        $currentParticipantId = session()->get('current_participant_id');
+
+        // Safety check - if no participant ID, redirect to dashboard
+        if (empty($currentParticipantId)) {
+            return redirect()->to(base_url('dashboard'));
+        }
+
+        // Fetch participant certificates from API
+        $certificatesData = $this->makeGetRequest('/certificates/participant/' . $currentParticipantId, [], false, false);
+
+        // Handle API response - check if data exists and has the expected structure
+        $processedData = null;
+        if ($certificatesData && is_array($certificatesData)) {
+            if (isset($certificatesData['data'])) {
+                // API returned {data: {...}} structure
+                $processedData = $certificatesData['data'];
+            } elseif (isset($certificatesData['participant']) || isset($certificatesData['certificates'])) {
+                // API returned direct structure
+                $processedData = $certificatesData;
+            }
+        }
+
+        // If API returns null or unexpected structure, set empty data
+        if (!$processedData) {
+            $processedData = [
+                'participant' => null,
+                'certificates' => [],
+                'total_count' => 0
+            ];
+        }
+
+        $data = [
+            'title' => 'My Certificates',
+            'certificates_data' => $processedData,
+        ];
+
+        return $this->render('participant/documents/certificates', $data);
+    }
+
+    /**
+     * Generate certificate via API call
+     */
+    public function generateCertificate()
+    {
+        // Only allow AJAX requests
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Invalid request method']);
+        }
+
+        // Get JSON input
+        $input = $this->request->getJSON(true);
+        
+        if (empty($input['participant_id']) || empty($input['award_id'])) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Participant ID and Award ID are required']);
+        }
+
+        // Get current participant ID from session for validation
+        $currentParticipantId = session()->get('current_participant_id');
+        if (empty($currentParticipantId) || $input['participant_id'] != $currentParticipantId) {
+            return $this->response->setStatusCode(401)->setJSON(['error' => 'Unauthorized access']);
+        }
+
+        try {
+            // Call API to generate certificate with the correct request body
+            $generateResult = $this->makePostRequest('/certificates/generate', [
+                'participant_id' => (int)$input['participant_id'],
+                'award_id' => (int)$input['award_id']
+            ], [], false, false);
+
+            if ($generateResult && isset($generateResult['status']) && $generateResult['status']) {
+                return $this->response->setJSON([
+                    'status' => true,
+                    'data' => $generateResult['data'] ?? null,
+                    'message' => $generateResult['data']['message'] ?? 'Certificate generated successfully'
+                ]);
+            } else {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => false,
+                    'message' => $generateResult['message'] ?? 'Failed to generate certificate'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Certificate Generation Error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => false,
+                'message' => 'An error occurred while generating the certificate'
+            ]);
+        }
     }
 
     /**
