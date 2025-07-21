@@ -43,9 +43,9 @@
                             <?= $this->include('landing/program-detail/components/program-rundowns') ?>
                         <?php endif; ?>
 
-                        <!-- Program Timeline -->
+                        <!-- Program Schedules -->
                         <?php if (isset($schedules) && !empty($schedules)): ?>
-                            <?= $this->include('landing/program-detail/timeline') ?>
+                            <?= $this->include('landing/program-detail/components/program-schedules') ?>
                         <?php endif; ?>
 
                         <!-- Program Faqs -->

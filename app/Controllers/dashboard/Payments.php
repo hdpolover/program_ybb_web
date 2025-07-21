@@ -57,28 +57,59 @@ class Payments extends BaseController
             });
         }
 
-        // Handle registration
+        // Handle registration with funding type filtering
         $registrationDone = false;
+        $registrationPayments = [];
+        $hasSuccessfulRegistration = false;
+        $successfulRegistrationType = null;
+        
+        // First pass: check for successful registrations and their types
+        foreach ($byCategory['registration'] as $payment) {
+            $paymentId = $payment['id'];
+            $isPaid = $isCompleted($paymentId);
+            
+            if ($isPaid) {
+                $hasSuccessfulRegistration = true;
+                $successfulRegistrationType = $payment['type'];
+                $registrationPayments[] = $payment;
+                $registrationDone = true;
+            }
+        }
+        
+        // Second pass: handle unsuccessful attempts and active registrations
         foreach ($byCategory['registration'] as $payment) {
             $paymentId = $payment['id'];
             $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
             $isPaid = $isCompleted($paymentId);
             $hasTried = $hasAnyAttempt($paymentId);
-
+            
+            // Skip if already added as successful
             if ($isPaid) {
-                $visiblePayments[] = $payment;
-                $registrationDone = true;
-                break; // No need to show other registration payments
+                continue;
             }
-
-            if ($hasTried || $isWithinDateRange) {
-                $visiblePayments[] = $payment;
+            
+            // If there's a successful registration, only show unsuccessful attempts of different funding types
+            // or unsuccessful attempts of the same type (for history)
+            if ($hasSuccessfulRegistration) {
+                // Show unsuccessful attempts regardless of type (for payment history)
+                if ($hasTried) {
+                    $registrationPayments[] = $payment;
+                }
+            } else {
+                // No successful registration yet
+                // Show if participant has attempted payment OR if within date range
+                if ($hasTried || $isWithinDateRange) {
+                    $registrationPayments[] = $payment;
+                }
             }
         }
+        
+        // Add all registration payments to visible payments
+        $visiblePayments = array_merge($visiblePayments, $registrationPayments);
 
         $completed['registration'] = $registrationDone;
 
-        // Handle program_fee_1
+        // Handle program_fee_1 - show if registration is done OR if participant has attempted this payment
         if ($completed['registration']) {
             foreach ($byCategory['program_fee_1'] as $payment) {
                 $paymentId = $payment['id'];
@@ -90,24 +121,57 @@ class Payments extends BaseController
                     $completed['program_fee_1'] = true;
                 }
 
-                if ($isWithinDateRange || $hasTried) {
+                // Show if participant has attempted payment OR if within date range
+                if ($hasTried || $isWithinDateRange) {
+                    $visiblePayments[] = $payment;
+                }
+            }
+        } else {
+            // Even if registration is not complete, show program_fee_1 if participant has attempted it
+            foreach ($byCategory['program_fee_1'] as $payment) {
+                $paymentId = $payment['id'];
+                $hasTried = $hasAnyAttempt($paymentId);
+                $isPaid = $isCompleted($paymentId);
+
+                if ($isPaid) {
+                    $completed['program_fee_1'] = true;
+                }
+
+                if ($hasTried) {
                     $visiblePayments[] = $payment;
                 }
             }
         }
 
-        // Handle program_fee_2
+        // Handle program_fee_2 - show if program_fee_1 is done OR if participant has attempted this payment
         if ($completed['program_fee_1']) {
             foreach ($byCategory['program_fee_2'] as $payment) {
                 $paymentId = $payment['id'];
                 $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
+                $isPaid = $isCompleted($paymentId);
                 $hasTried = $hasAnyAttempt($paymentId);
 
                 if ($isPaid) {
                     $completed['program_fee_2'] = true;
                 }
 
-                if ($isWithinDateRange || $hasTried) {
+                // Show if participant has attempted payment OR if within date range
+                if ($hasTried || $isWithinDateRange) {
+                    $visiblePayments[] = $payment;
+                }
+            }
+        } else {
+            // Even if program_fee_1 is not complete, show program_fee_2 if participant has attempted it
+            foreach ($byCategory['program_fee_2'] as $payment) {
+                $paymentId = $payment['id'];
+                $hasTried = $hasAnyAttempt($paymentId);
+                $isPaid = $isCompleted($paymentId);
+
+                if ($isPaid) {
+                    $completed['program_fee_2'] = true;
+                }
+
+                if ($hasTried) {
                     $visiblePayments[] = $payment;
                 }
             }
@@ -133,6 +197,9 @@ class Payments extends BaseController
         $participantPayments = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], false);
         $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);        // Safety check - if not participant payments, skip loop
 
+        // Store original participant payments for visibility logic
+        $originalParticipantPayments = $participantPayments ?? [];
+        
         if (empty($participantPayments)) {
             $participantPayments = [];
         } else {
@@ -161,8 +228,8 @@ class Payments extends BaseController
             }
         }
 
-        // Get visible program payments
-        $programPayments = $this->getVisibleProgramPayments($programPayments, $participantPayments);
+        // Get visible program payments using original structure
+        $programPayments = $this->getVisibleProgramPayments($programPayments, $originalParticipantPayments);
 
         $data = [
             'title' => 'Payments',
