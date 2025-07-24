@@ -8,6 +8,8 @@ class Dashboard extends BaseController
 {
     public function index()
     {
+        $startTime = microtime(true);
+        
         // Get current program ID from session
         $currentProgramId = session()->get('current_program_id');
         $currentParticipantId = session()->get('current_participant_id');
@@ -22,13 +24,32 @@ class Dashboard extends BaseController
             }
         }
 
-        // Get payment status
+        // Initialize cache service
+        $cache = \Config\Services::cache();
+
+        // Get payment status with caching
         $paymentStatus = 'completed'; // Default
         $paymentDueDate = null;
+        $hasSubmittedForm = false;
         
         if ($currentParticipantId) {
-            // Get participant payments
-            $participantPayments = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
+            // Cache participant payments (5 minute cache)
+            $paymentsCacheKey = "participant_payments_" . $currentParticipantId . "_v1";
+            $participantPayments = $cache->get($paymentsCacheKey);
+            
+            if ($participantPayments === null) {
+                $paymentsStartTime = microtime(true);
+                $participantPayments = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
+                $paymentsLoadTime = round((microtime(true) - $paymentsStartTime) * 1000, 2);
+                
+                // Cache for 5 minutes (300 seconds)
+                if ($participantPayments !== null) {
+                    $cache->save($paymentsCacheKey, $participantPayments, 300);
+                    log_message('info', "Participant payments cached for {$currentParticipantId} (loaded in {$paymentsLoadTime}ms)");
+                }
+            } else {
+                log_message('debug', "Participant payments cache hit for {$currentParticipantId}");
+            }
             
             // Check if any payment is pending
             $hasSuccessfulPayment = false;
@@ -50,9 +71,23 @@ class Dashboard extends BaseController
                 }
             }
             
-            // Get form submission status
-            $participantStatuses = $this->makeGetRequest('/participants/' . $currentParticipantId . '/status', [], false, false);
-            $hasSubmittedForm = false;
+            // Cache form submission status (10 minute cache)
+            $statusCacheKey = "participant_status_" . $currentParticipantId . "_v1";
+            $participantStatuses = $cache->get($statusCacheKey);
+            
+            if ($participantStatuses === null) {
+                $statusStartTime = microtime(true);
+                $participantStatuses = $this->makeGetRequest('/participants/' . $currentParticipantId . '/status', [], false, false);
+                $statusLoadTime = round((microtime(true) - $statusStartTime) * 1000, 2);
+                
+                // Cache for 10 minutes (600 seconds)
+                if ($participantStatuses !== null) {
+                    $cache->save($statusCacheKey, $participantStatuses, 600);
+                    log_message('info', "Participant status cached for {$currentParticipantId} (loaded in {$statusLoadTime}ms)");
+                }
+            } else {
+                log_message('debug', "Participant status cache hit for {$currentParticipantId}");
+            }
             
             if (isset($participantStatuses) && isset($participantStatuses['form_status']) && $participantStatuses['form_status'] === '2') {
                 $hasSubmittedForm = true;
@@ -65,8 +100,11 @@ class Dashboard extends BaseController
             'currentProgram' => $currentProgram,
             'paymentStatus' => $paymentStatus,
             'paymentDueDate' => $paymentDueDate,
-            'hasSubmittedForm' => $hasSubmittedForm ?? false,
+            'hasSubmittedForm' => $hasSubmittedForm,
         ];
+
+        $totalLoadTime = round((microtime(true) - $startTime) * 1000, 2);
+        log_message('info', "Dashboard loaded in {$totalLoadTime}ms");
 
         return $this->render('participant/dashboard/index', $data);
     }

@@ -102,8 +102,9 @@ abstract class BaseController extends Controller
 
         // Handle special cases for localhost and different environments
         if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
-            $this->currentUrl = "koreayouthsummit.com";
-            log_message('debug', 'Detected localhost, setting currentUrl to middleeastyouthsummit.com');
+            // You can change this to test different domains
+            $this->currentUrl = "japanyouthsummit.com"; // Changed from koreayouthsummit.com for testing
+            log_message('debug', 'Detected localhost, setting currentUrl to japanyouthsummit.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
             // Check both baseDomain and HTTP_HOST to be safe
@@ -118,7 +119,35 @@ abstract class BaseController extends Controller
         $this->currentUrl = preg_replace('~^https?://~', '', $this->currentUrl);
         log_message('debug', 'Final currentUrl value: ' . $this->currentUrl);
 
-        $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
+        // Get web settings with caching
+        $this->loadWebSettingsWithCache();
+    }
+
+    /**
+     * Load web settings with caching
+     */
+    protected function loadWebSettingsWithCache(): void
+    {
+        $cacheKey = "web_settings_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
+        $cache = \Config\Services::cache();
+        
+        // Try to get from cache first
+        $webSettingData = $cache->get($cacheKey);
+        
+        if ($webSettingData === null) {
+            // Cache miss - fetch from API
+            $startTime = microtime(true);
+            $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
+            $loadTime = round((microtime(true) - $startTime) * 1000, 2);
+            
+            // Cache for 1 hour (3600 seconds)
+            if (!empty($webSettingData)) {
+                $cache->save($cacheKey, $webSettingData, 3600);
+                log_message('info', "Web settings cached for {$this->currentUrl} (loaded in {$loadTime}ms)");
+            }
+        } else {
+            log_message('debug', "Web settings cache hit for {$this->currentUrl}");
+        }
 
         $siteLogoUrl = $webSettingData['logo_url'] ?? null;
         // Debug log for web settings data
@@ -132,32 +161,9 @@ abstract class BaseController extends Controller
 
         // Get the latest program dates if program_category_id exists
         if ($programCategoryId) {
-            // Make API request to get programs for this category
-            $programs = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
-
-            // Log the programs data for debugging
-            log_message('debug', 'BaseController - Programs retrieved: ' . json_encode($programs));
-
-            // Sort programs by start_date (descending) to get the latest one
-            if (!empty($programs) && is_array($programs)) {
-                usort($programs, function ($a, $b) {
-                    return strtotime($b['start_date'] ?? '0') - strtotime($a['start_date'] ?? '0');
-                });
-
-                // Get start_date and end_date from the latest program
-                $latestProgram = $programs[0] ?? null;
-                if ($latestProgram && isset($latestProgram['start_date']) && isset($latestProgram['end_date'])) {
-                    // Add these dates to the webSettings array
-                    $webSettingData['event_start_date'] = $latestProgram['start_date'];
-                    $webSettingData['event_end_date'] = $latestProgram['end_date'];
-
-                    log_message('debug', 'BaseController - Latest program dates set: ' .
-                        $latestProgram['start_date'] . ' to ' . $latestProgram['end_date']);
-                }
-            } else {
-                log_message('warning', 'BaseController - No programs found for category ID: ' . $programCategoryId);
-            }
+            $this->loadProgramDataWithCache($programCategoryId, $webSettingData);
         }
+        
         // Check if the web settings data is empty and handle accordingly
         if (empty($webSettingData)) {
             // Just store null settings instead of redirecting here
@@ -192,6 +198,56 @@ abstract class BaseController extends Controller
                 header('Location: ' . base_url('maintenance'));
                 exit();
             }
+        }
+    }
+
+    /**
+     * Load program data with caching
+     */
+    protected function loadProgramDataWithCache($programCategoryId, &$webSettingData): void
+    {
+        $cacheKey = "programs_category_" . $programCategoryId . "_v1";
+        $cache = \Config\Services::cache();
+        
+        // Try to get from cache first
+        $programs = $cache->get($cacheKey);
+        
+        if ($programs === null) {
+            // Cache miss - fetch from API
+            $startTime = microtime(true);
+            $programs = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
+            $loadTime = round((microtime(true) - $startTime) * 1000, 2);
+            
+            // Cache for 30 minutes (1800 seconds)
+            if (!empty($programs)) {
+                $cache->save($cacheKey, $programs, 1800);
+                log_message('info', "Programs data cached for category {$programCategoryId} (loaded in {$loadTime}ms)");
+            }
+        } else {
+            log_message('debug', "Programs data cache hit for category {$programCategoryId}");
+        }
+
+        // Log the programs data for debugging
+        log_message('debug', 'BaseController - Programs retrieved: ' . json_encode($programs));
+
+        // Sort programs by start_date (descending) to get the latest one
+        if (!empty($programs) && is_array($programs)) {
+            usort($programs, function ($a, $b) {
+                return strtotime($b['start_date'] ?? '0') - strtotime($a['start_date'] ?? '0');
+            });
+
+            // Get start_date and end_date from the latest program
+            $latestProgram = $programs[0] ?? null;
+            if ($latestProgram && isset($latestProgram['start_date']) && isset($latestProgram['end_date'])) {
+                // Add these dates to the webSettings array
+                $webSettingData['event_start_date'] = $latestProgram['start_date'];
+                $webSettingData['event_end_date'] = $latestProgram['end_date'];
+
+                log_message('debug', 'BaseController - Latest program dates set: ' .
+                    $latestProgram['start_date'] . ' to ' . $latestProgram['end_date']);
+            }
+        } else {
+            log_message('warning', 'BaseController - No programs found for category ID: ' . $programCategoryId);
         }
     }
 

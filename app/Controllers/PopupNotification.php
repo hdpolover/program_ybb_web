@@ -28,12 +28,36 @@ class PopupNotification extends BaseController
      */
     public function getRecentRegistrations()
     {
+        $startTime = microtime(true);
+        
         // Set content type as JSON
         $this->response->setContentType('application/json');
 
         try {
-            // Get a list of names and programs for recent signups
-            $notif = $this->makeGetRequest('/notifications/random-registration?web_url=' . $this->currentUrl);
+            // Use caching for notification data (2 minute cache)
+            $cacheKey = "popup_notifications_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
+            $cache = \Config\Services::cache();
+            
+            // Try to get from cache first
+            $notif = $cache->get($cacheKey);
+            
+            if ($notif === null) {
+                // Cache miss - fetch from API
+                $apiStartTime = microtime(true);
+                $notif = $this->makeGetRequest('/notifications/random-registration?web_url=' . $this->currentUrl);
+                $apiLoadTime = round((microtime(true) - $apiStartTime) * 1000, 2);
+                
+                // Cache for 2 minutes (120 seconds) - frequent enough for "recent" notifications
+                if (!empty($notif)) {
+                    $cache->save($cacheKey, $notif, 120);
+                    log_message('info', "Popup notifications cached for {$this->currentUrl} (API load: {$apiLoadTime}ms)");
+                }
+            } else {
+                log_message('debug', "Popup notifications cache hit for {$this->currentUrl}");
+            }
+
+            $totalLoadTime = round((microtime(true) - $startTime) * 1000, 2);
+            log_message('debug', "Popup notification loaded in {$totalLoadTime}ms");
 
             return $this->response->setJSON([
                 'success' => true,
@@ -44,6 +68,14 @@ class PopupNotification extends BaseController
         } catch (\Exception $e) {
             // do nothing and log error
             log_message('error', 'Error fetching recent registrations: ' . $e->getMessage());
+            
+            // Return a fallback response
+            return $this->response->setJSON([
+                'success' => false,
+                'data' => [
+                    'notif' => 'Welcome to our community!',
+                ]
+            ]);
         }
     }
 }

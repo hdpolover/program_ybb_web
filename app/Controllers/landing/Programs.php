@@ -8,8 +8,29 @@ class Programs extends BaseController
 {
     public function index()
     {
-        // Get program data from API
-        $programs = $this->makeGetRequest('/landing/programs?web_url=' . $this->currentUrl);
+        $startTime = microtime(true);
+        
+        // Use caching for programs data
+        $cacheKey = "landing_programs_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
+        $cache = \Config\Services::cache();
+        
+        // Try to get from cache first
+        $programs = $cache->get($cacheKey);
+        
+        if ($programs === null) {
+            // Cache miss - fetch from API
+            $apiStartTime = microtime(true);
+            $programs = $this->makeGetRequest('/landing/programs?web_url=' . $this->currentUrl);
+            $apiLoadTime = round((microtime(true) - $apiStartTime) * 1000, 2);
+            
+            // Cache for 20 minutes (1200 seconds)
+            if (!empty($programs)) {
+                $cache->save($cacheKey, $programs, 1200);
+                log_message('info', "Programs data cached for {$this->currentUrl} (API load: {$apiLoadTime}ms)");
+            }
+        } else {
+            log_message('debug', "Programs data cache hit for {$this->currentUrl}");
+        }
 
         $otherPrograms = $programs['otherPrograms'] ?? [];
 
@@ -26,6 +47,9 @@ class Programs extends BaseController
             'programs' => $programs['programs'] ?? [],
             'otherPrograms' => $otherPrograms,
         ];
+
+        $totalLoadTime = round((microtime(true) - $startTime) * 1000, 2);
+        log_message('info', "Programs page loaded in {$totalLoadTime}ms");
 
         return $this->render('landing/programs', $data);
     }

@@ -189,6 +189,11 @@ $routes->get('payments/receipt/(:num)', 'dashboard\Payments::downloadReceipt/$1'
 // API route for getting current user data
 $routes->get('api/user/current', 'TopbarController::getCurrentUser');
 
+// Cache management routes (admin only in production)
+$routes->get('cache/clear', 'CacheController::clearAll');
+$routes->get('cache/clear/(:any)', 'CacheController::clearPattern/$1');
+$routes->get('cache/stats', 'CacheController::stats');
+
 /*
  * --------------------------------------------------------------------
  * Additional Routing

@@ -331,12 +331,12 @@ document.addEventListener("DOMContentLoaded", function() {
             })
             .catch(error => console.error('Error fetching notification data:', error));
         
-        // Schedule next toast with random interval between 30 seconds and 1 minute
-        const nextInterval = Math.floor(Math.random() * (60000 - 30000 + 1)) + 30000;
+        // Schedule next toast with random interval between 2-5 minutes (reduced frequency)
+        const nextInterval = Math.floor(Math.random() * (300000 - 120000 + 1)) + 120000;
         setTimeout(showRegistrationToast, nextInterval);
     }
     
-    // Start showing registration toasts after a short delay
-    setTimeout(showRegistrationToast, 3000);
+    // Start showing registration toasts after initial page load
+    setTimeout(showRegistrationToast, 10000);
 });
 </script>
