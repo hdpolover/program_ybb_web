@@ -295,6 +295,9 @@
     <!--Swiper slider js-->
     <script src="/assets/libs/swiper/swiper-bundle.min.js"></script>
 
+    <!-- Gallery modal initialization -->
+    <script src="/assets/js/pages/gallery-modal.init.js"></script>
+
     <!-- landing init -->
     <script src="/assets/js/pages/landing.init.js"></script>
     <script src="/assets/js/pages/nft-landing.init.js"></script>

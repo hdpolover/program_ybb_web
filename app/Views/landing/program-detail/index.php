@@ -5,6 +5,8 @@
     <?= $this->include('partials/title-meta', ['meta_title' => "Program Details"]) ?>
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
+    <!-- GLightbox css -->
+    <link rel="stylesheet" href="/assets/libs/glightbox/css/glightbox.min.css">
     <?= $this->include('partials/head-css') ?>
 </head>
 
@@ -54,6 +56,7 @@
         <!-- end Program Detail section -->
 
         <!-- Photo Gallery Section -->
+        <?= $this->include('landing/program-detail/gallery') ?>
 
         <?= $this->include('landing/common/footer') ?>
     </div>
@@ -64,22 +67,8 @@
     <!--Swiper slider js-->
     <script src="/assets/libs/swiper/swiper-bundle.min.js"></script>
 
-    <!-- Initialize Lightbox for Gallery -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Initialize image popups if Magnific Popup is available
-            if (typeof $.fn.magnificPopup !== 'undefined') {
-                $('.image-popup').magnificPopup({
-                    type: 'image',
-                    closeOnContentClick: true,
-                    mainClass: 'mfp-img-mobile',
-                    image: {
-                        verticalFit: true
-                    }
-                });
-            }
-        });
-    </script>
+    <!-- GLightbox js -->
+    <script src="/assets/libs/glightbox/js/glightbox.min.js"></script>
 
     <!-- landing init -->
     <script src="/assets/js/pages/landing.init.js"></script>
