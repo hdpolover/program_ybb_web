@@ -76,7 +76,7 @@ class DashboardOptimized extends BaseController
     }
 
     /**
-     * Fetch dashboard data with caching and parallel processing
+     * Fetch dashboard data without caching for real-time updates
      */
     private function fetchDashboardDataParallel(int $participantId): array
     {
@@ -88,12 +88,12 @@ class DashboardOptimized extends BaseController
         ];
 
         try {
-            // Fetch payment status with caching (5 minute cache)
+            // Fetch payment status directly (no caching)
             $paymentStatus = $this->getPaymentStatusCached($participantId);
             $result['paymentStatus'] = $paymentStatus['status'];
             $result['paymentDueDate'] = $paymentStatus['dueDate'];
 
-            // Fetch form status with caching (10 minute cache)
+            // Fetch form status directly (no caching)
             $formStatus = $this->getFormStatusCached($participantId);
             $result['hasSubmittedForm'] = $formStatus;
 
@@ -106,60 +106,52 @@ class DashboardOptimized extends BaseController
     }
 
     /**
-     * Get payment status with caching
+     * Get payment status without caching for real-time data
      */
     private function getPaymentStatusCached(int $participantId): array
     {
-        $cacheKey = $this->cacheService->getParticipantPaymentsKey($participantId);
+        $participantPayments = $this->makeGetRequest('/payments/participants/' . $participantId, [], false, false);
         
-        return $this->cacheService->remember($cacheKey, function() use ($participantId) {
-            $participantPayments = $this->makeGetRequest('/payments/participants/' . $participantId, [], false, false);
-            
-            $status = 'completed';
-            $dueDate = null;
-            $hasSuccessfulPayment = false;
-            
-            if (isset($participantPayments) && is_array($participantPayments)) {
-                foreach ($participantPayments as $payment) {
-                    if (isset($payment['status']) && $payment['status'] === '2') {
-                        $hasSuccessfulPayment = true;
-                        break;
-                    }
-                }
-                
-                if (!$hasSuccessfulPayment) {
-                    $status = 'pending';
-                    
-                    // Get due date from current program if available
-                    $currentProgram = session()->get('current_program');
-                    if (isset($currentProgram['payment_due_date'])) {
-                        $dueDate = $currentProgram['payment_due_date'];
-                    }
+        $status = 'completed';
+        $dueDate = null;
+        $hasSuccessfulPayment = false;
+        
+        if (isset($participantPayments) && is_array($participantPayments)) {
+            foreach ($participantPayments as $payment) {
+                if (isset($payment['status']) && $payment['status'] === '2') {
+                    $hasSuccessfulPayment = true;
+                    break;
                 }
             }
             
-            return [
-                'status' => $status,
-                'dueDate' => $dueDate,
-                'lastUpdated' => time()
-            ];
-        }, 300); // 5 minute cache
+            if (!$hasSuccessfulPayment) {
+                $status = 'pending';
+                
+                // Get due date from current program if available
+                $currentProgram = session()->get('current_program');
+                if (isset($currentProgram['payment_due_date'])) {
+                    $dueDate = $currentProgram['payment_due_date'];
+                }
+            }
+        }
+        
+        return [
+            'status' => $status,
+            'dueDate' => $dueDate,
+            'lastUpdated' => time()
+        ];
     }
 
     /**
-     * Get form submission status with caching
+     * Get form submission status without caching for real-time data
      */
     private function getFormStatusCached(int $participantId): bool
     {
-        $cacheKey = $this->cacheService->getParticipantStatusKey($participantId);
+        $participantStatuses = $this->makeGetRequest('/participants/' . $participantId . '/status', [], false, false);
         
-        return $this->cacheService->remember($cacheKey, function() use ($participantId) {
-            $participantStatuses = $this->makeGetRequest('/participants/' . $participantId . '/status', [], false, false);
-            
-            return isset($participantStatuses) && 
-                   isset($participantStatuses['form_status']) && 
-                   $participantStatuses['form_status'] === '2';
-        }, 600); // 10 minute cache
+        return isset($participantStatuses) && 
+               isset($participantStatuses['form_status']) && 
+               $participantStatuses['form_status'] === '2';
     }
 
     /**

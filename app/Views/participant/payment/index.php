@@ -162,7 +162,8 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                         $isPaid = false;
                                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                                             foreach ($participantPayments as $payment) {
-                                                                                if ($payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
+                                                                                // Safety check for program_payment_id existence
+                                                                                if (isset($payment['program_payment_id']) && $payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
                                                                                     $isPaid = true;
                                                                                     break;
                                                                                 }
@@ -209,7 +210,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                         // Check if this payment is already in progress or paid
                                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                                             foreach ($participantPayments as $payment) {
-                                                                                if ($payment['program_payment_id'] == $programPayment['id']) {
+                                                                                if (isset($payment['program_payment_id']) && $payment['program_payment_id'] == $programPayment['id']) {
                                                                                     if ($payment['status'] == 2) {
                                                                                         $isPaid = true;
                                                                                         break;
@@ -264,7 +265,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                         // Check if this program payment has been completed
                                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                                             foreach ($participantPayments as $payment) {
-                                                                                if ($payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
+                                                                                if (isset($payment['program_payment_id']) && $payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
                                                                                     $isPaid = true;
                                                                                     break;
                                                                                 }
@@ -311,7 +312,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                         // Check if this payment is already successfully paid
                                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                                             foreach ($participantPayments as $payment) {
-                                                                                if ($payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
+                                                                                if (isset($payment['program_payment_id']) && $payment['program_payment_id'] == $programPayment['id'] && $payment['status'] == 2) {
                                                                                     $isPaid = true;
                                                                                     break;
                                                                                 }
@@ -395,7 +396,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
 
                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                             foreach ($participantPayments as $participantPayment) {
-                                                                if ($participantPayment['program_payment_id'] == $programPayment['id']) {
+                                                                if (isset($participantPayment['program_payment_id']) && $participantPayment['program_payment_id'] == $programPayment['id']) {
                                                                     // Track the latest payment attempt by timestamp
                                                                     $paymentTimestamp = strtotime($participantPayment['created_at'] ?? '0');
                                                                     if ($paymentTimestamp > $latestTimestamp) {
@@ -422,7 +423,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
 
                                                         if (isset($participantPayments) && !empty($participantPayments)) {
                                                             foreach ($participantPayments as $participantPayment) {
-                                                                if ($participantPayment['program_payment_id'] == $programPayment['id']) {
+                                                                if (isset($participantPayment['program_payment_id']) && $participantPayment['program_payment_id'] == $programPayment['id']) {
                                                                     // Check if this is a successful payment
                                                                     if ($participantPayment['status'] == 2) {
                                                                         $hasSuccessfulPayment = true;

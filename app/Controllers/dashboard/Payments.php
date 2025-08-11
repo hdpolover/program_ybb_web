@@ -10,9 +10,14 @@ class Payments extends BaseController
     {
         $today = date('Y-m-d H:i:s');
 
-        // Group participant payments by program_payment_id
+        // Group participant payments by program_payment_id (with safety check)
         $participantPaymentMap = [];
         foreach ($participantPayments as $pmt) {
+            // Safety check for program_payment_id existence
+            if (!isset($pmt['program_payment_id'])) {
+                log_message('warning', 'Participant payment missing program_payment_id: ' . json_encode($pmt));
+                continue; // Skip this payment if program_payment_id is missing
+            }
             $participantPaymentMap[$pmt['program_payment_id']][] = $pmt;
         }
 
@@ -194,8 +199,16 @@ class Payments extends BaseController
     public function index()
     {
         $programPayments = $this->makeGetRequest('/program-payments/program/' . session()->get('current_program_id'), [], false);
-        $participantPayments = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], false);
-        $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);        // Safety check - if not participant payments, skip loop
+        $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], false);
+        $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);
+        
+        // Extract the actual payments array from the API response
+        $participantPayments = [];
+        if (isset($participantPaymentsResponse['payments']) && is_array($participantPaymentsResponse['payments'])) {
+            $participantPayments = $participantPaymentsResponse['payments'];
+        }
+        
+        // Safety check - if not participant payments, skip loop
 
         // Store original participant payments for visibility logic
         $originalParticipantPayments = $participantPayments ?? [];
@@ -206,8 +219,13 @@ class Payments extends BaseController
             // Convert participant payments to a more usable format, prioritizing successful payments
             $organizedPayments = [];
 
-            // First, group all payments by program_payment_id
+            // First, group all payments by program_payment_id (with safety check)
             foreach ($participantPayments as $payment) {
+                // Safety check for program_payment_id existence
+                if (!isset($payment['program_payment_id'])) {
+                    log_message('warning', 'Payment missing program_payment_id: ' . json_encode($payment));
+                    continue; // Skip this payment if program_payment_id is missing
+                }
                 $organizedPayments[$payment['program_payment_id']][] = $payment;
             }
 
