@@ -93,6 +93,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->get('api/test/abstract-version-creation', 'AjaxHandler::testAbstractVersionCreation'); // Debug endpoint
 
     $routes->get('dashboard', 'dashboard\Dashboard::index');
+    $routes->post('dashboard/switch-category', 'dashboard\Dashboard::switchCategory');
 
     // announcements
     $routes->get('dashboard-announcements', 'dashboard\Announcements::index');
@@ -143,6 +144,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->get('payments', 'dashboard\Payments::index');
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
     $routes->post('payments/make', 'dashboard\Payments::makePayment');
+    $routes->get('payments/test-api', 'dashboard\Payments::testPaymentAPI'); // Temporary debug endpoint
+    $routes->get('debug/session', 'DebugController::sessionData'); // Debug session endpoint
     // documents
     $routes->get('documents/program', 'dashboard\Documents::index');
     $routes->get('documents/program/details/(:num)', 'dashboard\Documents::details/$1');

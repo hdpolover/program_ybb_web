@@ -319,8 +319,13 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                             }
                                                                         }
 
-                                                                        // Only include in total if payment is not overdue and not already paid
-                                                                        if (!$isPaid && $currentDate <= $endDate) {
+                                                                        // Check participant access based on category only
+                                                                        $paymentType = $programPayment['type'] ?? 'all';
+                                                                        $canMakePayment = ($paymentType === 'all') || ($paymentType === $participantCategory);
+
+                                                                        // Only include in total if participant can make payment (based on category), payment is not overdue and not already paid
+                                                                        // Note: We don't include payments with history but wrong category in statistics
+                                                                        if ($canMakePayment && !$isPaid && $currentDate <= $endDate) {
                                                                             $totalAmount += (float)$programPayment['usd_amount'];
                                                                         }
                                                                     }
@@ -477,6 +482,27 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                             $dueClass = 'info';
                                                         }
 
+                                                        // Calculate payment timing variables for each payment
+                                                        $paymentHasStarted = $currentDate >= $startDate;
+                                                        $paymentHasEnded = $currentDate > $endDate;
+                                                        
+                                                        // Calculate days until payment start
+                                                        $daysUntilStart = 0;
+                                                        $comingSoonMessage = '';
+                                                        
+                                                        if (!$paymentHasStarted) {
+                                                            $interval = $currentDate->diff($startDate);
+                                                            $daysUntilStart = $interval->days;
+                                                            
+                                                            if ($daysUntilStart == 0) {
+                                                                $comingSoonMessage = 'Payment opens today at ' . $startDate->format('H:i');
+                                                            } elseif ($daysUntilStart == 1) {
+                                                                $comingSoonMessage = 'Payment opens tomorrow (' . $startDate->format('M d') . ') at ' . $startDate->format('H:i');
+                                                            } else {
+                                                                $comingSoonMessage = 'Payment opens in ' . $daysUntilStart . ' days on ' . $startDate->format('M d, Y') . ' at ' . $startDate->format('H:i');
+                                                            }
+                                                        }
+
                                                         $programPayment['status'] = $status;
                                                         ?>
                                                         <tr>
@@ -484,6 +510,15 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                 <?= $key + 1; ?>
                                                             </td>
                                                             <td> <strong><?= $programPayment['name']; ?></strong>
+                                                                <?php
+                                                                    // Show badge for category mismatch (payment history)
+                                                                    $paymentType = $programPayment['type'] ?? 'all';
+                                                                    if ($paymentType !== 'all' && $paymentType !== $participantCategory): ?>
+                                                                        <span class="badge bg-info ms-2" data-bs-toggle="tooltip" title="Payment History - This payment type (<?= ucfirst($paymentType); ?>) doesn't match your current category (<?= ucfirst($participantCategory); ?>), but shown because you have payment history">
+                                                                            <i class="ri-history-line"></i> History
+                                                                        </span>
+                                                                    <?php endif;
+                                                                ?>
                                                                 <?php
                                                                 // Normalize category names
                                                                 $normalizedCategory = $programPayment['category'];
@@ -525,7 +560,20 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                             </td>
                                                             <td><?= formatCurrency($programPayment['usd_amount'], 'USD'); ?></td>
                                                             <td>
-                                                                <?php if ($programPayment['status'] == 'unpaid'): ?>
+                                                                <?php if (!$paymentHasStarted && $programPayment['status'] == 'unpaid'): ?>
+                                                                    <span class="badge bg-info-subtle text-info" data-bs-toggle="tooltip" title="<?= htmlspecialchars($comingSoonMessage); ?>">
+                                                                        Coming Soon
+                                                                        <?php if ($daysUntilStart == 0): ?>
+                                                                            (Today)
+                                                                        <?php elseif ($daysUntilStart == 1): ?>
+                                                                            (Tomorrow)
+                                                                        <?php else: ?>
+                                                                            (<?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>)
+                                                                        <?php endif; ?>
+                                                                    </span>
+                                                                <?php elseif ($paymentHasEnded && $programPayment['status'] == 'unpaid'): ?>
+                                                                    <span class="badge bg-secondary-subtle text-secondary" data-bs-toggle="tooltip" title="Payment period ended on <?= $endDate->format('M d, Y H:i'); ?>">Expired</span>
+                                                                <?php elseif ($programPayment['status'] == 'unpaid'): ?>
                                                                     <span class="badge bg-danger-subtle text-danger"><?= ucfirst($programPayment['status']); ?></span>
                                                                 <?php elseif ($programPayment['status'] == 'pending'): ?>
                                                                     <span class="badge bg-warning-subtle text-warning"><?= ucfirst($programPayment['status']); ?></span>
@@ -545,16 +593,81 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                     <a href="<?= site_url('payments/detail/' . $programPayment['id']); ?>" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="View Details">
                                                                         <i class="ri-eye-fill align-middle"></i>
                                                                     </a>
+                                                                    <?php 
+                                                                        // Check if participant can make payment for this payment type
+                                                                        $paymentType = $programPayment['type'] ?? 'all';
+                                                                        $canMakePayment = ($paymentType === 'all') || ($paymentType === $participantCategory);
+                                                                        $categoryMismatchMessage = '';
+                                                                        if (!$canMakePayment) {
+                                                                            if ($paymentType === 'fully_funded' && $participantCategory === 'self_funded') {
+                                                                                $categoryMismatchMessage = 'This payment is only available for fully funded participants';
+                                                                            } elseif ($paymentType === 'self_funded' && $participantCategory === 'fully_funded') {
+                                                                                $categoryMismatchMessage = 'This payment is only available for self funded participants';
+                                                                            } else {
+                                                                                $categoryMismatchMessage = 'This payment is only available for ' . $paymentType . ' participants';
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        // Check if payment period has started
+                                                                        $paymentHasStarted = $currentDate >= $startDate;
+                                                                        $paymentIsActive = $currentDate >= $startDate && $currentDate <= $endDate;
+                                                                        $paymentHasEnded = $currentDate > $endDate;
+                                                                        
+                                                                        // Calculate days until start (if not started yet)
+                                                                        $daysUntilStart = 0;
+                                                                        $comingSoonMessage = '';
+                                                                        if (!$paymentHasStarted) {
+                                                                            $daysUntilStart = $currentDate->diff($startDate)->days;
+                                                                            if ($daysUntilStart == 0) {
+                                                                                $comingSoonMessage = 'Payment opens today at ' . $startDate->format('H:i');
+                                                                            } elseif ($daysUntilStart == 1) {
+                                                                                $comingSoonMessage = 'Payment opens tomorrow (' . $startDate->format('M d, Y') . ')';
+                                                                            } else {
+                                                                                $comingSoonMessage = 'Payment opens in ' . $daysUntilStart . ' days (' . $startDate->format('M d, Y') . ')';
+                                                                            }
+                                                                        }
+                                                                    ?>
                                                                     <?php if ($programPayment['status'] == 'unpaid'): ?>
-                                                                        <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
-                                                                            data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                                                                            data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
-                                                                            data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
-                                                                            data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
-                                                                            data-payment-index="<?= $key; ?>"
-                                                                            title="Make Payment">
-                                                                            <i class="ri-bank-card-line align-middle me-1"></i> Pay Now
-                                                                        </button>
+                                                                        <?php if (!$paymentHasStarted): ?>
+                                                                            <!-- Payment hasn't started yet -->
+                                                                            <button type="button" class="btn btn-sm btn-info" disabled 
+                                                                                data-bs-toggle="tooltip" 
+                                                                                title="<?= htmlspecialchars($comingSoonMessage); ?>">
+                                                                                <i class="ri-time-line align-middle me-1"></i> 
+                                                                                <?php if ($daysUntilStart == 0): ?>
+                                                                                    Opens Today
+                                                                                <?php elseif ($daysUntilStart == 1): ?>
+                                                                                    Opens Tomorrow
+                                                                                <?php else: ?>
+                                                                                    Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                                                                                <?php endif; ?>
+                                                                            </button>
+                                                                        <?php elseif ($paymentHasEnded): ?>
+                                                                            <!-- Payment period has ended -->
+                                                                            <button type="button" class="btn btn-sm btn-secondary" disabled 
+                                                                                data-bs-toggle="tooltip" 
+                                                                                title="Payment period ended on <?= $endDate->format('M d, Y H:i'); ?>">
+                                                                                <i class="ri-time-line align-middle me-1"></i> Expired
+                                                                            </button>
+                                                                        <?php elseif ($canMakePayment): ?>
+                                                                            <!-- Payment is active and participant has access -->
+                                                                            <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                                                                data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
+                                                                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                                                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                                                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                                                                data-payment-index="<?= $key; ?>"
+                                                                                title="Make Payment">
+                                                                                <i class="ri-bank-card-line align-middle me-1"></i> Pay Now
+                                                                            </button>
+                                                                        <?php else: ?>
+                                                                            <!-- Payment is active but participant doesn't have access -->
+                                                                            <button type="button" class="btn btn-sm btn-secondary" disabled 
+                                                                                data-bs-toggle="tooltip" 
+                                                                                title="<?= htmlspecialchars($categoryMismatchMessage); ?>">
+                                                                                <i class="ri-lock-line align-middle me-1"></i> Restricted
+                                                                            </button>
+                                                                        <?php endif; ?>
                                                                     <?php elseif ($programPayment['status'] == 'pending'): ?>
                                                                         <button type="button" class="btn btn-sm btn-warning" disabled title="Payment Processing">
                                                                             <i class="ri-time-line align-middle me-1"></i> Processing
@@ -563,15 +676,46 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                             <i class="ri-download-2-line align-middle me-1"></i> Receipt
                                                                         </a>
                                                                     <?php elseif (($programPayment['status'] == 'cancelled' || $programPayment['status'] == 'rejected') && $dueStatus != 'Overdue'): ?>
-                                                                        <button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
-                                                                            data-payment-id="<?= $programPayment['id']; ?>"
-                                                                            data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
-                                                                            data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
-                                                                            data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
-                                                                            data-payment-index="<?= $key; ?>"
-                                                                            title="Try Payment Again">
-                                                                            <i class="ri-refresh-line align-middle me-1"></i> Try Again
-                                                                        </button>
+                                                                        <?php if (!$paymentHasStarted): ?>
+                                                                            <!-- Payment hasn't started yet -->
+                                                                            <button type="button" class="btn btn-sm btn-info" disabled 
+                                                                                data-bs-toggle="tooltip" 
+                                                                                title="<?= htmlspecialchars($comingSoonMessage); ?>">
+                                                                                <i class="ri-time-line align-middle me-1"></i> 
+                                                                                <?php if ($daysUntilStart == 0): ?>
+                                                                                    Opens Today
+                                                                                <?php elseif ($daysUntilStart == 1): ?>
+                                                                                    Opens Tomorrow
+                                                                                <?php else: ?>
+                                                                                    Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                                                                                <?php endif; ?>
+                                                                            </button>
+                                                                        <?php elseif ($paymentHasEnded): ?>
+                                                                            <!-- Payment period has ended -->
+                                                                            <button type="button" class="btn btn-sm btn-secondary" disabled 
+                                                                                data-bs-toggle="tooltip" 
+                                                                                title="Payment period ended on <?= $endDate->format('M d, Y H:i'); ?>">
+                                                                                <i class="ri-time-line align-middle me-1"></i> Expired
+                                                                            </button>
+                                                                        <?php elseif ($canMakePayment): ?>
+                                                                            <!-- Payment is active and participant has access -->
+                                                                            <button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                                                                data-payment-id="<?= $programPayment['id']; ?>"
+                                                                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                                                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                                                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                                                                data-payment-index="<?= $key; ?>"
+                                                                                title="Try Payment Again">
+                                                                                <i class="ri-refresh-line align-middle me-1"></i> Try Again
+                                                                            </button>
+                                                                        <?php else: ?>
+                                                                            <!-- Payment is active but participant doesn't have access -->
+                                                                            <button type="button" class="btn btn-sm btn-secondary" disabled 
+                                                                                data-bs-toggle="tooltip" 
+                                                                                title="<?= htmlspecialchars($categoryMismatchMessage); ?>">
+                                                                                <i class="ri-lock-line align-middle me-1"></i> Restricted
+                                                                            </button>
+                                                                        <?php endif; ?>
                                                                     <?php elseif ($programPayment['status'] == 'cancelled' || $programPayment['status'] == 'rejected'): ?>
                                                                         <button type="button" class="btn btn-sm btn-secondary" disabled title="Payment Expired">
                                                                             <i class="ri-time-line align-middle me-1"></i> Expired
@@ -640,7 +784,9 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
             const paymentMethods = <?= json_encode($paymentMethods ?? []); ?>;
 
             document.addEventListener('DOMContentLoaded', function() {
-                $(document).ready(function() {                    // Check if we're on a mobile device and make sure warning is visible
+                // Wait for jQuery to be available
+                $(document).ready(function() {                    
+                    // Check if we're on a mobile device and make sure warning is visible
                     function checkMobileView() {
                         if (window.innerWidth < 768) {
                             $('#mobileScrollWarning').addClass('d-block').removeClass('d-none');

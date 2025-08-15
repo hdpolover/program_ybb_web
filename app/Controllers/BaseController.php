@@ -103,7 +103,7 @@ abstract class BaseController extends Controller
         // Handle special cases for localhost and different environments
         if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
             // You can change this to test different domains
-            $this->currentUrl = "istanbulyouthsummit.com"; // Changed from koreayouthsummit.com for testing
+            $this->currentUrl = "worldyouthfest.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to middleeastyouthsummit.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
@@ -130,16 +130,16 @@ abstract class BaseController extends Controller
     {
         $cacheKey = "web_settings_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
         $cache = \Config\Services::cache();
-        
+
         // Try to get from cache first
         $webSettingData = $cache->get($cacheKey);
-        
+
         if ($webSettingData === null) {
             // Cache miss - fetch from API
             $startTime = microtime(true);
             $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
             $loadTime = round((microtime(true) - $startTime) * 1000, 2);
-            
+
             // Cache for 1 hour (3600 seconds)
             if (!empty($webSettingData)) {
                 $cache->save($cacheKey, $webSettingData, 3600);
@@ -163,7 +163,7 @@ abstract class BaseController extends Controller
         if ($programCategoryId) {
             $this->loadProgramDataWithCache($programCategoryId, $webSettingData);
         }
-        
+
         // Check if the web settings data is empty and handle accordingly
         if (empty($webSettingData)) {
             // Just store null settings instead of redirecting here
@@ -208,16 +208,16 @@ abstract class BaseController extends Controller
     {
         $cacheKey = "programs_category_" . $programCategoryId . "_v1";
         $cache = \Config\Services::cache();
-        
+
         // Try to get from cache first
         $programs = $cache->get($cacheKey);
-        
+
         if ($programs === null) {
             // Cache miss - fetch from API
             $startTime = microtime(true);
             $programs = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
             $loadTime = round((microtime(true) - $startTime) * 1000, 2);
-            
+
             // Cache for 30 minutes (1800 seconds)
             if (!empty($programs)) {
                 $cache->save($cacheKey, $programs, 1800);
@@ -276,14 +276,15 @@ abstract class BaseController extends Controller
             $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
             log_message('info', "[BaseController::setApiBaseUrl] Development environment detected, using: {$this->apiBaseUrl}");
         } else {
-            // Use production API URL
+            // TODO: Change back to real API when admin.ybbfoundation.com/api is fixed
             $this->apiBaseUrl = defined('BASE_API_URL') ? BASE_API_URL : 'https://admin.ybbfoundation.com/api';
-            log_message('info', "[BaseController::setApiBaseUrl] Production environment detected, using: {$this->apiBaseUrl}");
+            log_message('info', "[BaseController::setApiBaseUrl] Production environment detected (using MOCK), using: {$this->apiBaseUrl}");
         }
 
         log_message('debug', "[BaseController::setApiBaseUrl] Environment: {$environment}");
         log_message('debug', "[BaseController::setApiBaseUrl] Final API base URL: {$this->apiBaseUrl}");
     }
+
     /**
      * Process and prepare the topbar data for views
      */

@@ -28,18 +28,43 @@ class Submission extends BaseController
         // get referral by
         $referral = $this->makeGetRequest('/participants/' . $currentParticipantId . '/referrals', [], false, false);
 
+        log_message('debug', 'Submission::getSubmissionData - After referral API call');
+
         // check for any successful payments
-        $participantPayments = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
+        log_message('debug', 'Submission::getSubmissionData - About to check payments for participant: ' . $currentParticipantId);
+        $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
+        log_message('debug', 'Submission::getSubmissionData - Payment API Response: ' . json_encode($participantPaymentsResponse));
+
+        // Extract payments array from the response structure
+        $participantPayments = [];
+        
+        // Try both possible response structures
+        if (isset($participantPaymentsResponse['data']['payments']) && is_array($participantPaymentsResponse['data']['payments'])) {
+            // Nested structure: {"data": {"payments": [...]}}
+            $participantPayments = $participantPaymentsResponse['data']['payments'];
+            log_message('debug', 'Submission::getSubmissionData - Extracted payments from nested structure: ' . json_encode($participantPayments));
+        } elseif (isset($participantPaymentsResponse['payments']) && is_array($participantPaymentsResponse['payments'])) {
+            // Direct structure: {"payments": [...]}
+            $participantPayments = $participantPaymentsResponse['payments'];
+            log_message('debug', 'Submission::getSubmissionData - Extracted payments from direct structure: ' . json_encode($participantPayments));
+        } else {
+            log_message('debug', 'Submission::getSubmissionData - No payments data found in API response structure');
+            log_message('debug', 'Submission::getSubmissionData - Response keys: ' . json_encode(array_keys($participantPaymentsResponse ?? [])));
+        }
 
         // loop through payments and check if any are successful
         $hasSuccessfulPayment = false;
 
-        if (isset($participantPayments) && is_array($participantPayments)) {
-            foreach ($participantPayments as $payment) {
-                if (isset($payment['status']) && $payment['status'] === '2') {
-                    $hasSuccessfulPayment = true;
-                    break;
-                }
+        log_message('debug', 'Submission::getSubmissionData - About to loop through ' . count($participantPayments) . ' payments');
+
+        foreach ($participantPayments as $index => $payment) {
+            log_message('debug', 'Submission::getSubmissionData - Checking payment ' . $index . ': ' . json_encode($payment));
+            if (isset($payment['status']) && $payment['status'] === '2') {
+                log_message('debug', 'Submission::getSubmissionData - Found successful payment with status=2');
+                $hasSuccessfulPayment = true;
+                break;
+            } else {
+                log_message('debug', 'Submission::getSubmissionData - Payment status is: ' . ($payment['status'] ?? 'NULL'));
             }
         }
 
@@ -68,6 +93,12 @@ class Submission extends BaseController
             'hasSubmittedForm' => $hasSubmittedForm,
             'referral' => $referral,
         ];
+
+        // Debug logging to check payment status
+        log_message('debug', 'Submission::getSubmissionData - hasSuccessfulPayment: ' . ($hasSuccessfulPayment ? 'true' : 'false'));
+        log_message('debug', 'Submission::getSubmissionData - Number of payments found: ' . count($participantPayments ?? []));
+        log_message('debug', 'Submission::getSubmissionData - About to return data array');
+        log_message('debug', 'Submission::getSubmissionData - Data array keys: ' . json_encode(array_keys($data)));
 
         return $data;
     }
@@ -99,6 +130,9 @@ class Submission extends BaseController
 
         // Merge submission data into view data
         $data = array_merge($data, $submissionData);
+
+        // Debug logging for view data
+        log_message('debug', 'Submission::index - Final data hasSuccessfulPayment: ' . (isset($data['hasSuccessfulPayment']) ? ($data['hasSuccessfulPayment'] ? 'true' : 'false') : 'NOT SET'));
 
         // Output data structure as JSON for easier debugging
         // echo '<pre>';
@@ -136,6 +170,9 @@ class Submission extends BaseController
 
         // Merge submission data into view data
         $data = array_merge($data, $submissionData);
+
+        // Debug logging for view data
+        log_message('debug', 'Submission::edit - Final data hasSuccessfulPayment: ' . (isset($data['hasSuccessfulPayment']) ? ($data['hasSuccessfulPayment'] ? 'true' : 'false') : 'NOT SET'));
 
         // Output data structure as JSON for easier debugging
         // echo '<pre>';

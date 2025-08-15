@@ -6,9 +6,80 @@ use App\Controllers\BaseController;
 
 class Payments extends BaseController
 {
+    /**
+     * Filter program payments based on participant category and payment type
+     * 
+     * @param array $programPayments All program payments
+     * @param string $participantCategory The participant's category (self_funded, fully_funded)
+     * @param array $participantPayments Array of participant's payment attempts (used for payment history)
+     * @return array Filtered program payments
+     */
+    public function filterPaymentsByCategory($programPayments, $participantCategory, $participantPayments = [])
+    {
+        if (empty($programPayments) || !is_array($programPayments)) {
+            log_message('debug', 'filterPaymentsByCategory: Empty or invalid program payments provided');
+            return [];
+        }
+        
+        // Create a map of program payment IDs that the participant has attempted
+        $attemptedPaymentIds = [];
+        foreach ($participantPayments as $payment) {
+            if (isset($payment['program_payment_id'])) {
+                $attemptedPaymentIds[$payment['program_payment_id']] = true;
+            }
+        }
+        
+        log_message('debug', 'filterPaymentsByCategory: Processing ' . count($programPayments) . ' payments for category: ' . $participantCategory);
+        log_message('debug', 'filterPaymentsByCategory: Participant has attempted payments for IDs: ' . implode(', ', array_keys($attemptedPaymentIds)));
+        
+        $filteredPayments = [];
+        
+        foreach ($programPayments as $payment) {
+            $paymentType = $payment['type'] ?? 'all'; // Default to 'all' if type not specified
+            $paymentId = $payment['id'] ?? 'unknown';
+            $paymentName = $payment['name'] ?? 'unnamed';
+            
+            log_message('debug', "filterPaymentsByCategory: Checking payment ID {$paymentId} ('{$paymentName}') with type '{$paymentType}' for participant category '{$participantCategory}'");
+            
+            // Logic for filtering:
+            // - 'all' type payments are visible to everyone
+            // - 'self_funded' type payments are only visible to self_funded participants
+            // - 'fully_funded' type payments are only visible to fully_funded participants
+            // - EXCEPTION: Always show payments that participant has attempted, regardless of category (for payment history)
+            
+            $shouldInclude = false;
+            
+            if ($paymentType === 'all') {
+                // All participants can see 'all' type payments
+                $shouldInclude = true;
+                log_message('debug', "filterPaymentsByCategory: Including payment {$paymentId} - type is 'all'");
+            } elseif ($paymentType === $participantCategory) {
+                // Participant can see payments that match their category
+                $shouldInclude = true;
+                log_message('debug', "filterPaymentsByCategory: Including payment {$paymentId} - type matches participant category");
+            } elseif (isset($attemptedPaymentIds[$paymentId])) {
+                // IMPORTANT: Include payments that the participant has previously attempted, regardless of category
+                $shouldInclude = true;
+                log_message('debug', "filterPaymentsByCategory: Including payment {$paymentId} - participant has payment history for this payment (type: {$paymentType}, participant category: {$participantCategory})");
+            } else {
+                log_message('debug', "filterPaymentsByCategory: Excluding payment {$paymentId} - type '{$paymentType}' does not match participant category '{$participantCategory}' and no payment history");
+            }
+            
+            if ($shouldInclude) {
+                $filteredPayments[] = $payment;
+            }
+        }
+        
+        log_message('debug', 'filterPaymentsByCategory: Filtered payments for category ' . $participantCategory . ': ' . count($filteredPayments) . ' out of ' . count($programPayments) . ' total payments');
+        
+        return $filteredPayments;
+    }
+
     public function getVisibleProgramPayments($allPayments, $participantPayments)
     {
         $today = date('Y-m-d H:i:s');
+        
+        log_message('debug', 'getVisibleProgramPayments: Processing ' . count($allPayments) . ' filtered payments and ' . count($participantPayments) . ' participant payments');
 
         // Group participant payments by program_payment_id (with safety check)
         $participantPaymentMap = [];
@@ -52,7 +123,24 @@ class Payments extends BaseController
         ];
 
         foreach ($allPayments as $payment) {
-            $byCategory[$payment['category']][] = $payment;
+            $paymentCategory = $payment['category'] ?? 'unknown';
+            $paymentType = $payment['type'] ?? 'all';
+            $paymentId = $payment['id'] ?? 'unknown';
+            
+            log_message('debug', "getVisibleProgramPayments: Payment ID {$paymentId} has category '{$paymentCategory}' and type '{$paymentType}'");
+            
+            if (isset($byCategory[$paymentCategory])) {
+                $byCategory[$paymentCategory][] = $payment;
+            } else {
+                log_message('warning', "getVisibleProgramPayments: Unknown payment category '{$paymentCategory}' for payment ID {$paymentId}. Available categories: " . implode(', ', array_keys($byCategory)));
+                // Still add to visible payments if it doesn't fit standard categories
+                $visiblePayments[] = $payment;
+            }
+        }
+        
+        // Debug the categorized payments
+        foreach ($byCategory as $categoryName => $payments) {
+            log_message('debug', "getVisibleProgramPayments: Category '{$categoryName}' has " . count($payments) . " payments");
         }
 
         // Sort each category by start_date (especially important for registration: early/late bid)
@@ -67,6 +155,17 @@ class Payments extends BaseController
         $registrationPayments = [];
         $hasSuccessfulRegistration = false;
         $successfulRegistrationType = null;
+        
+        log_message('debug', 'getVisibleProgramPayments: Today is ' . $today);
+        log_message('debug', 'getVisibleProgramPayments: Processing registration payments: ' . count($byCategory['registration']));
+        
+        // Debug each payment's date range
+        foreach ($allPayments as $payment) {
+            $paymentId = $payment['id'];
+            $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
+            $hasAttempts = !empty($participantPaymentMap[$paymentId]);
+            log_message('debug', "getVisibleProgramPayments: Payment ID {$paymentId} ({$payment['name']}) - Start: {$payment['start_date']}, End: {$payment['end_date']}, Within range: " . ($isWithinDateRange ? 'YES' : 'NO') . ", Has attempts: " . ($hasAttempts ? 'YES' : 'NO'));
+        }
         
         // First pass: check for successful registrations and their types
         foreach ($byCategory['registration'] as $payment) {
@@ -88,6 +187,12 @@ class Payments extends BaseController
             $isPaid = $isCompleted($paymentId);
             $hasTried = $hasAnyAttempt($paymentId);
             
+            // Check if payment is close to start date (within 30 days)
+            $startDate = strtotime($payment['start_date']);
+            $todayTimestamp = strtotime($today);
+            $daysToStart = ($startDate - $todayTimestamp) / (60 * 60 * 24);
+            $isComingSoon = $daysToStart <= 30 && $daysToStart >= 0;
+            
             // Skip if already added as successful
             if ($isPaid) {
                 continue;
@@ -99,12 +204,14 @@ class Payments extends BaseController
                 // Show unsuccessful attempts regardless of type (for payment history)
                 if ($hasTried) {
                     $registrationPayments[] = $payment;
+                    log_message('debug', "getVisibleProgramPayments: Adding registration payment ID {$paymentId} due to previous attempt (with successful registration)");
                 }
             } else {
                 // No successful registration yet
-                // Show if participant has attempted payment OR if within date range
-                if ($hasTried || $isWithinDateRange) {
+                // Show if participant has attempted payment OR if within date range OR if coming soon
+                if ($hasTried || $isWithinDateRange || $isComingSoon) {
                     $registrationPayments[] = $payment;
+                    log_message('debug', "getVisibleProgramPayments: Adding registration payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
                 }
             }
         }
@@ -114,21 +221,28 @@ class Payments extends BaseController
 
         $completed['registration'] = $registrationDone;
 
-        // Handle program_fee_1 - show if registration is done OR if participant has attempted this payment
+        // Handle program_fee_1 - show if registration is done OR if participant has attempted this payment OR if close to start date
         if ($completed['registration']) {
             foreach ($byCategory['program_fee_1'] as $payment) {
                 $paymentId = $payment['id'];
                 $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
                 $isPaid = $isCompleted($paymentId);
                 $hasTried = $hasAnyAttempt($paymentId);
+                
+                // Check if payment is close to start date (within 30 days)
+                $startDate = strtotime($payment['start_date']);
+                $todayTimestamp = strtotime($today);
+                $daysToStart = ($startDate - $todayTimestamp) / (60 * 60 * 24);
+                $isComingSoon = $daysToStart <= 30 && $daysToStart >= 0;
 
                 if ($isPaid) {
                     $completed['program_fee_1'] = true;
                 }
 
-                // Show if participant has attempted payment OR if within date range
-                if ($hasTried || $isWithinDateRange) {
+                // Show if participant has attempted payment OR if within date range OR if coming soon
+                if ($hasTried || $isWithinDateRange || $isComingSoon) {
                     $visiblePayments[] = $payment;
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_1 payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
                 }
             }
         } else {
@@ -144,25 +258,33 @@ class Payments extends BaseController
 
                 if ($hasTried) {
                     $visiblePayments[] = $payment;
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_1 payment ID {$paymentId} due to previous attempt");
                 }
             }
         }
 
-        // Handle program_fee_2 - show if program_fee_1 is done OR if participant has attempted this payment
+        // Handle program_fee_2 - show if program_fee_1 is done OR if participant has attempted this payment OR if close to start date
         if ($completed['program_fee_1']) {
             foreach ($byCategory['program_fee_2'] as $payment) {
                 $paymentId = $payment['id'];
                 $isWithinDateRange = $payment['start_date'] <= $today && $payment['end_date'] >= $today;
                 $isPaid = $isCompleted($paymentId);
                 $hasTried = $hasAnyAttempt($paymentId);
+                
+                // Check if payment is close to start date (within 30 days)
+                $startDate = strtotime($payment['start_date']);
+                $todayTimestamp = strtotime($today);
+                $daysToStart = ($startDate - $todayTimestamp) / (60 * 60 * 24);
+                $isComingSoon = $daysToStart <= 30 && $daysToStart >= 0;
 
                 if ($isPaid) {
                     $completed['program_fee_2'] = true;
                 }
 
-                // Show if participant has attempted payment OR if within date range
-                if ($hasTried || $isWithinDateRange) {
+                // Show if participant has attempted payment OR if within date range OR if coming soon
+                if ($hasTried || $isWithinDateRange || $isComingSoon) {
                     $visiblePayments[] = $payment;
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_2 payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
                 }
             }
         } else {
@@ -178,6 +300,7 @@ class Payments extends BaseController
 
                 if ($hasTried) {
                     $visiblePayments[] = $payment;
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_2 payment ID {$paymentId} due to previous attempt");
                 }
             }
         }
@@ -190,6 +313,8 @@ class Payments extends BaseController
             return strtotime($a['start_date']) - strtotime($b['start_date']);
         });
 
+        log_message('debug', 'getVisibleProgramPayments: Returning ' . count($visiblePayments) . ' visible payments after processing all categories and visibility rules');
+
         return array_values($visiblePayments);
     }
 
@@ -199,17 +324,60 @@ class Payments extends BaseController
     public function index()
     {
         $programPayments = $this->makeGetRequest('/program-payments/program/' . session()->get('current_program_id'), [], false);
-        $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], false);
+        $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . session()->get('current_participant_id'), [], true);
         $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . session()->get('current_program_id'), [], false);
         
-        // Extract the actual payments array from the API response
+        log_message('debug', 'Participant payments API response structure: ' . json_encode(array_keys($participantPaymentsResponse ?? []), JSON_PRETTY_PRINT));
+        
+        // Get participant data to determine their category
+        $participantId = session()->get('current_participant_id');
+        $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
+        $participantData = $participantResponse['participant'] ?? $participantResponse;
+        $participantCategoryFromAPI = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
+
+        // Check if there's a session category that differs from API (due to recent category switch)
+        $participantCategoryFromSession = session()->get('current_participant_category');
+        
+        // Use session category if it exists and is different from API (indicates recent switch)
+        if (!empty($participantCategoryFromSession) && $participantCategoryFromSession !== $participantCategoryFromAPI) {
+            log_message('info', "Using session category '{$participantCategoryFromSession}' instead of API category '{$participantCategoryFromAPI}' - likely due to recent category switch");
+            $participantCategory = $participantCategoryFromSession;
+        } else {
+            $participantCategory = $participantCategoryFromAPI;
+        }
+
+        // Debug logging for program payments BEFORE filtering
+        log_message('debug', 'Program payments BEFORE filtering: ' . count($programPayments ?? []) . ' payments');
+        log_message('debug', 'Participant category: ' . $participantCategory . ' (API: ' . $participantCategoryFromAPI . ', Session: ' . ($participantCategoryFromSession ?? 'none') . ')');
+        if (!empty($programPayments)) {
+            foreach ($programPayments as $idx => $payment) {
+                $paymentType = $payment['type'] ?? 'all';
+                log_message('debug', "Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}");
+            }
+        }
+        
+        // Extract the actual payments array from the API response first
         $participantPayments = [];
-        if (isset($participantPaymentsResponse['payments']) && is_array($participantPaymentsResponse['payments'])) {
+        if (isset($participantPaymentsResponse['data']['payments']) && is_array($participantPaymentsResponse['data']['payments'])) {
+            $participantPayments = $participantPaymentsResponse['data']['payments'];
+        } elseif (isset($participantPaymentsResponse['payments']) && is_array($participantPaymentsResponse['payments'])) {
+            // Fallback for direct payments array (backward compatibility)
             $participantPayments = $participantPaymentsResponse['payments'];
         }
         
-        // Safety check - if not participant payments, skip loop
-
+        log_message('debug', 'Extracted participant payments count: ' . count($participantPayments));
+        
+        // Filter program payments by participant category and type (including payment history)
+        $programPayments = $this->filterPaymentsByCategory($programPayments, $participantCategory, $participantPayments);
+        
+        // Debug logging AFTER filtering
+        log_message('debug', 'Program payments AFTER filtering: ' . count($programPayments ?? []) . ' payments');
+        if (!empty($programPayments)) {
+            foreach ($programPayments as $idx => $payment) {
+                $paymentType = $payment['type'] ?? 'all';
+                log_message('debug', "Filtered Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}");
+            }
+        }
         // Store original participant payments for visibility logic
         $originalParticipantPayments = $participantPayments ?? [];
         
@@ -248,12 +416,24 @@ class Payments extends BaseController
 
         // Get visible program payments using original structure
         $programPayments = $this->getVisibleProgramPayments($programPayments, $originalParticipantPayments);
+        
+        // Debug logging for final visible payments
+        log_message('debug', 'Final visible program payments: ' . count($programPayments ?? []) . ' payments');
+        if (!empty($programPayments)) {
+            foreach ($programPayments as $idx => $payment) {
+                $paymentType = $payment['type'] ?? 'all';
+                log_message('debug', "Final Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}");
+            }
+        } else {
+            log_message('warning', 'No visible program payments found after getVisibleProgramPayments()');
+        }
 
         $data = [
             'title' => 'Payments',
             'programPayments' => $programPayments,
             'participantPayments' => $participantPayments,
             'paymentMethods' => $paymentMethods,
+            'participantCategory' => $participantCategory, // Add participant category to view data
         ];
 
         return $this->render('participant/payment/index', $data);
@@ -273,38 +453,104 @@ class Payments extends BaseController
         $participantId = session()->get('current_participant_id');
         $programId = session()->get('current_program_id');
 
-        // Fetch programPayment details from API
-        $paymentDetails = $this->makeGetRequest('/payments/program-payment/' . $id . '/participant/' . $participantId, [], false);
+        // Get participant data to determine their category
+        $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
+        $participantData = $participantResponse['participant'] ?? $participantResponse;
+        $participantCategoryFromAPI = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
 
-        if (empty($paymentDetails)) {
+        // Check if there's a session category that differs from API (due to recent category switch)
+        $participantCategoryFromSession = session()->get('current_participant_category');
+        
+        // Use session category if it exists and is different from API (indicates recent switch)
+        if (!empty($participantCategoryFromSession) && $participantCategoryFromSession !== $participantCategoryFromAPI) {
+            log_message('info', "Detail: Using session category '{$participantCategoryFromSession}' instead of API category '{$participantCategoryFromAPI}' - likely due to recent category switch");
+            $participantCategory = $participantCategoryFromSession;
+        } else {
+            $participantCategory = $participantCategoryFromAPI;
+        }
+
+        // Use the combined endpoint that returns both program payment details and participant payment attempts
+        log_message('debug', "Detail: Attempting to fetch combined endpoint: /payments/program-payments/{$id}/participants/{$participantId}");
+        $responseData = $this->makeGetRequest('/payments/program-payments/' . $id . '/participants/' . $participantId, [], true);
+        
+        log_message('debug', 'Detail: Combined endpoint response: ' . json_encode($responseData));
+        
+        if (empty($responseData) || !isset($responseData['program_payment'])) {
+            log_message('error', 'Detail: Combined endpoint failed or returned no program_payment. Response: ' . json_encode($responseData));
             session()->setFlashdata('error', 'Program payment not found.');
             return redirect()->to(base_url('payments'));
         }
 
-        $programPayment = $paymentDetails['program_payment'] ?? null;
-        if (empty($programPayment)) {
+        $programPayment = $responseData['program_payment'] ?? null;
+        $payments = [];
+        
+        if (!$programPayment) {
             session()->setFlashdata('error', 'Program payment details not found.');
             return redirect()->to(base_url('payments'));
         }
-
-        // Fetch programPayment attempts for the participant
-        $payments = $paymentDetails['payments'] ?? [];
-
-        if (empty($payments)) {
-            $payments = [];
-        } else {
-            // Convert payments to a more usable format
-            $payments = array_column($payments, null, 'id');
+        
+        // Check if participant has access to this payment based on their category
+        // Use the same logic as filterPaymentsByCategory - allow access if:
+        // 1. Payment type is 'all'
+        // 2. Payment type matches participant category  
+        // 3. Participant has payment history for this payment (even if category doesn't match)
+        $paymentType = $programPayment['type'] ?? 'all';
+        $hasDirectAccess = ($paymentType === 'all') || ($paymentType === $participantCategory);
+        
+        // Check if participant has payment history for this payment
+        $hasPaymentHistory = false;
+        if (isset($responseData['payments']) && is_array($responseData['payments'])) {
+            foreach ($responseData['payments'] as $payment) {
+                if (isset($payment['program_payment_id']) && $payment['program_payment_id'] == $id) {
+                    $hasPaymentHistory = true;
+                    break;
+                }
+            }
         }
+        
+        $hasAccess = $hasDirectAccess || $hasPaymentHistory;
+        
+        if (!$hasAccess) {
+            log_message('warning', 'Unauthorized access attempt: Participant ' . $participantId . ' (' . $participantCategory . ') tried to access ' . $paymentType . ' payment ' . $id . ' without history or direct access');
+            session()->setFlashdata('error', 'You do not have access to this payment.');
+            return redirect()->to(base_url('payments'));
+        }
+
+        // Log successful access
+        $accessReason = $hasDirectAccess ? 'direct access' : 'payment history';
+        log_message('debug', 'Payment detail access granted for participant ' . $participantId . ' to payment ' . $id . ' via ' . $accessReason);
+
+        // Extract participant payment attempts from the combined response
+        if (isset($responseData['payments']) && is_array($responseData['payments'])) {
+            foreach ($responseData['payments'] as $payment) {
+                $payments[$payment['id']] = $payment;
+            }
+        }
+        
+        log_message('debug', 'Payment detail: Found ' . count($payments) . ' payment attempts for program payment ID: ' . $id);
+        log_message('debug', 'Program payment details: ' . json_encode([
+            'id' => $programPayment['id'],
+            'name' => $programPayment['name'],
+            'type' => $programPayment['type'],
+            'category' => $programPayment['category'],
+            'start_date' => $programPayment['start_date'],
+            'end_date' => $programPayment['end_date']
+        ]));
 
         // get payment methods
         $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . $programId, [], false);
+
+        // Get participant data for payment access validation
+        $participant = $this->makeGetRequest('/participants/' . $participantId, [], true);
+        $participantCategory = $participant['category'] ?? 'self_funded';
 
         $data = [
             'title' => 'Payment Details',
             'programPayment' => $programPayment,
             'payments' => $payments,
             'paymentMethods' => $paymentMethods,
+            'participant' => $participant,
+            'participantCategory' => $participantCategory,
         ];
 
         return $this->render('participant/payment/detail', $data);
@@ -325,14 +571,102 @@ class Payments extends BaseController
             return redirect()->to(base_url('payments'))->with('error', 'Participant ID not found in session.');
         }
 
+        // Get participant data to determine their category
+        $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
+        $participantData = $participantResponse['participant'] ?? $participantResponse;
+        $participantCategoryFromAPI = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
+
+        // Check if there's a session category that differs from API (due to recent category switch)
+        $participantCategoryFromSession = session()->get('current_participant_category');
+        
+        // Use session category if it exists and is different from API (indicates recent switch)
+        if (!empty($participantCategoryFromSession) && $participantCategoryFromSession !== $participantCategoryFromAPI) {
+            log_message('info', "MakePayment: Using session category '{$participantCategoryFromSession}' instead of API category '{$participantCategoryFromAPI}' - likely due to recent category switch");
+            $participantCategory = $participantCategoryFromSession;
+        } else {
+            $participantCategory = $participantCategoryFromAPI;
+        }
+
         // Get the program payment ID to validate amount
         $programPaymentId = $inputs['program_payment_id'] ?? null;
         if (empty($programPaymentId)) {
             return redirect()->to(base_url('payments'))->with('error', 'Program payment ID is required.');
         }
 
-        // Fetch the program payment to validate its amount
+        // Fetch the program payment to validate its amount and access rights
         $programPayment = $this->makeGetRequest('/program-payments/' . $programPaymentId, [], false);
+        if (!$programPayment) {
+            return redirect()->to(base_url('payments'))->with('error', 'Unable to retrieve payment information.');
+        }
+        
+        // Check if participant has access to this payment based on their category
+        $paymentType = $programPayment['type'] ?? 'all';
+        $hasAccess = ($paymentType === 'all') || ($paymentType === $participantCategory);
+        
+        if (!$hasAccess) {
+            log_message('warning', 'Unauthorized payment attempt: Participant ' . $participantId . ' (' . $participantCategory . ') tried to pay for ' . $paymentType . ' payment ' . $programPaymentId);
+            
+            // Check if this is an AJAX request
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'You do not have access to this payment option.'
+                ])->setStatusCode(403);
+            } else {
+                return redirect()->to(base_url('payments'))->with('error', 'You do not have access to this payment option.');
+            }
+        }
+        
+        // Check if the payment period has started
+        $currentDateTime = new \DateTime();
+        $paymentStartDate = new \DateTime($programPayment['start_date']);
+        $paymentEndDate = new \DateTime($programPayment['end_date']);
+        
+        if ($currentDateTime < $paymentStartDate) {
+            $daysUntilStart = $currentDateTime->diff($paymentStartDate)->days;
+            $startDateFormatted = $paymentStartDate->format('M d, Y H:i');
+            
+            log_message('warning', 'Early payment attempt: Participant ' . $participantId . ' tried to pay for payment ' . $programPaymentId . ' before start date (' . $startDateFormatted . ')');
+            
+            $message = 'This payment is not yet available. ';
+            if ($daysUntilStart == 0) {
+                $message .= 'Payment opens today at ' . $paymentStartDate->format('H:i');
+            } elseif ($daysUntilStart == 1) {
+                $message .= 'Payment opens tomorrow (' . $startDateFormatted . ')';
+            } else {
+                $message .= 'Payment opens in ' . $daysUntilStart . ' days (' . $startDateFormatted . ')';
+            }
+            
+            // Check if this is an AJAX request
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => $message
+                ])->setStatusCode(400);
+            } else {
+                return redirect()->to(base_url('payments'))->with('error', $message);
+            }
+        }
+        
+        // Check if the payment period has ended
+        if ($currentDateTime > $paymentEndDate) {
+            $endDateFormatted = $paymentEndDate->format('M d, Y H:i');
+            
+            log_message('warning', 'Late payment attempt: Participant ' . $participantId . ' tried to pay for payment ' . $programPaymentId . ' after end date (' . $endDateFormatted . ')');
+            
+            $message = 'This payment period has ended on ' . $endDateFormatted;
+            
+            // Check if this is an AJAX request
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => $message
+                ])->setStatusCode(400);
+            } else {
+                return redirect()->to(base_url('payments'))->with('error', $message);
+            }
+        }
+        
         if (!$programPayment) {
             return redirect()->to(base_url('payments'))->with('error', 'Unable to retrieve payment information.');
         }
@@ -411,15 +745,22 @@ class Payments extends BaseController
 
                 log_message('debug', 'Making direct cURL payment request with file upload');
 
+                // Get JWT token for authentication
+                $jwtToken = $this->getJwtToken();
+                $headers = [
+                    'Accept: application/json'
+                ];
+                if ($jwtToken) {
+                    $headers[] = 'Authorization: Bearer ' . $jwtToken;
+                }
+
                 // Set cURL options
                 curl_setopt_array($curl, [
                     CURLOPT_URL => $url,
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_POST => true,
                     CURLOPT_POSTFIELDS => $payload,
-                    CURLOPT_HTTPHEADER => [
-                        'Accept: application/json'
-                    ]
+                    CURLOPT_HTTPHEADER => $headers
                 ]);
 
                 // Execute the cURL request
@@ -476,7 +817,7 @@ class Payments extends BaseController
                     '/payments/create',
                     $formData,
                     [], // No additional headers
-                    false, // Use JWT if needed
+                    true, // Use JWT authentication (required for this endpoint)
                     true, // Send as JSON
                     false, // Not multipart
                     [] // No file data
@@ -494,76 +835,92 @@ class Payments extends BaseController
             }
         } else {
             // Handle gateway payment types
-            $programPaymentId = $inputs['program_payment_id'];
-            $paymentMethodId = $inputs['payment_method_id'];
+            try {
+                $programPaymentId = $inputs['program_payment_id'];
+                $paymentMethodId = $inputs['payment_method_id'];
 
-            // Check if this is an AJAX request
-            $isAjax = $this->request->isAJAX();
-            log_message('debug', 'Gateway payment is AJAX request: ' . ($isAjax ? 'yes' : 'no'));
+                // Check if this is an AJAX request
+                $isAjax = $this->request->isAJAX();
+                log_message('debug', 'Gateway payment is AJAX request: ' . ($isAjax ? 'yes' : 'no'));
 
-            // Verify we have a valid payment method ID
-            if (empty($paymentMethodId)) {
-                if ($isAjax) {
-                    return $this->response->setJSON([
-                        'status' => 'error',
-                        'message' => 'Please select a valid payment method'
-                    ]);
-                } else {
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('error', 'Please select a valid payment method.');
+                // Verify we have a valid payment method ID
+                if (empty($paymentMethodId)) {
+                    if ($isAjax) {
+                        return $this->response->setJSON([
+                            'status' => 'error',
+                            'message' => 'Please select a valid payment method'
+                        ])->setStatusCode(400);
+                    } else {
+                        return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                            ->with('error', 'Please select a valid payment method.');
+                    }
                 }
-            }
 
-            // Calculate IDR amount using the conversion rate from webSettings
-            $usdToIdrRate = $this->data['webSettings']['usd_in_idr'] ?? null;
+                // Calculate IDR amount using the conversion rate from webSettings
+                $usdToIdrRate = $this->data['webSettings']['usd_in_idr'] ?? null;
 
-            if (empty($usdToIdrRate) || $usdToIdrRate <= 0) {
-                log_message('error', 'Invalid USD to IDR conversion rate: ' . ($usdToIdrRate ?? 'null'));
+                if (empty($usdToIdrRate) || $usdToIdrRate <= 0) {
+                    log_message('error', 'Invalid USD to IDR conversion rate: ' . ($usdToIdrRate ?? 'null'));
 
-                if ($isAjax) {
-                    return $this->response->setJSON([
-                        'status' => 'error',
-                        'message' => 'Currency conversion rate not available. Please contact support.'
-                    ]);
-                } else {
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('error', 'Currency conversion rate not available. Please contact support.');
+                    if ($isAjax) {
+                        return $this->response->setJSON([
+                            'status' => 'error',
+                            'message' => 'Currency conversion rate not available. Please contact support.'
+                        ])->setStatusCode(400);
+                    } else {
+                        return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                            ->with('error', 'Currency conversion rate not available. Please contact support.');
+                    }
                 }
-            }
 
-            $idrAmount = $paymentAmount * $usdToIdrRate;
+                $idrAmount = $paymentAmount * $usdToIdrRate;
 
-            log_message('debug', 'USD to IDR conversion: ' . $paymentAmount . ' USD * ' . $usdToIdrRate . ' = ' . $idrAmount . ' IDR');
+                log_message('debug', 'USD to IDR conversion: ' . $paymentAmount . ' USD * ' . $usdToIdrRate . ' = ' . $idrAmount . ' IDR');
 
-            $paymentData = [
-                'participant_id' => $participantId,
-                'program_payment_id' => $programPaymentId,
-                'payment_method_id' => $paymentMethodId,
-                'idr_amount' => $idrAmount,
-                'usd_amount' => $paymentAmount,
-            ];
+                $paymentData = [
+                    'participant_id' => $participantId,
+                    'program_payment_id' => $programPaymentId,
+                    'payment_method_id' => $paymentMethodId,
+                    'idr_amount' => $idrAmount,
+                    'usd_amount' => $paymentAmount,
+                ];
 
             log_message('debug', 'Gateway payment data: ' . json_encode($paymentData));
 
+            // Use the correct API endpoint for payment creation
+            $apiEndpoint = '/payments/create';
+            log_message('debug', 'Using API endpoint: ' . $this->apiBaseUrl . $apiEndpoint);
+
             // Make API call to initiate gateway payment           
             $response = $this->makePostRequest(
-                '/payments/create',
+                $apiEndpoint,
                 $paymentData,
                 [], // No additional headers
-                false, // Use JWT if needed
+                true, // Use JWT authentication (required for this endpoint)
                 true, // Send as JSON
                 false // Not multipart
             );
 
-            if (!$response) {
+            // Log the complete response for debugging
+            log_message('debug', 'Payment response: ' . json_encode($response));
+
+            if (!$response || (isset($response['error']))) {
+                $errorMessage = 'Failed to initiate payment. Please try again or contact support.';
+                if (isset($response['error'])) {
+                    log_message('error', 'API Error: ' . json_encode($response));
+                    if (isset($response['message'])) {
+                        $errorMessage = $response['message'];
+                    }
+                }
+
                 if ($isAjax) {
                     return $this->response->setJSON([
                         'status' => 'error',
-                        'message' => 'Failed to initiate payment. Please try again or contact support.'
-                    ]);
+                        'message' => $errorMessage
+                    ])->setStatusCode(400);
                 } else {
                     return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('error', 'Failed to initiate payment. Please try again or contact support.');
+                        ->with('error', $errorMessage);
                 }
             }
 
@@ -637,11 +994,85 @@ class Payments extends BaseController
                     return $this->response->setJSON([
                         'status' => 'error',
                         'message' => 'Payment gateway error. Please try again later.'
-                    ]);
+                    ])->setStatusCode(400);
                 } else {
                     return redirect()->to(base_url('payments/detail/' . $programPaymentId))
                         ->with('error', 'Payment gateway error. Please try again later.');
                 }
+            }
+            
+            } catch (\Exception $e) {
+                log_message('error', 'Exception in gateway payment processing: ' . $e->getMessage());
+                log_message('error', 'Exception trace: ' . $e->getTraceAsString());
+
+                if ($isAjax) {
+                    return $this->response->setJSON([
+                        'status' => 'error',
+                        'message' => 'Payment processing error: ' . $e->getMessage()
+                    ])->setStatusCode(500);
+                } else {
+                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                        ->with('error', 'Payment processing error. Please try again.');
+                }
+            }
+        }
+    }
+
+    /**
+     * Test endpoint to verify API connectivity and payment processing
+     * This is a temporary debugging method that can be removed in production
+     */
+    public function testPaymentAPI()
+    {
+        // Check if this is an AJAX request
+        $isAjax = $this->request->isAJAX();
+        
+        try {
+            // Test basic connectivity
+            $participantId = session()->get('current_participant_id');
+            $programId = session()->get('current_program_id');
+            
+            if (empty($participantId) || empty($programId)) {
+                $response = [
+                    'status' => 'error',
+                    'message' => 'Missing session data',
+                    'participant_id' => $participantId,
+                    'program_id' => $programId
+                ];
+            } else {
+                // Test API connectivity
+                $testResponse = $this->makeGetRequest('/program-payments/program/' . $programId, [], false);
+                
+                $response = [
+                    'status' => 'success',
+                    'message' => 'API connectivity test successful',
+                    'participant_id' => $participantId,
+                    'program_id' => $programId,
+                    'api_base_url' => $this->apiBaseUrl,
+                    'api_test_response' => $testResponse ? 'success' : 'failed',
+                    'usd_in_idr' => $this->data['webSettings']['usd_in_idr'] ?? 'not found'
+                ];
+            }
+            
+            if ($isAjax) {
+                return $this->response->setJSON($response);
+            } else {
+                echo '<pre>' . json_encode($response, JSON_PRETTY_PRINT) . '</pre>';
+                return;
+            }
+            
+        } catch (\Exception $e) {
+            $response = [
+                'status' => 'error',
+                'message' => 'Test failed with exception: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ];
+            
+            if ($isAjax) {
+                return $this->response->setJSON($response);
+            } else {
+                echo '<pre>' . json_encode($response, JSON_PRETTY_PRINT) . '</pre>';
+                return;
             }
         }
     }
@@ -662,7 +1093,7 @@ class Payments extends BaseController
             log_message('info', 'Generating receipt for payment ID: ' . $id);
 
             // Get the payment details
-            $payment = $this->makeGetRequest('/payments/' . $id, [], false);
+        $payment = $this->makeGetRequest('/payments/get/' . $id, [], true);
             if (empty($payment)) {
                 log_message('error', 'Payment not found with ID: ' . $id);
                 return redirect()->back()->with('error', 'Payment not found.');
@@ -670,18 +1101,47 @@ class Payments extends BaseController
 
             log_message('info', 'Payment found: ' . json_encode($payment));
 
-            // Get the program payment details
+            // Get participant ID from session (needed for combined endpoint)
+            $participantId = session()->get('current_participant_id');
+
+            // Get the program payment details using the combined endpoint for better efficiency and access control
             $programPaymentId = $payment['program_payment_id'] ?? null;
             if (empty($programPaymentId)) {
                 log_message('error', 'Program payment ID not found in payment: ' . json_encode($payment));
                 return redirect()->back()->with('error', 'Unable to find associated program payment.');
             }
 
-            $programPayment = $this->makeGetRequest('/program-payments/' . $programPaymentId, [], false);
+            // Use combined endpoint to get program payment details and verify access
+            $combinedResponse = $this->makeGetRequest('/payments/program-payments/' . $programPaymentId . '/participants/' . $participantId, [], true);
+            $programPayment = null;
+            
+            if ($combinedResponse && isset($combinedResponse['data']['program_payment'])) {
+                $programPayment = $combinedResponse['data']['program_payment'];
+            } else {
+                // Fallback to individual endpoint if combined endpoint fails
+                $programPaymentResponse = $this->makeGetRequest('/program-payments/' . $programPaymentId, [], false);
+                $programPayment = $programPaymentResponse['data'] ?? null;
+            }
+            
+            if (!$programPayment) {
+                log_message('error', 'Program payment not found: ' . $programPaymentId);
+                return redirect()->back()->with('error', 'Unable to find associated program payment details.');
+            }
+            
             log_message('info', 'Program payment found: ' . json_encode($programPayment));
 
             // Get participant details
-            $participantId = session()->get('current_participant_id');
+            $participantData = $this->makeGetRequest('/participants/' . $participantId, [], true);
+            $participantCategory = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
+            
+            // Check if participant has access to this payment based on their category
+            $paymentType = $programPayment['type'] ?? 'all';
+            $hasAccess = ($paymentType === 'all') || ($paymentType === $participantCategory);
+            
+            if (!$hasAccess) {
+                log_message('warning', 'Unauthorized receipt download attempt: Participant ' . $participantId . ' (' . $participantCategory . ') tried to download receipt for ' . $paymentType . ' payment ' . $programPaymentId);
+                return redirect()->back()->with('error', 'You do not have access to this payment receipt.');
+            }
             $participant = $this->makeGetRequest('/participants/' . $participantId, [], false);
             log_message('info', 'Participant found: ' . ($participant ? 'yes' : 'no'));
 

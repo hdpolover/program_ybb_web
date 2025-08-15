@@ -25,16 +25,29 @@ class Auth implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
+        $uri = (string) $request->getUri();
+        log_message('debug', 'Auth Filter - Checking authentication for URI: ' . $uri);
+        
+        $isLoggedIn = session()->get('isLoggedIn');
+        $hasToken = session()->has('jwt_token');
+        
+        log_message('debug', 'Auth Filter - isLoggedIn: ' . ($isLoggedIn ? 'true' : 'false') . ', hasToken: ' . ($hasToken ? 'true' : 'false'));
+        
         // Check if user is logged in with a valid token
-        if (!session()->get('isLoggedIn') || !session()->has('jwt_token')) {
+        if (!$isLoggedIn || !$hasToken) {
+            log_message('warning', 'Auth Filter - Authentication failed for URI: ' . $uri . ' - redirecting to sign-in');
+            
             // If token missing but still marked as logged in, clean up the session
-            if (session()->get('isLoggedIn') && !session()->has('jwt_token')) {
+            if ($isLoggedIn && !$hasToken) {
+                log_message('debug', 'Auth Filter - Cleaning up session (logged in but no token)');
                 session()->remove('isLoggedIn');
                 session()->remove('user');
             }
             
             return redirect()->to(base_url('sign-in'))->with('error', 'Please sign in to access this page');
         }
+        
+        log_message('debug', 'Auth Filter - Authentication successful for URI: ' . $uri);
     }
 
     /**

@@ -127,7 +127,24 @@
             })
                 .then(response => {
                     console.log('Response received, status:', response.status);
-                    return response.json();
+                    
+                    // Check if the response is OK (status 200-299)
+                    if (!response.ok) {
+                        console.error('HTTP Error:', response.status, response.statusText);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        // If not JSON, get the text to see what was returned
+                        return response.text().then(text => {
+                            console.error('Non-JSON response received:', text.substring(0, 200) + '...');
+                            throw new Error('Server returned non-JSON response (possibly an error page)');
+                        });
+                    }
                 })
                 .then(data => {
                     console.log('Payment gateway response:', data);
@@ -167,9 +184,29 @@
                 .catch(error => {
                     console.error('Error processing payment request:', error);
                     isPaymentInProgress = false;
+                    
+                    let errorMessage = 'Failed to connect to payment gateway. Please try again.';
+                    
+                    // Provide more specific error messages based on the error type
+                    if (error.message.includes('HTTP 400')) {
+                        errorMessage = 'Invalid payment data. Please check your information and try again.';
+                    } else if (error.message.includes('HTTP 401')) {
+                        errorMessage = 'Authentication error. Please refresh the page and try again.';
+                    } else if (error.message.includes('HTTP 403')) {
+                        errorMessage = 'Access denied. Please contact support.';
+                    } else if (error.message.includes('HTTP 404')) {
+                        errorMessage = 'Payment service not found. Please contact support.';
+                    } else if (error.message.includes('HTTP 500')) {
+                        errorMessage = 'Server error. Please try again in a few minutes or contact support.';
+                    } else if (error.message.includes('non-JSON response')) {
+                        errorMessage = 'Server configuration error. Please contact support with error code: JSON_ERROR';
+                    } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                        errorMessage = 'Network connection error. Please check your internet connection and try again.';
+                    }
+                    
                     Swal.fire({
                         title: 'Payment Error',
-                        text: 'Failed to connect to payment gateway. Please try again.',
+                        text: errorMessage,
                         icon: 'error',
                         confirmButtonText: 'OK'
                     });

@@ -129,10 +129,14 @@ class TopbarController extends BaseController
             if (isset($response['id']) ) {
                 // Registration successful
 
-                // Get updated participants data to refresh the session
-                $updatedParticipants = $this->makeGetRequest('/participants/user/' . $userId, [], true);
+                // Get updated participants data to refresh the session using corrected API endpoint
+                $updatedParticipantsResponse = $this->makeGetRequest('/participants/user/' . $userId, [], true);
 
-                if ($updatedParticipants) {
+                // Note: makeGetRequest automatically extracts the 'data' portion, so we access 'participant' directly
+                if ($updatedParticipantsResponse && isset($updatedParticipantsResponse['participant']) && !empty($updatedParticipantsResponse['participant'])) {
+                    // Extract participant array from the API response structure (data portion already extracted)
+                    $updatedParticipants = $updatedParticipantsResponse['participant'];
+                    
                     // Update participants in session
                     session()->set('participants', $updatedParticipants);
 
@@ -435,7 +439,39 @@ class TopbarController extends BaseController
 
         $participantName = $currentParticipant['full_name'] ?? null;
         $profileImage = $currentParticipant['picture_url'] ?? null;
+        
+        // Log debug information
+        log_message('debug', 'TopbarController processTopbarData - currentParticipant: ' . ($currentParticipant ? json_encode($currentParticipant) : 'NULL'));
+        log_message('debug', 'TopbarController processTopbarData - participantName from currentParticipant: ' . ($participantName ?? 'NULL'));
+        
+        // If no participant name found, try to get name from user session or any participant
+        if (!$participantName) {
+            // Try to get name from user session
+            $user = session()->get('user');
+            log_message('debug', 'TopbarController processTopbarData - user session: ' . ($user ? json_encode($user) : 'NULL'));
+            
+            if (isset($user['full_name']) && !empty($user['full_name'])) {
+                $participantName = $user['full_name'];
+                log_message('debug', 'TopbarController processTopbarData - using user full_name: ' . $participantName);
+            } elseif (isset($user['name']) && !empty($user['name'])) {
+                $participantName = $user['name'];
+                log_message('debug', 'TopbarController processTopbarData - using user name: ' . $participantName);
+            }
+            // If still no name and we have participants, try the first one
+            elseif (!empty($participants)) {
+                log_message('debug', 'TopbarController processTopbarData - trying participants for name');
+                foreach ($participants as $p) {
+                    if (!empty($p['full_name'])) {
+                        $participantName = $p['full_name'];
+                        log_message('debug', 'TopbarController processTopbarData - using participant full_name: ' . $participantName);
+                        break;
+                    }
+                }
+            }
+        }
+        
         $name = $participantName ?: 'Guest';
+        log_message('debug', 'TopbarController processTopbarData - final name: ' . $name);
 
         // set current program to session
         if ($currentProgram !== null) {

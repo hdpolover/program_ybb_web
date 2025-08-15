@@ -3,7 +3,7 @@
 /**
  * Payment Actions Widget
  * Displays action buttons and payment status based on the payment state
- * Enhanced with more actionable features and better UI
+ * Enhanced with payment timing validation and category access control
  */
 
 // Include helper functions
@@ -13,6 +13,55 @@ require_once(__DIR__ . '/../helpers/payment_helpers.php');
 $paymentStatus = getPaymentStatus($payments ?? []);
 $paymentCompleted = $paymentStatus['completed'];
 $latestPayment = $paymentStatus['latestPayment'];
+
+// Get participant category and payment access validation
+$participantCategory = $participantCategory ?? 'self_funded';
+$paymentType = $programPayment['type'] ?? 'all';
+
+// Check if participant can make payment for this payment type
+$canMakePayment = ($paymentType === 'all') || ($paymentType === $participantCategory);
+
+// Category mismatch messages
+$categoryMismatchMessage = '';
+if (!$canMakePayment) {
+    if ($paymentType === 'fully_funded' && $participantCategory === 'self_funded') {
+        $categoryMismatchMessage = 'This payment is only available for fully funded participants';
+    } elseif ($paymentType === 'self_funded' && $participantCategory === 'fully_funded') {
+        $categoryMismatchMessage = 'This payment is only available for self funded participants';
+    } else {
+        $categoryMismatchMessage = 'This payment is only available for ' . $paymentType . ' participants';
+    }
+}
+
+// Check if participant has payment history (access through history even if category doesn't match)
+$hasPaymentHistory = !empty($payments);
+
+// Grant access if they can make payment OR have payment history
+$hasAccess = $canMakePayment || $hasPaymentHistory;
+
+// Payment timing validation
+$currentDate = new DateTime();
+$startDate = new DateTime($programPayment['start_date']);
+$endDate = new DateTime($programPayment['end_date']);
+
+$paymentHasStarted = $currentDate >= $startDate;
+$paymentIsActive = $currentDate >= $startDate && $currentDate <= $endDate;
+$paymentHasEnded = $currentDate > $endDate;
+
+// Calculate days until start (if not started yet)
+$daysUntilStart = 0;
+$comingSoonMessage = '';
+if (!$paymentHasStarted) {
+    $interval = $currentDate->diff($startDate);
+    $daysUntilStart = $interval->days;
+    if ($daysUntilStart == 0) {
+        $comingSoonMessage = 'Payment opens today at ' . $startDate->format('H:i');
+    } elseif ($daysUntilStart == 1) {
+        $comingSoonMessage = 'Payment opens tomorrow (' . $startDate->format('M d, Y') . ')';
+    } else {
+        $comingSoonMessage = 'Payment opens in ' . $daysUntilStart . ' days (' . $startDate->format('M d, Y') . ')';
+    }
+}
 ?>
 
 <div class="card border shadow-none mb-3">
@@ -73,7 +122,7 @@ $latestPayment = $paymentStatus['latestPayment'];
 
         <?php elseif ($latestPayment && isset($latestPayment['status'])): ?>
             <?php if ($latestPayment['status'] == 0 || $latestPayment['status'] == 'created' || $latestPayment['status'] == 'unpaid'): ?>
-                <!-- Payment Required UI -->
+                <!-- Payment Required UI with timing and access validation -->
                 <div class="mb-4">
                     <div class="text-center">
                         <div class="avatar-md mx-auto mb-3">
@@ -84,95 +133,222 @@ $latestPayment = $paymentStatus['latestPayment'];
                         <h5 class="fs-16 mb-2">Payment Required</h5>
                         <p class="text-muted mb-4">This payment requires your attention.</p>
 
-                        <?php
-                        // Check if due date is approaching
-                        $isDueSoon = false;
-                        $isOverdue = false;
-
-                        if (isset($programPayment['end_date'])) {
-                            $today = new DateTime();
-                            $dueDate = new DateTime($programPayment['end_date']);
-                            $interval = $today->diff($dueDate);
-
-                            if ($dueDate < $today) {
-                                $isOverdue = true;
-                            } elseif ($interval->days <= 7) {
-                                $isDueSoon = true;
-                            }
-                        }
-                        ?>
-
-                        <?php if ($isOverdue): ?>
+                        <?php if (!$paymentHasStarted): ?>
+                            <!-- Payment hasn't started yet -->
+                            <div class="alert alert-info mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="ri-time-line fs-18"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-2">
+                                        <h6 class="alert-heading mb-1">Payment Coming Soon</h6>
+                                        <p class="mb-0 fs-13"><?= htmlspecialchars($comingSoonMessage); ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-info btn-lg w-100" disabled>
+                                <i class="ri-time-line align-middle me-1"></i> 
+                                <?php if ($daysUntilStart == 0): ?>
+                                    Opens Today
+                                <?php elseif ($daysUntilStart == 1): ?>
+                                    Opens Tomorrow
+                                <?php else: ?>
+                                    Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                                <?php endif; ?>
+                            </button>
+                        <?php elseif ($paymentHasEnded): ?>
+                            <!-- Payment period has ended -->
                             <div class="alert alert-danger mb-3">
                                 <div class="d-flex">
                                     <div class="flex-shrink-0">
                                         <i class="ri-error-warning-line fs-18"></i>
                                     </div>
                                     <div class="flex-grow-1 ms-2">
-                                        <h6 class="alert-heading mb-1">Payment Overdue</h6>
-                                        <p class="mb-0 fs-13">This payment is past the due date. Please make your payment as soon as possible.</p>
+                                        <h6 class="alert-heading mb-1">Payment Expired</h6>
+                                        <p class="mb-0 fs-13">This payment period ended on <?= $endDate->format('M d, Y H:i'); ?> and can no longer be processed online. Please contact support for assistance.</p>
                                     </div>
                                 </div>
                             </div>
-                        <?php elseif ($isDueSoon): ?>
+                            <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-danger btn-lg w-100">
+                                <i class="ri-customer-service-2-line align-middle me-1"></i> Contact Support
+                            </a>
+                        <?php elseif (!$hasAccess): ?>
+                            <!-- Payment is active but participant doesn't have access -->
                             <div class="alert alert-warning mb-3">
                                 <div class="d-flex">
                                     <div class="flex-shrink-0">
-                                        <i class="ri-timer-line fs-18"></i>
+                                        <i class="ri-lock-line fs-18"></i>
                                     </div>
                                     <div class="flex-grow-1 ms-2">
-                                        <h6 class="alert-heading mb-1">Due Soon</h6>
-                                        <p class="mb-0 fs-13">This payment is due within 7 days. Please make your payment soon.</p>
+                                        <h6 class="alert-heading mb-1">Access Restricted</h6>
+                                        <p class="mb-0 fs-13"><?= htmlspecialchars($categoryMismatchMessage); ?></p>
                                     </div>
                                 </div>
                             </div>
+                            <button type="button" class="btn btn-secondary btn-lg w-100" disabled>
+                                <i class="ri-lock-line align-middle me-1"></i> Restricted
+                            </button>
+                        <?php else: ?>
+                            <!-- Payment is active and participant has access -->
+                            <?php
+                            // Check if due date is approaching
+                            $isDueSoon = false;
+                            $isOverdue = false;
+
+                            if (isset($programPayment['end_date'])) {
+                                $today = new DateTime();
+                                $dueDate = new DateTime($programPayment['end_date']);
+                                $interval = $today->diff($dueDate);
+
+                                if ($dueDate < $today) {
+                                    $isOverdue = true;
+                                } elseif ($interval->days <= 7) {
+                                    $isDueSoon = true;
+                                }
+                            }
+                            ?>
+
+                            <?php if ($isOverdue): ?>
+                                <div class="alert alert-danger mb-3">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <i class="ri-error-warning-line fs-18"></i>
+                                        </div>
+                                        <div class="flex-grow-1 ms-2">
+                                            <h6 class="alert-heading mb-1">Payment Overdue</h6>
+                                            <p class="mb-0 fs-13">This payment is past the due date. Please make your payment as soon as possible.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php elseif ($isDueSoon): ?>
+                                <div class="alert alert-warning mb-3">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <i class="ri-timer-line fs-18"></i>
+                                        </div>
+                                        <div class="flex-grow-1 ms-2">
+                                            <h6 class="alert-heading mb-1">Due Soon</h6>
+                                            <p class="mb-0 fs-13">This payment is due within 7 days. Please make your payment soon.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Show payment history access notice if applicable -->
+                            <?php if (!$canMakePayment && $hasPaymentHistory): ?>
+                                <div class="alert alert-info mb-3">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <i class="ri-history-line fs-18"></i>
+                                        </div>
+                                        <div class="flex-grow-1 ms-2">
+                                            <h6 class="alert-heading mb-1">Payment History Access</h6>
+                                            <p class="mb-0 fs-13">You can view this payment because you have payment history for it, even though it's for <?= ucfirst($paymentType); ?> participants.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Payment Methods Section -->
+                            <?php if (isset($paymentMethods) && !empty($paymentMethods)): ?>
+                                <?php if ($canMakePayment && $paymentHasStarted && !$paymentHasEnded): ?>
+                                    <!-- Payment is active and participant has access -->
+                                    <div class="mb-4">
+                                        <h6 class="fs-14 mb-3">Select Payment Method:</h6>
+                                        <div class="d-grid gap-2">
+                                            <?php foreach ($paymentMethods as $index => $method): ?>
+                                                <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '') . '&method=' . $method['id']); ?>" class="btn btn-outline-primary position-relative payment-method-btn">
+                                                    <div class="d-flex align-items-center">
+                                                        <?php
+                                                        // Define icons for different payment methods
+                                                        $methodIcon = 'ri-bank-card-line';
+                                                        $methodName = strtolower($method['name'] ?? '');
+
+                                                        if (strpos($methodName, 'paypal') !== false) {
+                                                            $methodIcon = 'ri-paypal-line';
+                                                        } elseif (strpos($methodName, 'bank') !== false || strpos($methodName, 'transfer') !== false) {
+                                                            $methodIcon = 'ri-bank-line';
+                                                        } elseif (strpos($methodName, 'credit') !== false || strpos($methodName, 'card') !== false) {
+                                                            $methodIcon = 'ri-bank-card-line';
+                                                        } elseif (strpos($methodName, 'cash') !== false) {
+                                                            $methodIcon = 'ri-money-dollar-box-line';
+                                                        }
+                                                        ?>
+                                                        <i class="<?= $methodIcon ?> fs-18 me-2"></i>
+                                                        <span><?= esc($method['name']) ?></span>
+                                                    </div>
+                                                    <?php if ($index === 0): ?>
+                                                        <span class="badge bg-success position-absolute top-0 end-0 translate-middle-y me-2">Recommended</span>
+                                                    <?php endif; ?>
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <!-- Payment methods not available due to timing or access restrictions -->
+                                    <div class="mb-4">
+                                        <h6 class="fs-14 mb-3">Payment Methods:</h6>
+                                        <div class="alert alert-secondary">
+                                            <p class="mb-0">
+                                                <i class="ri-information-line me-1"></i>
+                                                <?php if (!$paymentHasStarted): ?>
+                                                    Payment methods will be available when the payment period starts.
+                                                <?php elseif ($paymentHasEnded): ?>
+                                                    Payment methods are no longer available as the payment period has ended.
+                                                <?php elseif (!$canMakePayment): ?>
+                                                    Payment methods are restricted for your participant category.
+                                                <?php else: ?>
+                                                    Payment methods are currently unavailable.
+                                                <?php endif; ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <!-- No specific payment methods, use modal approach with timing validation -->
+                                <?php if ($canMakePayment && $paymentHasStarted && !$paymentHasEnded): ?>
+                                    <div class="d-grid">
+                                        <button type="button" class="btn btn-lg btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                            data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
+                                            data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                            data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                            data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                            title="Make Payment">
+                                            <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <!-- Payment not available due to timing or access restrictions -->
+                                    <div class="d-grid">
+                                        <?php if (!$paymentHasStarted): ?>
+                                            <button type="button" class="btn btn-lg btn-info" disabled>
+                                                <i class="ri-time-line align-middle me-1"></i> 
+                                                <?php if ($daysUntilStart == 0): ?>
+                                                    Opens Today
+                                                <?php elseif ($daysUntilStart == 1): ?>
+                                                    Opens Tomorrow
+                                                <?php else: ?>
+                                                    Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                                                <?php endif; ?>
+                                            </button>
+                                        <?php elseif ($paymentHasEnded): ?>
+                                            <button type="button" class="btn btn-lg btn-secondary" disabled>
+                                                <i class="ri-time-line align-middle me-1"></i> Payment Expired
+                                            </button>
+                                        <?php elseif (!$canMakePayment): ?>
+                                            <button type="button" class="btn btn-lg btn-secondary" disabled>
+                                                <i class="ri-lock-line align-middle me-1"></i> Restricted
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button" class="btn btn-lg btn-secondary" disabled>
+                                                <i class="ri-alert-line align-middle me-1"></i> Unavailable
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
-
-                    <!-- Payment Methods Section -->
-                    <?php if (isset($paymentMethods) && !empty($paymentMethods)): ?>
-                        <div class="mb-4">
-                            <h6 class="fs-14 mb-3">Select Payment Method:</h6>
-                            <div class="d-grid gap-2">
-                                <?php foreach ($paymentMethods as $index => $method): ?>
-                                    <a href="<?= site_url('participant/programPayment?pay=' . (isset($programPayment['id']) ? $programPayment['id'] : '') . '&method=' . $method['id']); ?>" class="btn btn-outline-primary position-relative payment-method-btn">
-                                        <div class="d-flex align-items-center">
-                                            <?php
-                                            // Define icons for different payment methods
-                                            $methodIcon = 'ri-bank-card-line';
-                                            $methodName = strtolower($method['name'] ?? '');
-
-                                            if (strpos($methodName, 'paypal') !== false) {
-                                                $methodIcon = 'ri-paypal-line';
-                                            } elseif (strpos($methodName, 'bank') !== false || strpos($methodName, 'transfer') !== false) {
-                                                $methodIcon = 'ri-bank-line';
-                                            } elseif (strpos($methodName, 'credit') !== false || strpos($methodName, 'card') !== false) {
-                                                $methodIcon = 'ri-bank-card-line';
-                                            } elseif (strpos($methodName, 'cash') !== false) {
-                                                $methodIcon = 'ri-money-dollar-box-line';
-                                            }
-                                            ?>
-                                            <i class="<?= $methodIcon ?> fs-18 me-2"></i>
-                                            <span><?= esc($method['name']) ?></span>
-                                        </div>
-                                        <?php if ($index === 0): ?>
-                                            <span class="badge bg-success position-absolute top-0 end-0 translate-middle-y me-2">Recommended</span>
-                                        <?php endif; ?>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        </div> <?php else: ?>
-                        <div class="d-grid">
-                            <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
-                                data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
-                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
-                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
-                                title="Make Payment">
-                                <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
-                            </button>
-                        </div>
-                    <?php endif; ?>
                 </div>
             <?php elseif ($latestPayment['status'] == 1 || $latestPayment['status'] == 'pending'): ?> <!-- Payment Processing UI -->
                 <div class="mb-4 text-center">
@@ -215,18 +391,7 @@ $latestPayment = $paymentStatus['latestPayment'];
                         </button>
                     </div>
                 </div><?php elseif ($latestPayment['status'] == 3 || $latestPayment['status'] == 'cancelled'): ?>
-                <?php
-                        // Check if payment is overdue
-                        $isOverdue = false;
-                        if (isset($programPayment['end_date'])) {
-                            $today = new DateTime();
-                            $dueDate = new DateTime($programPayment['end_date']);
-                            if ($dueDate < $today) {
-                                $isOverdue = true;
-                            }
-                        }
-                ?>
-                <!-- Payment Cancelled UI -->
+                <!-- Payment Cancelled UI with timing and access validation -->
                 <div class="mb-4 text-center">
                     <div class="avatar-md mx-auto mb-3">
                         <div class="avatar-title bg-danger-subtle text-danger rounded-circle display-5">
@@ -237,16 +402,66 @@ $latestPayment = $paymentStatus['latestPayment'];
                     <div class="alert alert-danger mb-3">
                         <p class="mb-0">This payment has been cancelled. Contact support for more information.</p>
                     </div>
-                    <div class="d-grid gap-2"> <?php if (!$isOverdue): ?>
+                    
+                    <?php if (!$paymentHasStarted): ?>
+                        <!-- Payment hasn't started yet -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-time-line fs-18"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <h6 class="alert-heading mb-1">Payment Coming Soon</h6>
+                                    <p class="mb-0 fs-13"><?= htmlspecialchars($comingSoonMessage); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-info btn-lg w-100" disabled>
+                            <i class="ri-time-line align-middle me-1"></i> 
+                            <?php if ($daysUntilStart == 0): ?>
+                                Opens Today
+                            <?php elseif ($daysUntilStart == 1): ?>
+                                Opens Tomorrow
+                            <?php else: ?>
+                                Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                            <?php endif; ?>
+                        </button>
+                    <?php elseif ($paymentHasEnded): ?>
+                        <!-- Payment period has ended -->
+                        <div class="alert alert-secondary mb-0">
+                            <p class="mb-0">This payment is overdue and can no longer be processed online. Please contact support for assistance.</p>
+                        </div>
+                    <?php elseif (!$canMakePayment): ?>
+                        <!-- Payment is active but participant cannot make payments due to category restrictions -->
+                        <div class="alert alert-warning mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-lock-line fs-18"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <h6 class="alert-heading mb-1">Access Restricted</h6>
+                                    <p class="mb-0 fs-13"><?= htmlspecialchars($categoryMismatchMessage); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-lg w-100" disabled>
+                            <i class="ri-lock-line align-middle me-1"></i> Restricted
+                        </button>
+                    <?php else: ?>
+                        <!-- Payment is active and participant can make payments - allow retry -->
+                        <div class="d-grid gap-2"> 
                             <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                 data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                                data-payment-amount="<?= $programPayment['usd_amount'] ?? ''; ?>"
-                                data-payment-description="<?= $programPayment['name'] ?? ''; ?>"
-                                title="Make Payment">
+                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                title="Try Payment Again">
                                 <i class="ri-bank-card-line align-middle me-1"></i> Try Again
                             </button>
-
-                        <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <div class="d-grid gap-2 mt-3">
                         <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-outline-danger">
                             <i class="ri-customer-service-2-line align-middle me-1"></i> Contact Support
                         </a>
@@ -278,26 +493,69 @@ $latestPayment = $paymentStatus['latestPayment'];
                             <h6 class="alert-heading mb-1">Reason:</h6>
                             <p class="mb-0"><?= $latestPayment['rejection_reason'] ?></p>
                         <?php endif; ?>
-                    </div> <?php if (!$isOverdue): ?>
+                    </div> 
+                    
+                    <?php if (!$paymentHasStarted): ?>
+                        <!-- Payment hasn't started yet -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-time-line fs-18"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <h6 class="alert-heading mb-1">Payment Coming Soon</h6>
+                                    <p class="mb-0 fs-13"><?= htmlspecialchars($comingSoonMessage); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-info btn-lg w-100" disabled>
+                            <i class="ri-time-line align-middle me-1"></i> 
+                            <?php if ($daysUntilStart == 0): ?>
+                                Opens Today
+                            <?php elseif ($daysUntilStart == 1): ?>
+                                Opens Tomorrow
+                            <?php else: ?>
+                                Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                            <?php endif; ?>
+                        </button>
+                    <?php elseif ($paymentHasEnded): ?>
+                        <!-- Payment period has ended -->
+                        <div class="alert alert-secondary mb-0">
+                            <p class="mb-0">This payment is overdue and can no longer be processed online. Please contact support for assistance.</p>
+                        </div>
+                    <?php elseif (!$canMakePayment): ?>
+                        <!-- Payment is active but participant cannot make payments due to category restrictions -->
+                        <div class="alert alert-warning mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-lock-line fs-18"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <h6 class="alert-heading mb-1">Access Restricted</h6>
+                                    <p class="mb-0 fs-13"><?= htmlspecialchars($categoryMismatchMessage); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-lg w-100" disabled>
+                            <i class="ri-lock-line align-middle me-1"></i> Restricted
+                        </button>
+                    <?php else: ?>
+                        <!-- Payment is active and participant has access - allow retry -->
                         <div class="d-grid">
                             <button type="button" class="btn btn-md btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                 data-payment-id="<?= $programPayment['id']; ?>"
                                 data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
                                 data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
                                 data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
-
                                 title="Try Payment Again">
                                 <i class="ri-refresh-line align-middle me-1"></i> Try Again
                             </button>
                         </div>
-                    <?php else: ?>
-                        <div class="alert alert-secondary mb-0">
-                            <p class="mb-0">This payment is overdue and can no longer be processed online. Please contact support for assistance.</p>
-                        </div>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
-        <?php else: ?> <!-- Default Payment Required UI -->
+        <?php else: ?> 
+            <!-- Default Payment Required UI with timing and access validation -->
             <div class="mb-4 text-center">
                 <div class="avatar-md mx-auto mb-3">
                     <div class="avatar-title bg-warning-subtle text-warning rounded-circle display-5">
@@ -307,27 +565,31 @@ $latestPayment = $paymentStatus['latestPayment'];
                 <h5 class="fs-16 mb-2">Payment Required</h5>
                 <p class="text-muted mb-4">This payment requires your attention.</p>
 
-                <?php
-                // Check if payment is overdue
-                $isOverdue = false;
-                if (isset($programPayment['end_date'])) {
-                    $today = new DateTime();
-                    $dueDate = new DateTime($programPayment['end_date']);
-                    if ($dueDate < $today) {
-                        $isOverdue = true;
-                    }
-                }
-                ?>
-
-                <?php if (!$isOverdue): ?>
-                    <button type="button" class="btn btn-lg btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
-                        data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                        data-payment-amount="<?= $programPayment['usd_amount'] ?? ''; ?>"
-                        data-payment-description="<?= $programPayment['name'] ?? ''; ?>"
-                        title="Make Payment">
-                        <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
+                <?php if (!$paymentHasStarted): ?>
+                    <!-- Payment hasn't started yet -->
+                    <div class="alert alert-info mb-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="ri-time-line fs-18"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <h6 class="alert-heading mb-1">Payment Coming Soon</h6>
+                                <p class="mb-0 fs-13"><?= htmlspecialchars($comingSoonMessage); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-info btn-lg w-100" disabled>
+                        <i class="ri-time-line align-middle me-1"></i> 
+                        <?php if ($daysUntilStart == 0): ?>
+                            Opens Today
+                        <?php elseif ($daysUntilStart == 1): ?>
+                            Opens Tomorrow
+                        <?php else: ?>
+                            Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                        <?php endif; ?>
                     </button>
-                <?php else: ?>
+                <?php elseif ($paymentHasEnded): ?>
+                    <!-- Payment period has ended -->
                     <div class="alert alert-danger mb-3">
                         <div class="d-flex">
                             <div class="flex-shrink-0">
@@ -342,6 +604,79 @@ $latestPayment = $paymentStatus['latestPayment'];
                     <a href="<?= site_url('participant/support/programPayment/' . (isset($programPayment['id']) ? $programPayment['id'] : '')) ?>" class="btn btn-danger btn-lg w-100">
                         <i class="ri-customer-service-2-line align-middle me-1"></i> Contact Support
                     </a>
+                <?php elseif (!$hasAccess): ?>
+                    <!-- Payment is active but participant doesn't have access -->
+                    <div class="alert alert-warning mb-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="ri-lock-line fs-18"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <h6 class="alert-heading mb-1">Access Restricted</h6>
+                                <p class="mb-0 fs-13"><?= htmlspecialchars($categoryMismatchMessage); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-lg w-100" disabled>
+                        <i class="ri-lock-line align-middle me-1"></i> Restricted
+                    </button>
+                <?php else: ?>
+                    <!-- Payment is active and participant has access -->
+                    
+                    <!-- Show payment history access notice if applicable -->
+                    <?php if (!$canMakePayment && $hasPaymentHistory): ?>
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-history-line fs-18"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <h6 class="alert-heading mb-1">Payment History Access</h6>
+                                    <p class="mb-0 fs-13">You can view this payment because you have payment history for it, even though it's for <?= ucfirst($paymentType); ?> participants.</p>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if (!$canMakePayment): ?>
+                        <!-- Participant has history but can't make new payments due to category mismatch -->
+                        <button type="button" class="btn btn-lg btn-secondary w-100" disabled>
+                            <i class="ri-lock-line align-middle me-1"></i> Cannot Make New Payments
+                        </button>
+                        <small class="text-muted d-block mt-2">You can view this payment due to payment history, but cannot make new payments for <?= ucfirst($paymentType); ?> participants.</small>
+                    <?php else: ?>
+                        <!-- Participant can make payment - check if payment is currently active -->
+                        <?php if (!$paymentHasStarted): ?>
+                            <!-- Payment hasn't started yet - show coming soon -->
+                            <button type="button" class="btn btn-lg btn-info w-100" disabled>
+                                <i class="ri-time-line align-middle me-1"></i> 
+                                <?php if ($daysUntilStart == 0): ?>
+                                    Opens Today
+                                <?php elseif ($daysUntilStart == 1): ?>
+                                    Opens Tomorrow
+                                <?php else: ?>
+                                    Opens in <?= $daysUntilStart ?> day<?= $daysUntilStart > 1 ? 's' : '' ?>
+                                <?php endif; ?>
+                            </button>
+                            <small class="text-muted d-block mt-2"><?= htmlspecialchars($comingSoonMessage); ?></small>
+                        <?php elseif ($paymentHasEnded): ?>
+                            <!-- Payment period has ended - show expired -->
+                            <button type="button" class="btn btn-lg btn-secondary w-100" disabled>
+                                <i class="ri-time-line align-middle me-1"></i> Payment Expired
+                            </button>
+                            <small class="text-muted d-block mt-2">Payment period ended on <?= $endDate->format('M d, Y H:i'); ?></small>
+                        <?php else: ?>
+                            <!-- Payment is active and participant has access - allow payment -->
+                            <button type="button" class="btn btn-lg btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
+                                data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
+                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
+                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
+                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                title="Make Payment">
+                                <i class="ri-bank-card-line align-middle me-1"></i> Make Payment
+                            </button>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

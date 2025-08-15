@@ -8,70 +8,43 @@ class Documents extends BaseController
 {
     public function index()
     {
-        // Get current program ID from session
-        $currentProgramId = session()->get('current_program_id');
-
-        // Safety check - if no program ID, redirect to home
-        if (empty($currentProgramId)) {
-            return redirect()->to(base_url('dashboard'));
-        }
-
         // Get current participant ID from session
         $currentParticipantId = session()->get('current_participant_id');
 
-        // CRITICAL FIX: Force refresh of API data for the current program
-        // 1. Get all documents for current user
-        $documentsData = $this->makeGetRequest('/program-documents/program/' . $currentProgramId, [], false);
-
-        // check for any successful payments
-        $participantPayments = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
-
-        // loop through payments and check if any are successful
-        $hasSuccessfulPayment = false;
-
-        if (isset($participantPayments) && is_array($participantPayments)) {
-            foreach ($participantPayments as $payment) {
-                if (isset($payment['status']) && $payment['status'] === '2') {
-                    $hasSuccessfulPayment = true;
-                    break;
-                }
-            }
+        // Safety check - if no participant ID, redirect to dashboard
+        if (empty($currentParticipantId)) {
+            return redirect()->to(base_url('dashboard'));
         }
 
-        // get participant statuses
-        $participantStatuses = $this->makeGetRequest('/participants/' . $currentParticipantId . '/status', [], false, false);
+        // Use the simplified API endpoint to get all participant documents
+        $response = $this->makeGetRequest('/participants/' . $currentParticipantId . '/documents', [], false);
 
-        $hasSubmittedForm = false;
-
-        // check if participant form_status from $participantStatuses equals to 2. $participantStatuse is one object. not an array
-        if (isset($participantStatuses)) {
-            if (isset($participantStatuses['form_status']) && $participantStatuses['form_status'] === '2') {
-                $hasSubmittedForm = true;
+        // Extract documents from the response
+        $documents = [];
+        
+        // The makeGetRequest method returns the 'data' portion of the API response directly
+        // So $response is already the documents array when the API returns success
+        if (is_array($response)) {
+            // Check if this is a real documents array (has document structure)
+            if (!empty($response) && isset($response[0]) && isset($response[0]['id'])) {
+                // This is the real documents array
+                $documents = $response;
+            } else {
+                // Empty array or unexpected structure
+                $documents = [];
             }
-        }
-
-        $visibleDocuments = [];
-
-        // check if participant has submitted form and has successful payment
-        if ($hasSubmittedForm && $hasSuccessfulPayment) {
-            // show documents only if participant has submitted form and has successful payment
-            if (isset($documentsData) && is_array($documentsData)) {
-                foreach ($documentsData as $document) {
-                    $visibleDocuments[] = $document;
-                }
-            }
+        } else if (isset($response['message']) && strpos($response['message'], 'working') !== false) {
+            // This might be test/debug data returned directly
+            $documents = [];
+            session()->setFlashdata('info', 'Documents system is currently being set up. Please check back later.');
         } else {
-            // do not show any documents
-            $visibleDocuments = [];
+            $documents = [];
         }
-
 
         $data = [
             'title' => 'Program Documents',
-            'documents' => $visibleDocuments,
+            'documents' => $documents,
         ];
-
-        // var_dump($hasSubmittedForm, $hasSuccessfulPayment, $documentsData, $participantStatuses, $visibleDocuments); // Debugging output
 
         return $this->render('participant/documents/program-docs', $data);
     }

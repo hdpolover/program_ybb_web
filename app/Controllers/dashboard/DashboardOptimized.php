@@ -110,7 +110,13 @@ class DashboardOptimized extends BaseController
      */
     private function getPaymentStatusCached(int $participantId): array
     {
-        $participantPayments = $this->makeGetRequest('/payments/participants/' . $participantId, [], false, false);
+        $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . $participantId, [], false, false);
+        
+        // Extract payments array from the new nested response structure
+        $participantPayments = null;
+        if (isset($participantPaymentsResponse['data']['payments']) && is_array($participantPaymentsResponse['data']['payments'])) {
+            $participantPayments = $participantPaymentsResponse['data']['payments'];
+        }
         
         $status = 'completed';
         $dueDate = null;

@@ -71,11 +71,10 @@
                                                     $counter = 1;
                                                     if (isset($documents) && !empty($documents)):
                                                         foreach ($documents as $document):
-                                                            // Only show documents with visibility = 1
-                                                            if ($document['visibility'] == 1):
-                                                                $hasVisibleDocs = true;
+                                                            // All documents returned by the API are already filtered for visibility and access
+                                                            $hasVisibleDocs = true;
                                                     ?>
-                                                                <tr class="document-row" data-type="<?= $document['is_upload'] ? 'upload-required' : ($document['is_generated'] ? 'can-generate' : 'reference') ?>">
+                                                                <tr class="document-row" data-type="<?= $document['is_upload'] == '1' ? 'upload-required' : ($document['is_generated'] == '1' ? 'can-generate' : 'reference') ?>">
                                                                     <td><?= $counter++ ?></td>
                                                                     <td>
                                                                         <h6 class="mb-1"><?= $document['name'] ?? 'Program Document' ?></h6>
@@ -90,9 +89,9 @@
                                                                         </p>
                                                                     </td>
                                                                     <td>
-                                                                        <?php if ($document['is_upload']): ?>
+                                                                        <?php if ($document['is_upload'] == '1'): ?>
                                                                             <span class="badge bg-info">Upload Required</span>
-                                                                        <?php elseif ($document['is_generated']): ?>
+                                                                        <?php elseif ($document['is_generated'] == '1'): ?>
                                                                             <span class="badge bg-primary">Can Generate</span>
                                                                         <?php else: ?>
                                                                             <span class="badge bg-secondary">Reference</span>
@@ -120,7 +119,6 @@
                                                                     </td>
                                                                 </tr>
                                                         <?php
-                                                            endif;
                                                         endforeach;
                                                     endif;
 

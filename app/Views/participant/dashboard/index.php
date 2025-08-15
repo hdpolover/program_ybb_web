@@ -57,6 +57,14 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                                     'program' => $currentProgram ?? null,
                                 ]); ?>
 
+                                <!-- Include Participant Category Card -->
+                                <?php if (isset($detailedParticipant)): ?>
+                                    <?php echo view('participant/dashboard/participant_category_card', [
+                                        'currentParticipant' => $currentParticipant ?? null,
+                                        'detailedParticipant' => $detailedParticipant ?? null,
+                                    ]); ?>
+                                <?php endif; ?>
+
                                 <!-- Notification Center -->
                                 <div class="row mb-4">
                                     <div class="col-12">

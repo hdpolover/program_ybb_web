@@ -182,6 +182,11 @@ class Auth extends BaseController
         // Get program slug from query parameter
         $programSlug = $this->request->getGet('program');
         log_message('debug', 'Program slug from query: ' . ($programSlug ?? 'not provided'));
+        
+        // Get registration type from query parameter (self_funded or fully_funded)
+        $registrationType = $this->request->getGet('type');
+        log_message('debug', 'Registration type from query: ' . ($registrationType ?? 'not provided'));
+        
         $programData = null;
 
         // If program slug is provided, fetch program data
@@ -276,6 +281,7 @@ class Auth extends BaseController
             'title' => 'Sign Up',
             'program' => $programData,
             'programSlug' => $programSlug,
+            'registrationType' => $registrationType,
             'ambassadorId' => $ambassadorId,
         ];
 
@@ -511,11 +517,14 @@ class Auth extends BaseController
                     $session->set('user', $response['user']);
                 }
 
-                // get participants data from api
-                $participants = $this->makeGetRequest('/participants/user/' . $response['user']['id'], [], true);
+                // get participants data from api using the updated endpoint
+                $participantsResponse = $this->makeGetRequest('/participants/user/' . $response['user']['id'], [], true);
 
-                if ($participants) {
-
+                // Note: makeGetRequest automatically extracts the 'data' portion, so we access 'participant' directly
+                if ($participantsResponse && isset($participantsResponse['participant']) && !empty($participantsResponse['participant'])) {
+                    // Extract participant array from the API response structure (data portion already extracted)
+                    $participants = $participantsResponse['participant'];
+                    
                     $session->set('participants', $participants);
                     $session->set('isLoggedIn', true);
                     log_message('info', 'User logged in successfully: ' . $response['user']['id']);
