@@ -364,6 +364,97 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                         </div>
                                     </div>
 
+                                    <!-- Category Switch Information Section -->
+                                    <?php if (!empty($switchEligibility)): ?>
+                                        <?php
+                                        // Fix: Use 'eligible' instead of 'canSwitch' to match API response
+                                        $canSwitch = $switchEligibility['eligible'] ?? false;
+                                        $currentCategory = $switchEligibility['current_category'] ?? $participantCategory;
+                                        $reasons = $switchEligibility['reasons'] ?? [];
+                                        $hasFullyFundedExpired = false;
+                                        
+                                        // Check if there are expired fully funded payments
+                                        if (!empty($programPayments)) {
+                                            $currentDate = new DateTime();
+                                            foreach ($programPayments as $payment) {
+                                                if (($payment['type'] ?? 'all') === 'fully_funded') {
+                                                    $endDate = new DateTime($payment['end_date']);
+                                                    if ($currentDate > $endDate) {
+                                                        $hasFullyFundedExpired = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        ?>
+                                        
+                                        <?php if ($currentCategory === 'fully_funded' && ($canSwitch || $hasFullyFundedExpired)): ?>
+                                            <div class="alert alert-info border-info" role="alert">
+                                                <div class="d-flex align-items-start">
+                                                    <div class="flex-shrink-0">
+                                                        <i class="ri-information-line display-6 text-info"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h5 class="alert-heading mb-2">
+                                                            <i class="ri-exchange-line me-1"></i>
+                                                            Category Switch Available
+                                                        </h5>
+                                                        
+                                                        <?php if ($hasFullyFundedExpired): ?>
+                                                            <p class="mb-3">
+                                                                <strong>Important Notice:</strong> Your fully funded registration payment period has expired. 
+                                                                Don't worry - you can still participate in the program by switching to self-funded status.
+                                                            </p>
+                                                        <?php endif; ?>
+                                                        
+                                                        <?php if ($canSwitch): ?>
+                                                            <div class="mb-3">
+                                                                <h6 class="text-success">
+                                                                    <i class="ri-checkbox-circle-line me-1"></i>
+                                                                    Switch Available: You're eligible to switch from Fully Funded to Self Funded
+                                                                </h6>
+                                                                <p class="mb-2">
+                                                                    By switching to self-funded status, you'll be able to:
+                                                                </p>
+                                                                <ul class="mb-3">
+                                                                    <li>Continue with your program participation</li>
+                                                                    <li>Access self-funded payment options</li>
+                                                                    <li>Complete your registration and program fees</li>
+                                                                </ul>
+                                                            </div>
+                                                            
+                                                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                                <a href="<?= base_url('dashboard') ?>" class="btn btn-info btn-sm">
+                                                                    <i class="ri-exchange-line me-1"></i>
+                                                                    Switch to Self Funded
+                                                                </a>
+                                                                <small class="text-muted">
+                                                                    <i class="ri-shield-check-line me-1"></i>
+                                                                    Secure and instant category switch
+                                                                </small>
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <div class="mb-3">
+                                                                <h6 class="text-warning">
+                                                                    <i class="ri-error-warning-line me-1"></i>
+                                                                    Switch Requirements Not Met
+                                                                </h6>
+                                                                <?php if (!empty($reasons)): ?>
+                                                                    <p class="mb-2">To switch categories, please ensure:</p>
+                                                                    <ul class="mb-0">
+                                                                        <?php foreach ($reasons as $reason): ?>
+                                                                            <li><?= esc($reason) ?></li>
+                                                                        <?php endforeach; ?>
+                                                                    </ul>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+
                                     <div class="table-responsive">
                                         <table id="paymentDatatable" class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width:100%">
                                             <thead class="table-light">
@@ -933,14 +1024,35 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                         });
 
                         // Use fetch to request the receipt generation
-                        fetch(downloadUrl)
+                        console.log('Making receipt request to:', downloadUrl);
+                        fetch(downloadUrl, {
+                            credentials: 'include', // Include cookies for authentication
+                            headers: {
+                                'Accept': 'application/pdf,*/*'
+                            }
+                        })
                             .then(response => {
+                                console.log('Receipt response status:', response.status);
+                                console.log('Receipt response headers:', response.headers);
+                                console.log('Content-Type:', response.headers.get('content-type'));
+                                
                                 if (!response.ok) {
-                                    throw new Error('Failed to generate receipt');
+                                    throw new Error(`Failed to generate receipt: ${response.status} ${response.statusText}`);
                                 }
                                 return response.blob();
                             })
                             .then(blob => {
+                                console.log('Receipt blob received:', blob.type, blob.size, 'bytes');
+                                
+                                // Check if the blob is actually a PDF
+                                if (!blob.type.includes('pdf')) {
+                                    console.warn('Warning: Response is not a PDF. Type:', blob.type);
+                                    // For debugging, let's also log the content
+                                    blob.text().then(text => {
+                                        console.log('Non-PDF content preview:', text.substring(0, 500));
+                                    });
+                                }
+                                
                                 // Create blob URL
                                 const blobUrl = URL.createObjectURL(blob);
 
