@@ -44,11 +44,40 @@ $categoryIcon = $isFullyFunded ? 'ri-shield-check-fill' : 'ri-user-fill';
 $categoryColorClass = $isFullyFunded ? 'success' : 'primary'; // Changed from 'warning' to 'primary' (blue)
 $categoryBgClass = $isFullyFunded ? 'bg-success-subtle' : 'bg-primary-subtle'; // Changed from 'bg-warning-subtle'
 
+// Process switch eligibility data
+$isEligibleToSwitch = false;
+$eligibilityMessage = '';
+$targetCategory = '';
+$targetCategoryDisplay = '';
+
+if (isset($switchEligibility) && is_array($switchEligibility)) {
+    // Handle response format from API
+    if (isset($switchEligibility['data'])) {
+        $eligibilityData = $switchEligibility['data'];
+        $isEligibleToSwitch = $eligibilityData['eligible'] ?? false;
+        $eligibilityMessage = $eligibilityData['message'] ?? '';
+        $targetCategory = $eligibilityData['target_category'] ?? '';
+        $targetCategoryDisplay = $targetCategory === 'fully_funded' ? 'Fully Funded' : 'Self Funded';
+    } elseif (isset($switchEligibility['eligible'])) {
+        // Direct data format
+        $isEligibleToSwitch = $switchEligibility['eligible'] ?? false;
+        $eligibilityMessage = $switchEligibility['message'] ?? '';
+        $targetCategory = $switchEligibility['target_category'] ?? '';
+        $targetCategoryDisplay = $targetCategory === 'fully_funded' ? 'Fully Funded' : 'Self Funded';
+    }
+}
+
+// Log eligibility for debugging
+error_log('DEBUG: Switch eligibility - Eligible: ' . ($isEligibleToSwitch ? 'true' : 'false') . ', Target: ' . $targetCategory . ', Message: ' . $eligibilityMessage);
+
 // Temporary debug output (remove this in production)
 if (isset($_GET['debug'])) {
     echo '<div class="alert alert-info mt-3">';
     echo '<h6>Debug Information:</h6>';
     echo '<p><strong>Participant Category Found:</strong> ' . ($participantCategory ?: 'null') . '</p>';
+    echo '<p><strong>Switch Eligible:</strong> ' . ($isEligibleToSwitch ? 'true' : 'false') . '</p>';
+    echo '<p><strong>Target Category:</strong> ' . $targetCategory . '</p>';
+    echo '<p><strong>Eligibility Message:</strong> ' . $eligibilityMessage . '</p>';
     if (isset($detailedParticipant)) {
         echo '<p><strong>Detailed Participant Fields:</strong> ' . implode(', ', array_keys($detailedParticipant)) . '</p>';
         echo '<p><strong>Detailed Participant Data:</strong> <pre>' . print_r($detailedParticipant, true) . '</pre></p>';
@@ -56,6 +85,9 @@ if (isset($_GET['debug'])) {
     if (isset($currentParticipant)) {
         echo '<p><strong>Current Participant Fields:</strong> ' . implode(', ', array_keys($currentParticipant)) . '</p>';
         echo '<p><strong>Current Participant Data:</strong> <pre>' . print_r($currentParticipant, true) . '</pre></p>';
+    }
+    if (isset($switchEligibility)) {
+        echo '<p><strong>Switch Eligibility Data:</strong> <pre>' . print_r($switchEligibility, true) . '</pre></p>';
     }
     echo '</div>';
 }
@@ -215,9 +247,23 @@ if (isset($_GET['debug'])) {
                         <button type="button" class="btn btn-outline-primary info-button" data-bs-toggle="modal" data-bs-target="#categoryInfoModal">
                             <i class="ri-information-line me-1"></i> Learn More
                         </button>
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#categoryInfoModal" data-action="switch">
-                            <i class="ri-shuffle-line me-1"></i> Switch Category
-                        </button>
+                        <?php if ($isEligibleToSwitch): ?>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#categoryInfoModal" data-action="switch" title="<?= $targetCategory === 'self_funded' ? 'Switch to guaranteed participation with standard payment' : 'Switch to reimbursement program with essays and interviews' ?>">
+                                <i class="ri-shuffle-line me-1"></i> Switch to <?= $targetCategoryDisplay ?>
+                            </button>
+                        <?php else: ?>
+                            <button type="button" class="btn btn-secondary" disabled title="<?php
+                                $tooltipMessage = $eligibilityMessage;
+                                $tooltipMessage = str_replace('Participant is not eligible', 'You are not currently eligible', $tooltipMessage);
+                                $tooltipMessage = str_replace('fully_funded', 'Fully Funded', $tooltipMessage);
+                                $tooltipMessage = str_replace('self_funded', 'Self Funded', $tooltipMessage);
+                                $tooltipMessage = str_replace('from Fully Funded to Self Funded', 'to Self Funded registration', $tooltipMessage);
+                                $tooltipMessage = str_replace('from Self Funded to Fully Funded', 'to Fully Funded registration', $tooltipMessage);
+                                echo htmlspecialchars($tooltipMessage);
+                            ?>">
+                                <i class="ri-lock-line me-1"></i> Switch Unavailable
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="mt-3 p-3 bg-light rounded">
@@ -229,6 +275,53 @@ if (isset($_GET['debug'])) {
                             You're registered as a <strong>Self Funded</strong> participant. Complete the standard registration process and make your payments according to the scheduled payment batches as they become due.
                         <?php endif; ?>
                     </small>
+                    <?php if (!$isEligibleToSwitch && !empty($eligibilityMessage)): ?>
+                        <div class="mt-2 p-2 bg-warning-subtle rounded">
+                            <small class="text-warning">
+                                <i class="ri-alert-line me-1"></i>
+                                <strong>Category Switch:</strong> 
+                                <?php
+                                // Make the message more user-friendly
+                                $userFriendlyMessage = $eligibilityMessage;
+                                
+                                // Common message improvements
+                                $userFriendlyMessage = str_replace('Participant is not eligible', 'You are not currently eligible', $userFriendlyMessage);
+                                $userFriendlyMessage = str_replace('fully_funded', 'Fully Funded', $userFriendlyMessage);
+                                $userFriendlyMessage = str_replace('self_funded', 'Self Funded', $userFriendlyMessage);
+                                $userFriendlyMessage = str_replace('from Fully Funded to Self Funded', 'to Self Funded registration', $userFriendlyMessage);
+                                $userFriendlyMessage = str_replace('from Self Funded to Fully Funded', 'to Fully Funded registration', $userFriendlyMessage);
+                                
+                                echo htmlspecialchars($userFriendlyMessage);
+                                ?>
+                            </small>
+                        </div>
+                    <?php elseif ($isEligibleToSwitch && !empty($eligibilityMessage)): ?>
+                        <div class="mt-2 p-2 bg-success-subtle rounded">
+                            <small class="text-success">
+                                <i class="ri-check-line me-1"></i>
+                                <strong>Switch Available:</strong> 
+                                <?php
+                                // Make the message more user-friendly for eligible status
+                                $userFriendlyMessage = $eligibilityMessage;
+                                
+                                if ($targetCategory === 'self_funded') {
+                                    $userFriendlyMessage = "You can switch to Self Funded registration for guaranteed program participation with standard payment requirements.";
+                                } elseif ($targetCategory === 'fully_funded') {
+                                    $userFriendlyMessage = "You can switch to Fully Funded registration for a chance at full reimbursement if selected after completing essays and interviews.";
+                                } else {
+                                    // Fallback: improve the API message
+                                    $userFriendlyMessage = str_replace('Participant is eligible to switch', 'You can switch', $userFriendlyMessage);
+                                    $userFriendlyMessage = str_replace('fully_funded', 'Fully Funded', $userFriendlyMessage);
+                                    $userFriendlyMessage = str_replace('self_funded', 'Self Funded', $userFriendlyMessage);
+                                    $userFriendlyMessage = str_replace('from Fully Funded to Self Funded', 'to Self Funded registration', $userFriendlyMessage);
+                                    $userFriendlyMessage = str_replace('from Self Funded to Fully Funded', 'to Fully Funded registration', $userFriendlyMessage);
+                                }
+                                
+                                echo htmlspecialchars($userFriendlyMessage);
+                                ?>
+                            </small>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -349,16 +442,37 @@ if (isset($_GET['debug'])) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="switchCategoryBtn" 
-                        data-current-category="<?= $participantCategory ?>" 
-                        data-participant-id="<?= $currentParticipant['id'] ?? '' ?>">
-                    <i class="ri-shuffle-line me-1"></i> 
-                    <?php if ($isFullyFunded): ?>
-                        Switch to Self Funded
-                    <?php else: ?>
-                        Switch to Fully Funded
+                <?php if ($isEligibleToSwitch): ?>
+                    <button type="button" class="btn btn-primary" id="switchCategoryBtn" 
+                            data-current-category="<?= $participantCategory ?>" 
+                            data-participant-id="<?= $currentParticipant['id'] ?? '' ?>"
+                            data-target-category="<?= $targetCategory ?>"
+                            data-target-display="<?= $targetCategoryDisplay ?>">
+                        <i class="ri-shuffle-line me-1"></i> 
+                        Switch to <?= $targetCategoryDisplay ?>
+                    </button>
+                <?php else: ?>
+                    <button type="button" class="btn btn-secondary" disabled title="<?= htmlspecialchars($eligibilityMessage) ?>">
+                        <i class="ri-lock-line me-1"></i> Switch Unavailable
+                    </button>
+                    <?php if (!empty($eligibilityMessage)): ?>
+                        <div class="text-start mt-2">
+                            <small class="text-muted">
+                                <i class="ri-information-line me-1"></i>
+                                <?php
+                                // Make the tooltip message more user-friendly too
+                                $tooltipMessage = $eligibilityMessage;
+                                $tooltipMessage = str_replace('Participant is not eligible', 'You are not currently eligible', $tooltipMessage);
+                                $tooltipMessage = str_replace('fully_funded', 'Fully Funded', $tooltipMessage);
+                                $tooltipMessage = str_replace('self_funded', 'Self Funded', $tooltipMessage);
+                                $tooltipMessage = str_replace('from Fully Funded to Self Funded', 'to Self Funded registration', $tooltipMessage);
+                                $tooltipMessage = str_replace('from Self Funded to Fully Funded', 'to Fully Funded registration', $tooltipMessage);
+                                echo htmlspecialchars($tooltipMessage);
+                                ?>
+                            </small>
+                        </div>
                     <?php endif; ?>
-                </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -373,44 +487,52 @@ document.addEventListener('DOMContentLoaded', function() {
         switchBtn.addEventListener('click', function() {
             const currentCategory = this.getAttribute('data-current-category');
             const participantId = this.getAttribute('data-participant-id');
-            const targetCategory = currentCategory === 'fully_funded' ? 'self_funded' : 'fully_funded';
-            const targetCategoryText = targetCategory === 'fully_funded' ? 'Fully Funded' : 'Self Funded';
+            const targetCategory = this.getAttribute('data-target-category');
+            const targetCategoryText = this.getAttribute('data-target-display');
             const currentCategoryText = currentCategory === 'fully_funded' ? 'Fully Funded' : 'Self Funded';
             
             // Enhanced confirmation dialog with SweetAlert2
             if (typeof Swal !== 'undefined') {
+                // Create user-friendly descriptions
+                const targetDescription = targetCategory === 'fully_funded' 
+                    ? 'Fully Funded (Reimbursement Program)' 
+                    : 'Self Funded (Guaranteed Participation)';
+                const currentDescription = currentCategory === 'fully_funded' 
+                    ? 'Fully Funded (Reimbursement Program)' 
+                    : 'Self Funded (Guaranteed Participation)';
+                
                 Swal.fire({
                     title: 'Switch Registration Category?',
                     html: `
                         <div class="text-start">
-                            <p class="mb-3">You are about to switch from <strong>${currentCategoryText}</strong> to <strong>${targetCategoryText}</strong>.</p>
-                            <div class="alert ${targetCategory === 'fully_funded' ? 'alert-info' : 'alert-warning'}">
-                                <h6><i class="ri-information-line me-1"></i> ${targetCategory === 'fully_funded' ? 'Fully Funded' : 'Self Funded'} Requirements:</h6>
+                            <p class="mb-3">You are about to switch from <strong>${currentDescription}</strong> to <strong>${targetDescription}</strong>.</p>
+                            <div class="alert ${targetCategory === 'fully_funded' ? 'alert-info' : 'alert-success'}">
+                                <h6><i class="ri-information-line me-1"></i> ${targetCategory === 'fully_funded' ? 'Fully Funded Program Details:' : 'Self Funded Program Details:'}</h6>
                                 <ul class="mb-0 small">
                                     ${targetCategory === 'fully_funded' ? `
-                                        <li>Complete comprehensive application essays</li>
-                                        <li>Participate in interview sessions</li>
-                                        <li>Pay all scheduled fee batches initially</li>
-                                        <li>Get full reimbursement if selected</li>
-                                        <li>Competitive selection process</li>
+                                        <li><strong>Reimbursement Opportunity:</strong> Get all payments refunded if selected</li>
+                                        <li><strong>Additional Requirements:</strong> Complete essays and interview process</li>
+                                        <li><strong>Competitive Selection:</strong> Limited spots available based on qualifications</li>
+                                        <li><strong>Payment Schedule:</strong> Pay all scheduled fee batches initially</li>
+                                        <li><strong>Timeline:</strong> Longer process due to evaluation requirements</li>
                                     ` : `
-                                        <li>Guaranteed program participation</li>
-                                        <li>Standard registration requirements</li>
-                                        <li>Pay all scheduled fee batches yourself</li>
-                                        <li>No competitive selection needed</li>
-                                        <li>Streamlined process</li>
+                                        <li><strong>Guaranteed Participation:</strong> No competitive selection needed</li>
+                                        <li><strong>Standard Requirements:</strong> Complete registration and documentation</li>
+                                        <li><strong>Payment Responsibility:</strong> You pay all scheduled fee batches</li>
+                                        <li><strong>Faster Processing:</strong> Streamlined registration process</li>
+                                        <li><strong>Immediate Confirmation:</strong> Program access upon payment completion</li>
                                     `}
                                 </ul>
                             </div>
-                            <p class="mb-0"><strong>Are you sure you want to proceed?</strong></p>
+                            <p class="mb-0"><strong>Are you sure you want to proceed with this change?</strong></p>
                         </div>
                     `,
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: '#0066cc',
+                    confirmButtonColor: targetCategory === 'fully_funded' ? '#0066cc' : '#28a745',
                     cancelButtonColor: '#6c757d',
                     confirmButtonText: `<i class="ri-shuffle-line me-1"></i> Yes, Switch to ${targetCategoryText}`,
-                    cancelButtonText: 'Cancel',
+                    cancelButtonText: 'Keep Current Category',
                     allowOutsideClick: false,
                     customClass: {
                         popup: 'category-switch-modal'
@@ -421,9 +543,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             } else {
-                // Fallback to regular confirm dialog
+                // Fallback to regular confirm dialog with improved messaging
                 const confirmMessage = `Are you sure you want to switch from ${currentCategoryText} to ${targetCategoryText}?\n\n` +
-                    `This will change your registration requirements and process.`;
+                    `This will change your registration requirements and ${targetCategory === 'fully_funded' ? 'add essay/interview requirements with reimbursement opportunity' : 'provide guaranteed participation with standard payment'}.`;
                 
                 if (confirm(confirmMessage)) {
                     performCategorySwitch(participantId, targetCategory, targetCategoryText);
@@ -470,34 +592,43 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 // Show success message
                 if (typeof Swal !== 'undefined') {
+                    const successTitle = targetCategory === 'fully_funded' 
+                        ? 'Switched to Fully Funded Program!' 
+                        : 'Switched to Self Funded Program!';
+                    
+                    const whatNextContent = targetCategory === 'fully_funded' ? `
+                        <li><strong>Check Your Email:</strong> Look for application essay instructions and deadlines</li>
+                        <li><strong>Prepare Essays:</strong> Complete all required application essays thoroughly</li>
+                        <li><strong>Interview Process:</strong> Participate in scheduled interview sessions</li>
+                        <li><strong>Continue Payments:</strong> Keep up with scheduled payment obligations</li>
+                        <li><strong>Selection Results:</strong> Wait for evaluation results and potential full reimbursement</li>
+                        <li><strong>Higher Standards:</strong> Meet enhanced academic and professional requirements</li>
+                    ` : `
+                        <li><strong>Guaranteed Participation:</strong> Your program spot is now secured</li>
+                        <li><strong>Continue Payments:</strong> Keep up with your scheduled payment obligations</li>
+                        <li><strong>Standard Requirements:</strong> Complete your registration and program requirements</li>
+                        <li><strong>Faster Process:</strong> No additional essays or interviews needed</li>
+                        <li><strong>Direct Access:</strong> Immediate program benefits upon payment completion</li>
+                        <li><strong>Streamlined Path:</strong> Focus on core program activities</li>
+                    `;
+                    
                     Swal.fire({
-                        title: 'Category Switched Successfully!',
+                        title: successTitle,
                         html: `
                             <div class="text-start">
                                 <p class="mb-3">${data.message}</p>
                                 <div class="alert alert-success">
                                     <h6><i class="ri-check-line me-1"></i> What's Next:</h6>
                                     <ul class="mb-0 small">
-                                        ${targetCategory === 'fully_funded' ? `
-                                            <li>Check your email for application essay instructions</li>
-                                            <li>Complete all required documentation</li>
-                                            <li>Prepare for the interview process</li>
-                                            <li>Continue with scheduled payment obligations</li>
-                                            <li>Wait for selection results and potential reimbursement</li>
-                                        ` : `
-                                            <li>Your participation is now guaranteed</li>
-                                            <li>Continue with scheduled payment obligations</li>
-                                            <li>Complete standard program requirements</li>
-                                            <li>No additional essays or interviews needed</li>
-                                        `}
+                                        ${whatNextContent}
                                     </ul>
                                 </div>
-                                <p class="mb-0 text-muted small"><i class="ri-refresh-line me-1"></i> This page will refresh to show your updated status.</p>
+                                <p class="mb-0 text-muted small"><i class="ri-refresh-line me-1"></i> This page will refresh to show your updated registration type.</p>
                             </div>
                         `,
                         icon: 'success',
                         confirmButtonColor: '#28a745',
-                        confirmButtonText: 'Perfect!'
+                        confirmButtonText: 'Perfect! Continue'
                     }).then(() => {
                         // Reload page to reflect changes
                         window.location.reload();
@@ -562,10 +693,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 alert('Failed to switch category. Please check your connection and try again, or contact support.');
                 // Reset button for fallback
-                switchBtn.disabled = false;
-                const currentCategory = switchBtn.getAttribute('data-current-category');
-                const targetText = currentCategory === 'fully_funded' ? 'Switch to Self Funded' : 'Switch to Fully Funded';
-                switchBtn.innerHTML = `<i class="ri-shuffle-line me-1"></i> ${targetText}`;
+                if (switchBtn) {
+                    switchBtn.disabled = false;
+                    const targetDisplay = switchBtn.getAttribute('data-target-display');
+                    switchBtn.innerHTML = `<i class="ri-shuffle-line me-1"></i> Switch to ${targetDisplay}`;
+                }
             }
         });
     }
@@ -581,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Automatically focus on the switch button when opened for switching
                 setTimeout(() => {
                     const switchBtn = document.getElementById('switchCategoryBtn');
-                    if (switchBtn) {
+                    if (switchBtn && !switchBtn.disabled) {
                         switchBtn.focus();
                     }
                 }, 500);

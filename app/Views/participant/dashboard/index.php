@@ -62,6 +62,7 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                                     <?php echo view('participant/dashboard/participant_category_card', [
                                         'currentParticipant' => $currentParticipant ?? null,
                                         'detailedParticipant' => $detailedParticipant ?? null,
+                                        'switchEligibility' => $switchEligibility ?? null,
                                     ]); ?>
                                 <?php endif; ?>
 

@@ -28,9 +28,17 @@ class Dashboard extends BaseController
 
         // Fetch detailed participant information including category
         $detailedParticipant = null;
+        $switchEligibility = null;
         if ($currentParticipantId) {
             $detailedParticipant = $this->makeGetRequest('/participants/' . $currentParticipantId, [], true);
             log_message('debug', 'Detailed participant data: ' . json_encode($detailedParticipant));
+            
+            // Check category switch eligibility
+            $eligibilityStartTime = microtime(true);
+            $switchEligibility = $this->makeGetRequest('/participants/' . $currentParticipantId . '/switch-category/check', [], false, false);
+            $eligibilityLoadTime = round((microtime(true) - $eligibilityStartTime) * 1000, 2);
+            log_message('info', "Category switch eligibility checked for {$currentParticipantId} (loaded in {$eligibilityLoadTime}ms)");
+            log_message('debug', 'Switch eligibility data: ' . json_encode($switchEligibility));
         }
 
         // Initialize cache service
@@ -94,6 +102,7 @@ class Dashboard extends BaseController
             'paymentStatus' => $paymentStatus,
             'paymentDueDate' => $paymentDueDate,
             'hasSubmittedForm' => $hasSubmittedForm,
+            'switchEligibility' => $switchEligibility,
         ];
 
         $totalLoadTime = round((microtime(true) - $startTime) * 1000, 2);

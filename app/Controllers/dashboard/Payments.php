@@ -193,6 +193,10 @@ class Payments extends BaseController
             $daysToStart = ($startDate - $todayTimestamp) / (60 * 60 * 24);
             $isComingSoon = $daysToStart <= 30 && $daysToStart >= 0;
             
+            // Check if payment has expired
+            $endDate = strtotime($payment['end_date']);
+            $isExpired = $todayTimestamp > $endDate;
+            
             // Skip if already added as successful
             if ($isPaid) {
                 continue;
@@ -208,10 +212,10 @@ class Payments extends BaseController
                 }
             } else {
                 // No successful registration yet
-                // Show if participant has attempted payment OR if within date range OR if coming soon
-                if ($hasTried || $isWithinDateRange || $isComingSoon) {
+                // Show if participant has attempted payment OR if within date range OR if coming soon OR if expired (to show what they missed)
+                if ($hasTried || $isWithinDateRange || $isComingSoon || $isExpired) {
                     $registrationPayments[] = $payment;
-                    log_message('debug', "getVisibleProgramPayments: Adding registration payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
+                    log_message('debug', "getVisibleProgramPayments: Adding registration payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . ", isExpired: " . ($isExpired ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
                 }
             }
         }
@@ -221,7 +225,7 @@ class Payments extends BaseController
 
         $completed['registration'] = $registrationDone;
 
-        // Handle program_fee_1 - show if registration is done OR if participant has attempted this payment OR if close to start date
+        // Handle program_fee_1 - show if registration is done OR if participant has attempted this payment OR if close to start date OR if expired
         if ($completed['registration']) {
             foreach ($byCategory['program_fee_1'] as $payment) {
                 $paymentId = $payment['id'];
@@ -234,36 +238,45 @@ class Payments extends BaseController
                 $todayTimestamp = strtotime($today);
                 $daysToStart = ($startDate - $todayTimestamp) / (60 * 60 * 24);
                 $isComingSoon = $daysToStart <= 30 && $daysToStart >= 0;
+                
+                // Check if payment has expired
+                $endDate = strtotime($payment['end_date']);
+                $isExpired = $todayTimestamp > $endDate;
 
                 if ($isPaid) {
                     $completed['program_fee_1'] = true;
                 }
 
-                // Show if participant has attempted payment OR if within date range OR if coming soon
-                if ($hasTried || $isWithinDateRange || $isComingSoon) {
+                // Show if participant has attempted payment OR if within date range OR if coming soon OR if expired
+                if ($hasTried || $isWithinDateRange || $isComingSoon || $isExpired) {
                     $visiblePayments[] = $payment;
-                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_1 payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_1 payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . ", isExpired: " . ($isExpired ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
                 }
             }
         } else {
-            // Even if registration is not complete, show program_fee_1 if participant has attempted it
+            // Even if registration is not complete, show program_fee_1 if participant has attempted it OR if it's expired (to show what they missed)
             foreach ($byCategory['program_fee_1'] as $payment) {
                 $paymentId = $payment['id'];
                 $hasTried = $hasAnyAttempt($paymentId);
                 $isPaid = $isCompleted($paymentId);
+                
+                // Check if payment has expired
+                $endDate = strtotime($payment['end_date']);
+                $todayTimestamp = strtotime($today);
+                $isExpired = $todayTimestamp > $endDate;
 
                 if ($isPaid) {
                     $completed['program_fee_1'] = true;
                 }
 
-                if ($hasTried) {
+                if ($hasTried || $isExpired) {
                     $visiblePayments[] = $payment;
-                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_1 payment ID {$paymentId} due to previous attempt");
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_1 payment ID {$paymentId} due to previous attempt or expiration - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", isExpired: " . ($isExpired ? 'YES' : 'NO'));
                 }
             }
         }
 
-        // Handle program_fee_2 - show if program_fee_1 is done OR if participant has attempted this payment OR if close to start date
+        // Handle program_fee_2 - show if program_fee_1 is done OR if participant has attempted this payment OR if close to start date OR if expired
         if ($completed['program_fee_1']) {
             foreach ($byCategory['program_fee_2'] as $payment) {
                 $paymentId = $payment['id'];
@@ -276,31 +289,40 @@ class Payments extends BaseController
                 $todayTimestamp = strtotime($today);
                 $daysToStart = ($startDate - $todayTimestamp) / (60 * 60 * 24);
                 $isComingSoon = $daysToStart <= 30 && $daysToStart >= 0;
+                
+                // Check if payment has expired
+                $endDate = strtotime($payment['end_date']);
+                $isExpired = $todayTimestamp > $endDate;
 
                 if ($isPaid) {
                     $completed['program_fee_2'] = true;
                 }
 
-                // Show if participant has attempted payment OR if within date range OR if coming soon
-                if ($hasTried || $isWithinDateRange || $isComingSoon) {
+                // Show if participant has attempted payment OR if within date range OR if coming soon OR if expired
+                if ($hasTried || $isWithinDateRange || $isComingSoon || $isExpired) {
                     $visiblePayments[] = $payment;
-                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_2 payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_2 payment ID {$paymentId} - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", inRange: " . ($isWithinDateRange ? 'YES' : 'NO') . ", comingSoon: " . ($isComingSoon ? 'YES' : 'NO') . ", isExpired: " . ($isExpired ? 'YES' : 'NO') . " (days to start: " . round($daysToStart) . ")");
                 }
             }
         } else {
-            // Even if program_fee_1 is not complete, show program_fee_2 if participant has attempted it
+            // Even if program_fee_1 is not complete, show program_fee_2 if participant has attempted it OR if it's expired
             foreach ($byCategory['program_fee_2'] as $payment) {
                 $paymentId = $payment['id'];
                 $hasTried = $hasAnyAttempt($paymentId);
                 $isPaid = $isCompleted($paymentId);
+                
+                // Check if payment has expired
+                $endDate = strtotime($payment['end_date']);
+                $todayTimestamp = strtotime($today);
+                $isExpired = $todayTimestamp > $endDate;
 
                 if ($isPaid) {
                     $completed['program_fee_2'] = true;
                 }
 
-                if ($hasTried) {
+                if ($hasTried || $isExpired) {
                     $visiblePayments[] = $payment;
-                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_2 payment ID {$paymentId} due to previous attempt");
+                    log_message('debug', "getVisibleProgramPayments: Adding program_fee_2 payment ID {$paymentId} due to previous attempt or expiration - hasTried: " . ($hasTried ? 'YES' : 'NO') . ", isExpired: " . ($isExpired ? 'YES' : 'NO'));
                 }
             }
         }
@@ -344,6 +366,21 @@ class Payments extends BaseController
             $participantCategory = $participantCategoryFromSession;
         } else {
             $participantCategory = $participantCategoryFromAPI;
+        }
+
+        // Check category switch eligibility for payments page guidance
+        $switchEligibility = null;
+        if ($participantId) {
+            $eligibilityStartTime = microtime(true);
+            $switchEligibility = $this->makeGetRequest('/participants/' . $participantId . '/switch-category/check', [], false, false);
+            $eligibilityLoadTime = round((microtime(true) - $eligibilityStartTime) * 1000, 2);
+            
+            if ($switchEligibility === null) {
+                log_message('warning', "Category switch eligibility check failed for participant {$participantId} - API returned error (loaded in {$eligibilityLoadTime}ms)");
+            } else {
+                log_message('info', "Category switch eligibility checked for payments page - {$participantId} (loaded in {$eligibilityLoadTime}ms)");
+                log_message('debug', 'Payments page switch eligibility data: ' . json_encode($switchEligibility));
+            }
         }
 
         // Debug logging for program payments BEFORE filtering
@@ -434,6 +471,7 @@ class Payments extends BaseController
             'participantPayments' => $participantPayments,
             'paymentMethods' => $paymentMethods,
             'participantCategory' => $participantCategory, // Add participant category to view data
+            'switchEligibility' => $switchEligibility, // Add switch eligibility data to view
         ];
 
         return $this->render('participant/payment/index', $data);
@@ -1085,20 +1123,31 @@ class Payments extends BaseController
     public function downloadReceipt($id)
     {
         try {
+            log_message('error', '=== RECEIPT GENERATION START ===');
+            log_message('error', 'Request method: ' . $this->request->getMethod());
+            log_message('error', 'Request URI: ' . $this->request->getUri());
+            log_message('error', 'Request headers: ' . json_encode($this->request->getHeaders()));
+            
             if (empty($id)) {
+                log_message('error', 'Empty payment ID provided');
                 return redirect()->back()->with('error', 'Invalid payment ID specified.');
             }
 
             // Log payment ID for debugging
             log_message('info', 'Generating receipt for payment ID: ' . $id);
+            log_message('error', 'Payment ID type: ' . gettype($id) . ', value: ' . $id);
 
             // Get the payment details
-        $payment = $this->makeGetRequest('/payments/get/' . $id, [], true);
-            if (empty($payment)) {
+            $paymentResponse = $this->makeGetRequest('/payments/' . $id, [], true);
+            log_message('error', 'Payment API response: ' . json_encode($paymentResponse));
+            
+            if (empty($paymentResponse)) {
                 log_message('error', 'Payment not found with ID: ' . $id);
                 return redirect()->back()->with('error', 'Payment not found.');
             }
 
+            // Extract the payment data from the response
+            $payment = $paymentResponse['payment'] ?? $paymentResponse;
             log_message('info', 'Payment found: ' . json_encode($payment));
 
             // Get participant ID from session (needed for combined endpoint)
@@ -1117,10 +1166,13 @@ class Payments extends BaseController
             
             if ($combinedResponse && isset($combinedResponse['data']['program_payment'])) {
                 $programPayment = $combinedResponse['data']['program_payment'];
+                log_message('info', 'Program payment found via combined endpoint: ' . json_encode($programPayment));
             } else {
                 // Fallback to individual endpoint if combined endpoint fails
+                log_message('info', 'Combined endpoint failed, trying individual endpoint for program payment: ' . $programPaymentId);
                 $programPaymentResponse = $this->makeGetRequest('/program-payments/' . $programPaymentId, [], false);
-                $programPayment = $programPaymentResponse['data'] ?? null;
+                $programPayment = $programPaymentResponse; // Fix: Don't look for nested 'data' field
+                log_message('info', 'Individual endpoint response: ' . json_encode($programPaymentResponse));
             }
             
             if (!$programPayment) {
@@ -1132,18 +1184,27 @@ class Payments extends BaseController
 
             // Get participant details
             $participantData = $this->makeGetRequest('/participants/' . $participantId, [], true);
-            $participantCategory = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
+            // Extract participant data from the response structure
+            $participant = $participantData['participant'] ?? $participantData ?? [];
+            $participantCategory = $participant['category'] ?? 'self_funded'; // Default to self_funded if not found
+            
+            log_message('error', 'AUTHORIZATION CHECK: Participant ' . $participantId . ' has category: ' . $participantCategory);
+            log_message('error', 'AUTHORIZATION CHECK: Payment ' . $programPaymentId . ' has type: ' . ($programPayment['type'] ?? 'all'));
             
             // Check if participant has access to this payment based on their category
             $paymentType = $programPayment['type'] ?? 'all';
             $hasAccess = ($paymentType === 'all') || ($paymentType === $participantCategory);
             
+            log_message('error', 'AUTHORIZATION CHECK: Access granted: ' . ($hasAccess ? 'YES' : 'NO'));
+            
             if (!$hasAccess) {
                 log_message('warning', 'Unauthorized receipt download attempt: Participant ' . $participantId . ' (' . $participantCategory . ') tried to download receipt for ' . $paymentType . ' payment ' . $programPaymentId);
                 return redirect()->back()->with('error', 'You do not have access to this payment receipt.');
             }
-            $participant = $this->makeGetRequest('/participants/' . $participantId, [], false);
+            
+            // Use the participant data we already extracted for authorization
             log_message('info', 'Participant found: ' . ($participant ? 'yes' : 'no'));
+            log_message('info', 'Participant data structure: ' . json_encode($participant));
 
             // Get program details
             $programId = session()->get('current_program_id');
@@ -1166,11 +1227,32 @@ class Payments extends BaseController
                 }
             }
 
-            log_message('info', 'Payment method found: ' . json_encode($paymentMethod));            // Prepare data for the view
+            log_message('info', 'Payment method found: ' . json_encode($paymentMethod));
+            
+            // Ensure participant data is properly structured for the template
+            // The API can return either direct participant data OR nested data.participant structure
+            if (isset($participant['data']['participant'])) {
+                // Nested structure from some API responses
+                $participantData = $participant['data']['participant'];
+            } elseif (isset($participant['data']) && is_array($participant['data']) && isset($participant['data']['full_name'])) {
+                // Data is in 'data' key but not nested under 'participant'
+                $participantData = $participant['data'];
+            } elseif (isset($participant['full_name'])) {
+                // Direct structure
+                $participantData = $participant;
+            } else {
+                // Fallback - use the participant as-is and let template handle missing keys
+                $participantData = $participant;
+            }
+            
+            log_message('info', 'Template data structure - participant keys: ' . (is_array($participantData) ? implode(', ', array_keys($participantData)) : 'not an array'));
+            log_message('info', 'Template data structure - participant full_name: ' . ($participantData['full_name'] ?? 'NOT FOUND'));
+            
+            // Prepare data for the view
             $data = [
                 'payment' => $payment,
                 'programPayment' => $programPayment,
-                'participant' => $participant,
+                'participant' => $participantData,
                 'program' => $program,
                 'paymentMethod' => $paymentMethod,
                 'webSettings' => $this->data['webSettings'] ?? null,
@@ -1193,11 +1275,18 @@ class Payments extends BaseController
                 return redirect()->back()->with('error', 'PDF generation library not found. Please contact support.');
             }
 
+            log_message('error', 'DOMPDF class found - proceeding with PDF generation');
+
             // Make sure QrCodeHelper is loaded
             helper('QrCodeHelper');
+            log_message('error', 'QrCodeHelper loaded');
+            
             // Set higher execution time limit for PDF generation
             ini_set('max_execution_time', 180); // 3 minutes
-            set_time_limit(180);            // Generate PDF with optimized settings
+            set_time_limit(180);
+            log_message('error', 'Execution time limit set to 180 seconds');
+
+            // Generate PDF with optimized settings
             $dompdf = new \Dompdf\Dompdf();
             $options = new \Dompdf\Options();
             $options->set('isRemoteEnabled', true); // Enable loading external images
@@ -1210,52 +1299,89 @@ class Payments extends BaseController
             // Optimize memory usage
             $options->set('chroot', FCPATH);
             $dompdf->setOptions($options);
+            log_message('error', 'DOMPDF options configured');
 
             // Replace any external image references with local ones or placeholders
             $data['use_local_resources'] = true; // Flag for the view to use local resources
 
             // Load the receipt view into the PDF
             log_message('info', 'Rendering receipt view');
+            log_message('error', 'About to render receipt view with data: ' . json_encode(array_keys($data)));
+            
             $html = view('participant/payment/new-receipt', $data);
+            log_message('error', 'Receipt view rendered. HTML length: ' . strlen($html));
+            log_message('error', 'HTML preview (first 500 chars): ' . substr($html, 0, 500));
+            
             $dompdf->loadHtml($html);
+            log_message('error', 'HTML loaded into DOMPDF');
 
             // Set paper size and orientation (A4 is too large, use something smaller)
             $dompdf->setPaper('letter', 'portrait');
+            log_message('error', 'Paper size set to letter portrait');
 
             // Render the PDF - with memory limit management
             $currentMemoryLimit = ini_get('memory_limit');
+            log_message('error', 'Current memory limit: ' . $currentMemoryLimit);
+            
             // Temporarily increase memory limit if needed
             if ((int) $currentMemoryLimit < 256) {
                 ini_set('memory_limit', '256M');
+                log_message('error', 'Memory limit increased to 256M');
             }
 
             log_message('info', 'Rendering PDF - starting');
+            log_message('error', '=== STARTING PDF RENDER ===');
             $dompdf->render();
+            log_message('error', '=== PDF RENDER COMPLETED ===');
             log_message('info', 'Rendering PDF - completed');
 
             // Generate a filename
             $fileName = 'Receipt_' . ($payment['transaction_code'] ?? 'YBB-' . $id) . '.pdf';
             log_message('info', 'Streaming PDF to browser: ' . $fileName);
+            log_message('error', 'Generated filename: ' . $fileName);
 
             // Reset memory limit
             ini_set('memory_limit', $currentMemoryLimit);
+            log_message('error', 'Memory limit reset to: ' . $currentMemoryLimit);
 
             // Get the PDF content
             $pdfContent = $dompdf->output();
+            log_message('error', 'PDF content generated. Size: ' . strlen($pdfContent) . ' bytes');
+            
+            // Check if content is actually PDF
+            $isPdf = (substr($pdfContent, 0, 4) === '%PDF');
+            log_message('error', 'Content starts with PDF header: ' . ($isPdf ? 'YES' : 'NO'));
+            if (!$isPdf) {
+                log_message('error', 'Content preview (first 200 chars): ' . substr($pdfContent, 0, 200));
+            }
 
             // Set the appropriate headers
             $response = service('response');
+            log_message('error', 'Setting response headers for PDF download');
             $response->setHeader('Content-Type', 'application/pdf');
             $response->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"');
             $response->setHeader('Cache-Control', 'no-store');
             $response->setHeader('Content-Length', strlen($pdfContent));
+            log_message('error', 'Response headers set');
 
             // Output the PDF content directly
+            log_message('error', '=== SENDING PDF RESPONSE ===');
             return $response->setBody($pdfContent);
         } catch (\Exception $e) {
             // Log the error for debugging
+            log_message('error', '=== RECEIPT GENERATION EXCEPTION ===');
+            log_message('error', 'Exception type: ' . get_class($e));
             log_message('error', 'Error generating receipt: ' . $e->getMessage());
             log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            log_message('error', 'File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+
+            // Check if this is an AJAX request
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Error generating receipt: ' . $e->getMessage()
+                ])->setStatusCode(500);
+            }
 
             return redirect()->back()->with('error', 'Error generating receipt: ' . $e->getMessage());
         }

@@ -82,9 +82,15 @@ if (!$paymentHasStarted) {
 
                 <!-- Quick Action Buttons -->
                 <div class="d-grid gap-2">
-                    <a target="_blank" href="<?= site_url('payments/receipt/' . $programPayment['id']); ?>" class="btn btn-success">
-                        <i class="ri-download-2-line align-middle me-1"></i> Download Receipt
-                    </a>
+                    <?php if (isset($latestPayment) && !empty($latestPayment['id'])): ?>
+                        <a target="_blank" href="<?= site_url('payments/receipt/' . $latestPayment['id']); ?>" class="btn btn-success">
+                            <i class="ri-download-2-line align-middle me-1"></i> Download Receipt
+                        </a>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-success" disabled>
+                            <i class="ri-download-2-line align-middle me-1"></i> Receipt Not Available
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
