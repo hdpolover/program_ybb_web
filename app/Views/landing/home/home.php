@@ -41,6 +41,11 @@ $program_testimonies = $testimonies ?? [];
         <!-- Gallery Section -->
         <?= $this->include('landing/home/program-gallery') ?>
 
+        <!-- Video Testimonies Section -->
+        <?php if (!empty($hasVideoTestimonies) && !empty($videoTestimonies)): ?>
+            <?= $this->include('landing/home/video-testimonies') ?>
+        <?php endif; ?>
+
         <!-- Testimonial Section -->
         <?= $this->include('landing/home/testimonials') ?>
 

@@ -41,26 +41,90 @@
         <section class="section py-5 position-relative" id="programs">
             <div class="container">
 
-                <!-- Program Cards -->
-                <div class="row program-grid">
-                    <?php
-                    if (isset($programs) && !empty($programs)) {
-                        // if programs is just one, make it an array
-                        if (isset($programs['programs']) && !empty($programs['programs'])) {
-                            $programs = $programs['programs'];
-                        } else {
-                            $programs = [$programs];
-                        }
-
-                        // loop through programs
-                        if (isset($programs) && !empty($programs)) {
-                            foreach ($programs as $program) { ?>
-                                <div class="col-lg-12 col-md-12 mb-4 <?= isset($program['category']) ? strtolower(str_replace(' ', '-', $program['category'])) : '' ?>">
+                <!-- Active Programs Section -->
+                <?php if (isset($activePrograms) && !empty($activePrograms)): ?>
+                    <div class="row mb-5">
+                        <div class="col-12 mb-4">
+                            <div class="text-center">
+                                <h2 class="fw-semibold text-primary">Active Programs</h2>
+                                <p class="text-muted">Current programs open for registration and participation</p>
+                            </div>
+                        </div>
+                        <div class="row program-grid">
+                            <?php foreach ($activePrograms as $program): ?>
+                                <div class="col-lg-12 col-md-12 mb-4">
                                     <?= view('landing/common/program_card_widget', ['program' => $program]); ?>
                                 </div>
-                            <?php } ?>
-                        <?php } ?>
-                    <?php } else { ?>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Previous Programs Section -->
+                <?php if (isset($previousPrograms) && !empty($previousPrograms)): ?>
+                    <div class="row mb-5">
+                        <div class="col-12 mb-4">
+                            <div class="text-center">
+                                <h2 class="fw-semibold">Previous Programs</h2>
+                                <p class="text-muted">Past editions of <?= $webSettings['name'] ?? 'our programs' ?></p>
+                            </div>
+                        </div>
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            <?php foreach ($previousPrograms as $program): ?>
+                                <div class="col">
+                                    <div class="card h-100 shadow-sm border-0 overflow-hidden previous-program-card">
+                                        <?php if (!empty($program['banner_url'])): ?>
+                                            <div class="position-relative">
+                                                <img src="<?= esc($program['banner_url']) ?>" class="card-img-top" alt="<?= esc($program['name'] ?? 'Program') ?>" style="height: 200px; object-fit: cover;">
+                                                <div class="position-absolute top-0 end-0 m-2">
+                                                    <span class="badge bg-secondary">Past Event</span>
+                                                </div>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                                <i class="ri-calendar-event-line text-muted" style="font-size: 3rem;"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                        
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title mb-3"><?= esc($program['name'] ?? 'Program Name') ?></h5>
+                                            
+                                            <?php if (!empty($program['start_date']) || !empty($program['end_date'])): ?>
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <i class="ri-calendar-event-line text-primary me-2"></i>
+                                                    <small class="text-muted">
+                                                        <?php if (!empty($program['start_date']) && !empty($program['end_date'])): ?>
+                                                            <?= date('M d, Y', strtotime($program['start_date'])) ?> - <?= date('M d, Y', strtotime($program['end_date'])) ?>
+                                                        <?php elseif (!empty($program['start_date'])): ?>
+                                                            From <?= date('M d, Y', strtotime($program['start_date'])) ?>
+                                                        <?php elseif (!empty($program['end_date'])): ?>
+                                                            Until <?= date('M d, Y', strtotime($program['end_date'])) ?>
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <div class="mt-auto text-center">
+                                                <?php 
+                                                // Create slug from program name for detail page (matching active program card format)
+                                                helper('url'); // Ensure the helper is loaded
+                                                $slug = create_slug($program['name'] ?? '');
+                                                ?>
+                                                <a href="<?= base_url('programs/' . $slug . '/details') ?>" class="btn btn-outline-primary btn-sm">
+                                                    <i class="ri-eye-line me-1"></i> View Details
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Fallback for when no active or previous programs -->
+                <?php if ((empty($activePrograms) || count($activePrograms) == 0) && (empty($previousPrograms) || count($previousPrograms) == 0)): ?>
+                    <div class="row mb-5">
                         <div class="col-12 text-center py-5">
                             <div class="empty-state-container">
                                 <i class="ri-calendar-event-line empty-state-icon mb-4" style="font-size: 4rem; color: #adb5bd;"></i>
@@ -69,10 +133,8 @@
                                 <p class="text-muted">Please check back later or contact us for more information.</p>
                             </div>
                         </div>
-                    <?php
-                    }
-                    ?>
-                </div>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Other Programs Section -->
                 <div class="row mt-5 mb-4">
@@ -81,12 +143,14 @@
                             <h2 class="fw-semibold">Our Additional Programs</h2>
                             <p class="text-muted">Discover more educational opportunities we offer to develop future leaders</p>
                         </div>
-                    </div> <?php if (isset($otherPrograms) && !empty($otherPrograms)): ?>
+                    </div>
+                    <?php if (isset($otherPrograms) && !empty($otherPrograms)): ?>
                         <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-3">
                             <?php foreach ($otherPrograms as $program): ?>
                                 <div class="col">
                                     <div class="card h-100 shadow-sm border-0 overflow-hidden other-program-card">
-                                        <?php if (!empty($program['banner_url'])): ?> <div class="position-relative">
+                                        <?php if (!empty($program['banner_url'])): ?>
+                                            <div class="position-relative">
                                                 <img src="<?= esc($program['banner_url']) ?>" class="card-img-top" alt="<?= esc($program['name'] ?? 'Program') ?>" style="height: 120px; object-fit: cover;">
                                                 <?php if (!empty($program['logo_url'])): ?>
                                                     <div class="position-absolute bottom-0 start-50 translate-middle-x mb-n3">
@@ -112,7 +176,8 @@
                                                             Until <?= date('M d, Y', strtotime($program['end_date'])) ?>
                                                         <?php endif; ?>
                                                     </small>
-                                                </div> <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
 
                                             <div class="text-center mt-auto">
                                                 <?php if (!empty($program['web_url'])): ?>
@@ -220,6 +285,41 @@
         }
     }
 
+    /* Previous Programs Styles */
+    .previous-program-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb;
+    }
+
+    .previous-program-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        border-color: #405189;
+    }
+
+    .previous-program-card .card-img-top {
+        transition: all 0.5s ease;
+    }
+
+    .previous-program-card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+
+    .previous-program-card .card-title {
+        color: #405189;
+        font-weight: 600;
+    }
+
+    .previous-program-card .btn-outline-primary {
+        border-color: #405189;
+        color: #405189;
+    }
+
+    .previous-program-card .btn-outline-primary:hover {
+        background-color: #405189;
+        border-color: #405189;
+    }
+
     /* Other Programs Styles */
     .other-program-card {
         transition: all 0.3s ease;
@@ -241,6 +341,11 @@
     .avatar-sm {
         width: 40px;
         height: 40px;
+    }
+
+    /* Section styling */
+    .text-primary {
+        color: #405189 !important;
     }
 </style>
 

@@ -8,8 +8,22 @@ class Insights extends BaseController
 {
     public function index()
     {
-
         $insightsResponse = $this->makeGetRequest('/landing/insights?web_url=' . $this->currentUrl);
+
+        // Handle the case when API is not available or returns null
+        if (empty($insightsResponse)) {
+            // Provide default data when API is not available
+            $data = [
+                'title' => 'Insights',
+                'category' => [],
+                'program' => ['name' => 'Program Insights'],
+                'totalParticipants' => 0,
+                'totalCountries' => 0,
+                'countriesData' => [],
+            ];
+
+            return $this->render('landing/insights', $data);
+        }
 
         $category = $insightsResponse['category'] ?? []; // Extract the category data from the response
         $insightsData = $insightsResponse['insightsData'] ?? []; // Extract the data from the response
@@ -35,8 +49,17 @@ class Insights extends BaseController
         
         // Check if the insights data is empty and handle accordingly
         if (empty($insightsData)) {
-            // Handle the case when there are no insights available
-            return redirect()->to(base_url('home')); // Redirect to home or show a message
+            // Handle the case when there are no insights available but API responded
+            $data = [
+                'title' => 'Insights',
+                'category' => $category,
+                'program' => ['name' => 'Program Insights'],
+                'totalParticipants' => 0,
+                'totalCountries' => 0,
+                'countriesData' => [],
+            ];
+
+            return $this->render('landing/insights', $data);
         }
 
         $data = [

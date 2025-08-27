@@ -15,6 +15,10 @@
 
     <!--Swiper slider css-->
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
     <?= $this->include('partials/head-css') ?>
 </head>
 
@@ -37,6 +41,11 @@
                     <div class="col-lg-8">
                         <!-- Program Overview -->
                         <?= $this->include('landing/program-detail/overview') ?>
+
+                        <!-- Program Speakers -->
+                        <?php if (isset($speakers) && !empty($speakers)): ?>
+                            <?= $this->include('landing/program-detail/components/program-speakers') ?>
+                        <?php endif; ?>
 
                         <!-- Program Rundowns -->
                         <?php if (isset($rundowns) && !empty($rundowns)): ?>
@@ -77,6 +86,18 @@
     <?= $this->include('partials/vendor-scripts') ?>
     <!--Swiper slider js-->
     <script src="/assets/libs/swiper/swiper-bundle.min.js"></script>
+    
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true,
+            offset: 100
+        });
+    </script>
+    
     <!-- landing init -->
     <script src="/assets/js/pages/landing.init.js"></script>
 </body>

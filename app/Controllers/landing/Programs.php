@@ -11,7 +11,7 @@ class Programs extends BaseController
         $startTime = microtime(true);
         
         // Use caching for programs data
-        $cacheKey = "landing_programs_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
+        $cacheKey = "landing_programs_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v2";
         $cache = \Config\Services::cache();
         
         // Try to get from cache first
@@ -32,9 +32,12 @@ class Programs extends BaseController
             log_message('debug', "Programs data cache hit for {$this->currentUrl}");
         }
 
+        // Extract the new structure from API response
+        $activePrograms = $programs['activePrograms'] ?? [];
+        $previousPrograms = $programs['previousPrograms'] ?? [];
         $otherPrograms = $programs['otherPrograms'] ?? [];
 
-        // remove programs if is_registration_open is 0
+        // remove other programs if is_registration_open is 0
         foreach ($otherPrograms as $key => $program) {
             if ($program['is_registration_open'] == 0) {
                 unset($otherPrograms[$key]);
@@ -44,8 +47,11 @@ class Programs extends BaseController
         $data = [
             'title' => 'Programs',
             'category' => $programs['category'] ?? [],
-            'programs' => $programs['programs'] ?? [],
+            'activePrograms' => $activePrograms,
+            'previousPrograms' => $previousPrograms,
             'otherPrograms' => $otherPrograms,
+            // Keep backwards compatibility for existing code that might use 'programs'
+            'programs' => array_merge($activePrograms, $previousPrograms),
         ];
 
         $totalLoadTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -64,40 +70,56 @@ class Programs extends BaseController
             return redirect()->to(base_url('programs'))->with('error', 'Program not found.');
         }
 
-        // Get additional program details if needed
-        $program = $programDetails;
+        // Extract the actual program data from the response
+        $program = $programDetails['program'] ?? $programDetails;
+        $category = $programDetails['category'] ?? [];
+        $photos = $programDetails['photos'] ?? [];
+        $participant_photos = $programDetails['participant_photos'] ?? [];
+        $program_schedules = $programDetails['schedules'] ?? [];
+        $program_faqs = $programDetails['faqs'] ?? [];
+        $program_rundowns = $programDetails['rundowns'] ?? [];
+        $program_speakers = $programDetails['speakers'] ?? [];
 
-        // You can also fetch related programs or other data here if needed
-        $category = $this->makeGetRequest('/landing/programs?web_url=' . $this->currentUrl); // Fetch category data again if needed
-
-        $photos = $this->makeGetRequest('/program_photos/category/' . $program['program_category_id']); // Fetch photos related to the program
+        // If photos are empty, try to fetch from alternative endpoints
+        if (empty($photos) && !empty($program['program_category_id'])) {
+            $photos = $this->makeGetRequest('/program_photos/category/' . $program['program_category_id']); // Fetch photos related to the program
+        }
 
         // if no photos are found, use photos from other programs
         if (empty($photos)) {
             $photos = $this->makeGetRequest('/program-photos'); // Fetch all program photos
         }
 
-        // get participant photos
-        $participant_photos = $this->makeGetRequest('/participants/program/' . $program['id'] . '/photos'); // Fetch participant photos related to the program
+        // get participant photos if not already fetched
+        if (empty($participant_photos) && !empty($program['id'])) {
+            $participant_photos = $this->makeGetRequest('/participants/program/' . $program['id'] . '/photos'); // Fetch participant photos related to the program
+        }
 
-        // get program schedules by program id
-        $program_schedules = $this->makeGetRequest('/program-schedules/program/' . $program['id']); // Fetch program schedules related to the program
+        // get program schedules if not already fetched
+        if (empty($program_schedules) && !empty($program['id'])) {
+            $program_schedules = $this->makeGetRequest('/program-schedules/program/' . $program['id']); // Fetch program schedules related to the program
+        }
        
-        // get program faqs by program id
-        $program_faqs = $this->makeGetRequest('/program-faqs/program/' . $program['id']); // Fetch program faqs related to the program
+        // get program faqs if not already fetched
+        if (empty($program_faqs) && !empty($program['id'])) {
+            $program_faqs = $this->makeGetRequest('/program-faqs/program/' . $program['id']); // Fetch program faqs related to the program
+        }
 
-        // get program rundowns by program id
-        $program_rundowns = $this->makeGetRequest('/program-rundowns/program/' . $program['id']); // Fetch program rundowns related to the program
+        // get program rundowns if not already fetched
+        if (empty($program_rundowns) && !empty($program['id'])) {
+            $program_rundowns = $this->makeGetRequest('/program-rundowns/program/' . $program['id']); // Fetch program rundowns related to the program
+        }
 
         $data = [
             'title' => $program['name'] ?? 'Program Detail',
             'program' => $program,
-            'category' => $category['category'] ?? [],
+            'category' => $category,
             'photos' => $photos,
             'participant_photos' => $participant_photos,
             'schedules' => $program_schedules,
             'faqs' => $program_faqs,
             'rundowns' => $program_rundowns,
+            'speakers' => $program_speakers,
         ];
 
         // var_dump($program_rundowns); // Debugging line to check the data being passed to the view

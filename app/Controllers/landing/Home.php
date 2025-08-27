@@ -39,6 +39,8 @@ class Home extends BaseController
             'testimonies' => $homeData['testimonies'] ?? [],
             'hasPhotos' => $homeData['hasPhotos'] ?? false,
             'photos' => $homeData['photos'] ?? [],
+            'hasVideoTestimonies' => $homeData['hasVideoTestimonies'] ?? false,
+            'videoTestimonies' => $homeData['videoTestimonies'] ?? [],
         ];
 
         log_message('info', 'Home data retrieved: ' . print_r($homeData, true));
