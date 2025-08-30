@@ -58,10 +58,9 @@
 
                                         <div class="mt-4">
                                             <form action="<?= base_url('register') ?>" method="post" class="needs-validation" novalidate>
-                                                <!-- Hidden fields for program information -->
-                                                <input type="hidden" name="program_id" value="<?= $program['id'] ?? '' ?>">
-                                                <input type="hidden" name="program_category_id" value="<?= $program['program_category_id'] ?? '' ?>">
+                                                <!-- Hidden fields for ambassador referral -->
                                                 <input type="hidden" name="ambassador_id" value="<?= $ambassadorId ?? '' ?>">
+                                                <input type="hidden" name="q" value="<?= $ambassadorQuery ?? '' ?>">
 
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>

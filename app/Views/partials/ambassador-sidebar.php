@@ -39,19 +39,31 @@
             <ul class="navbar-nav" id="navbar-nav">
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link <?= url_is('ambassadors/dashboard*') ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/dashboard">
+                    <a class="nav-link menu-link <?= (current_url() === base_url('ambassadors/dashboard') || uri_string() === 'ambassadors/dashboard') ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/dashboard">
                         <i class="ri-dashboard-2-line"></i> <span>Dashboard</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link <?= url_is('ambassadors/referred-participants*') ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/referred-participants">
+                    <a class="nav-link menu-link <?= (strpos(uri_string(), 'ambassadors/referred-participants') !== false) ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/referred-participants">
                         <i class="ri-user-line"></i> <span>Referred Participants</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link <?= url_is('ambassadors/profile*') ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/profile">
+                    <a class="nav-link menu-link <?= (strpos(uri_string(), 'ambassadors/payments') !== false) ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/payments">
+                        <i class="ri-money-dollar-circle-line"></i> <span>Payment Analytics</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link <?= (strpos(uri_string(), 'ambassadors/performance') !== false) ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/performance">
+                        <i class="ri-bar-chart-2-line"></i> <span>Performance Analytics</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link <?= (strpos(uri_string(), 'ambassadors/profile') !== false) ? 'active' : '' ?>" href="<?= base_url() ?>ambassadors/profile">
                         <i class="ri-user-settings-line"></i> <span>Profile</span>
                     </a>
                 </li>

@@ -299,6 +299,12 @@ class TopbarController extends BaseController
         // Get participants data from session
         $participants = session()->get('participants') ?? [];
 
+        log_message('debug', 'TopbarController - processTopbarData called');
+        log_message('debug', 'TopbarController - programs count: ' . count($programs));
+        log_message('debug', 'TopbarController - participants count: ' . count($participants));
+        log_message('debug', 'TopbarController - programs data: ' . json_encode($programs));
+        log_message('debug', 'TopbarController - isAmbassador: ' . (session()->get('isAmbassador') ? 'true' : 'false'));
+
         // Initialize arrays
         $participant_programs = [];
         $sorted_programs = [];
@@ -478,7 +484,7 @@ class TopbarController extends BaseController
             session()->set('current_program', $currentProgram);
         }
 
-        return [
+        $returnData = [
             'sorted_programs' => $sorted_programs,
             'currentProgramId' => $currentProgramId,
             'currentProgram' => $currentProgram,
@@ -487,5 +493,11 @@ class TopbarController extends BaseController
             'profileImage' => $profileImage,
             'participant_programs' => $participant_programs
         ];
+        
+        log_message('debug', 'TopbarController - processTopbarData returning:');
+        log_message('debug', 'TopbarController - currentProgramId: ' . ($currentProgramId ?? 'null'));
+        log_message('debug', 'TopbarController - currentProgram: ' . ($currentProgram ? $currentProgram['name'] ?? 'no-name' : 'null'));
+
+        return $returnData;
     }
 }

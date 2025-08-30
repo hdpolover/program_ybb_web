@@ -18,13 +18,61 @@ class Auth extends BaseController
         // get programs by category id
         $programs = $this->makeGetRequest('/programs/category/' . $categoryId, [], true);
 
-        // check if any program is_registration_open = 1 
+        // DEBUG: Log the actual API response
+        log_message('debug', 'API Response for programs/category/' . $categoryId . ': ' . json_encode($programs));
+        log_message('debug', 'Programs array type: ' . gettype($programs));
+        log_message('debug', 'Programs array count: ' . (is_array($programs) ? count($programs) : 'not array'));
+
+        // check if any program is_registration_open = 1 OR has active registration payment options
         $isRegistrationOpen = false;        // loop through programs to check if any program is open for registration
         if (is_array($programs) && !empty($programs)) {
+            log_message('debug', 'Processing ' . count($programs) . ' programs for registration status');
             foreach ($programs as $program) {
+                log_message('debug', 'Checking program: ' . json_encode($program));
+                
+                // Check traditional registration open flag
                 if (isset($program['is_registration_open']) && $program['is_registration_open'] == '1') {
                     $isRegistrationOpen = true;
+                    log_message('debug', 'Registration open via is_registration_open flag for program: ' . ($program['name'] ?? 'unknown'));
                     break; // Exit loop if any program is open for registration
+                }
+                
+                // Check if any registration payment options are currently available
+                if (isset($program['registration_payments']) && !empty($program['registration_payments'])) {
+                    $currentDate = new \DateTime();
+                    $registrationPayments = $program['registration_payments'];
+                    
+                    // Check self_funded option
+                    if (isset($registrationPayments['self_funded'])) {
+                        $selfFunded = $registrationPayments['self_funded'];
+                        $startDate = new \DateTime($selfFunded['start_date']);
+                        $endDate = new \DateTime($selfFunded['end_date']);
+                        
+                        if ($selfFunded['is_available'] && 
+                            $selfFunded['is_active'] && 
+                            $currentDate >= $startDate && 
+                            $currentDate <= $endDate) {
+                            $isRegistrationOpen = true;
+                            log_message('debug', 'Registration open via self_funded option for program: ' . ($program['name'] ?? 'unknown'));
+                            break;
+                        }
+                    }
+                    
+                    // Check fully_funded option
+                    if (isset($registrationPayments['fully_funded'])) {
+                        $fullyFunded = $registrationPayments['fully_funded'];
+                        $startDate = new \DateTime($fullyFunded['start_date']);
+                        $endDate = new \DateTime($fullyFunded['end_date']);
+                        
+                        if ($fullyFunded['is_available'] && 
+                            $fullyFunded['is_active'] && 
+                            $currentDate >= $startDate && 
+                            $currentDate <= $endDate) {
+                            $isRegistrationOpen = true;
+                            log_message('debug', 'Registration open via fully_funded option for program: ' . ($program['name'] ?? 'unknown'));
+                            break;
+                        }
+                    }
                 }
             }
         } else {
@@ -266,14 +314,19 @@ class Auth extends BaseController
         // log program data for debugging
         log_message('info', 'Program data: ' . json_encode($programData));
 
-        // set ambassador ref_code data
+        // set ambassador data for the view
+        $ambassadorId = null;
+        $ambassadorQuery = null;
+        
         if (isset($queryData['ambassador']['id'])) {
-            // check if ref_code is valid
             $ambassadorId = $queryData['ambassador']['id'];
             log_message('debug', 'Using ambassador ID: ' . $ambassadorId);
+        } elseif ($q) {
+            // Pass the encrypted query to the view for API processing
+            $ambassadorQuery = $q;
+            log_message('debug', 'Using encrypted ambassador query for signup');
         } else {
-            $ambassadorId = null;
-            log_message('debug', 'No ambassador ID available');
+            log_message('debug', 'No ambassador reference available');
         }
 
         // Prepare data for the view
@@ -283,6 +336,7 @@ class Auth extends BaseController
             'programSlug' => $programSlug,
             'registrationType' => $registrationType,
             'ambassadorId' => $ambassadorId,
+            'ambassadorQuery' => $ambassadorQuery,
         ];
 
         log_message('debug', '===== SIGNUP PREPARATION COMPLETED =====');
@@ -335,30 +389,31 @@ class Auth extends BaseController
         }
 
         try {
-            // Prepare the data for API using the format required by sign-in-jwt endpoint
+            // Prepare the data for API using the new format
             $resetData = [
                 'email' => $email,
-                'web_url' => $this->currentUrl, // Add web_url if available
+                'web_url' => $this->currentUrl ?? $_SERVER['HTTP_HOST'] ?? 'default.com',
             ];
 
             // Log request for debugging
-            log_message('debug', 'Reset password request data: ' . json_encode($resetData));
+            log_message('debug', 'Password reset request data: ' . json_encode($resetData));
 
-            // Use the correct endpoint /api/auth/reset-password
+            // Use the correct endpoint for forgot password
             $response = $this->makePostRequest('/auth/forgot-password', $resetData, [], false, false);
 
             // Log response for debugging
-            log_message('debug', 'API Reset Password Response: ' . json_encode($response));
+            log_message('debug', 'API Password Reset Response: ' . json_encode($response));
 
             if (!$response) {
                 return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
             }
 
-            // Check for successful response
-            if (isset($response['message']) && $response['message']) {
+            // Check for successful response using new API format
+            if (isset($response['status']) && $response['status'] === 'success') {
                 return redirect()->to('sign-in')->with('success', 'Reset link sent to your email. Please check your inbox.');
             } else {
-                return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
+                $errorMessage = isset($response['message']) ? $response['message'] : 'Failed to send reset link. Please try again later.';
+                return redirect()->back()->with('error', $errorMessage);
             }
         } catch (\Exception $e) {
             log_message('error', 'Reset password error: ' . $e->getMessage());
@@ -377,13 +432,12 @@ class Auth extends BaseController
         }
 
         try {
-
-            $response = $this->makeGetRequest('/auth/verify-token?token=' . $token, [], false);
+            $response = $this->makeGetRequest('/auth/verify-token?token=' . urlencode($token), [], false);
 
             // Log response for debugging
             log_message('debug', 'API Token Verification Response: ' . json_encode($response));
 
-            if (!isset($response)) {
+            if (!$response || (isset($response['status']) && $response['status'] !== 'success')) {
                 return redirect()->to('forgot-password')->with('error', 'Invalid or expired token. Please request a new password reset link.');
             }
 
@@ -424,7 +478,7 @@ class Auth extends BaseController
         ];
 
         try {
-            // Make API call to reset password endpoint - use form data instead of JSON
+            // Make API call to reset password endpoint
             $response = $this->makePostRequest('/auth/reset-password', $resetData, [], false, false);
 
             // Log response for debugging
@@ -434,11 +488,12 @@ class Auth extends BaseController
                 return redirect()->back()->withInput()->with('error', 'Failed to reset password. Please try again later.');
             }
 
-            // Check for successful response
-            if (isset($response['message']) && $response['message']) {
+            // Check for successful response using new API format
+            if (isset($response['status']) && $response['status'] === 'success') {
                 return redirect()->to('sign-in')->with('success', 'Password reset successfully. You can now sign in.');
             } else {
-                return redirect()->back()->withInput()->with('error', 'Failed to reset password. Please try again later.');
+                $errorMessage = isset($response['message']) ? $response['message'] : 'Failed to reset password. Please try again later.';
+                return redirect()->back()->withInput()->with('error', $errorMessage);
             }
         } catch (\Exception $e) {
             log_message('error', 'Reset password error: ' . $e->getMessage());
@@ -466,25 +521,18 @@ class Auth extends BaseController
         }
 
         try {
-            // Prepare the data for API using the format required by sign-in-jwt endpoint
+            // Prepare the data for API using the new authentication API format
             $authData = [
                 'email' => $email,
                 'password' => $password,
-                'type' => 2, // 2 = participant (as defined in the API)
+                'web_url' => $this->currentUrl ?? $_SERVER['HTTP_HOST'] ?? 'default.com',
             ];
 
-            // Add web_url if available
-            if (isset($this->currentUrl)) {
-                $authData['web_url'] = $this->currentUrl;
-            }
-
             // Log request for debugging
-            log_message('debug', 'Auth request data: ' . json_encode($authData));
+            log_message('debug', 'Participant sign-in request data: ' . json_encode($authData));
             
-            
-            // Use the correct endpoint /api/auth/sign-in-jwt
-            // Pass false as the last parameter to send as form data instead of JSON
-            $response = $this->makePostRequest('/auth/sign-in', $authData, [], false, false);
+            // Use the new participant sign-in endpoint
+            $response = $this->makePostRequest('/auth/participant/sign-in', $authData, [], false, false);
             
             // Untuk debugging manual (jangan di production)
                 // echo '<pre>';
@@ -503,22 +551,35 @@ class Auth extends BaseController
                 return redirect()->back()->with('error', 'Authentication failed. Please check your credentials.');
             }
 
-            // API returns success field to indicate success
-            if (isset($response['token']) && $response['token']) {
+            // Check for successful authentication - handle both response formats
+            $isSuccess = false;
+            $token = null;
+            $user = null;
+            
+            // Check for new API format with status/data wrapper
+            if (isset($response['status']) && $response['status'] === 'success' && isset($response['data']['token'])) {
+                $isSuccess = true;
+                $token = $response['data']['token'];
+                $user = $response['data']['user'] ?? null;
+            }
+            // Check for direct token/user format (current API response)
+            elseif (isset($response['token']) && isset($response['user'])) {
+                $isSuccess = true;
+                $token = $response['token'];
+                $user = $response['user'];
+            }
+            
+            if ($isSuccess && $token && $user) {
                 $session = session();
-
-                // Store token from the data field
-                if (isset($response['token'])) {
-                    $session->set('jwt_token', $response['token']);
-                }
-
+                
+                // Store token
+                $session->set('jwt_token', $token);
+                
                 // Store user data
-                if (isset($response['user'])) {
-                    $session->set('user', $response['user']);
-                }
+                $session->set('user', $user);
 
                 // get participants data from api using the updated endpoint
-                $participantsResponse = $this->makeGetRequest('/participants/user/' . $response['user']['id'], [], true);
+                $participantsResponse = $this->makeGetRequest('/participants/user/' . $user['id'], [], true);
 
                 // Note: makeGetRequest automatically extracts the 'data' portion, so we access 'participant' directly
                 if ($participantsResponse && isset($participantsResponse['participant']) && !empty($participantsResponse['participant'])) {
@@ -527,10 +588,10 @@ class Auth extends BaseController
                     
                     $session->set('participants', $participants);
                     $session->set('isLoggedIn', true);
-                    log_message('info', 'User logged in successfully: ' . $response['user']['id']);
+                    log_message('info', 'User logged in successfully: ' . $user['id']);
 
                     // get programs by category id
-                    $programs = $this->makeGetRequest('/programs/category/' . $response['user']['program_category_id'], [], true);
+                    $programs = $this->makeGetRequest('/programs/category/' . $user['program_category_id'], [], true);
 
                     if ($programs) {
                         $session->set('programs', $programs);
@@ -594,14 +655,12 @@ class Auth extends BaseController
                                 }
                             }
                         }
-                    } else {
-                        log_message('error', 'Failed to fetch programs for user ID: ' . $response['user']['id']);
-                        return redirect()->back()->with('error', 'Failed to fetch programs. Please try again later.');
-                    }
-
-                    return redirect()->to('/dashboard');
                 } else {
-                    log_message('error', 'Failed to fetch participants data for user ID: ' . $response['user']['id']);
+                    log_message('error', 'Failed to fetch programs for user ID: ' . $user['id']);
+                    return redirect()->back()->with('error', 'Failed to fetch programs. Please try again later.');
+                }                    return redirect()->to('/dashboard');
+                } else {
+                    log_message('error', 'Failed to fetch participants data for user ID: ' . $user['id']);
                     return redirect()->back()->with('error', 'Failed to fetch participants data. Please try again later.');
                 }
             } else {
@@ -627,9 +686,8 @@ class Auth extends BaseController
         $email = $this->request->getPost('email');
         $password = $this->request->getPost('password');
         $confirmPassword = $this->request->getPost('confirm_password');
-        $programId = $this->request->getPost('program_id'); // Get program ID from form data
-        $programCategoryId = $this->request->getPost('program_category_id'); // Get program category ID from form data
         $ambassadorId = $this->request->getPost('ambassador_id');
+        $ambassadorQuery = $this->request->getPost('q'); // Get encrypted ambassador query if available
 
         // Validate input
         if (!$fullname || !$email || !$password) {
@@ -641,24 +699,25 @@ class Auth extends BaseController
             return redirect()->back()->withInput()->with('error', 'Passwords do not match');
         }
 
-        // Create registration data
+        // Create registration data using new API format
         $registerData = [
             'full_name' => $fullname,
             'email' => $email,
             'password' => $password,
-            'program_id' => $programId, // Include program ID in registration data
-            'program_category_id' => $programCategoryId, // Include program category ID in registration data
+            'web_url' => $this->currentUrl ?? $_SERVER['HTTP_HOST'] ?? 'default.com',
         ];
 
-        // Include ambassador ID if provided
+        // Include ambassador referral information
         if ($ambassadorId) {
             $registerData['ambassador_id'] = $ambassadorId;
+        } elseif ($ambassadorQuery) {
+            $registerData['q'] = $ambassadorQuery;
         }
 
-        // var_dump($registerData); // Debugging line to check the data being sent
+        log_message('debug', 'Registration data: ' . json_encode($registerData));
 
         try {
-            // Make API call to register endpoint - use form data instead of JSON
+            // Make API call to new participant sign-up endpoint
             $response = $this->makePostRequest('/auth/participant/sign-up', $registerData, [], false, false);
 
             // Log response for debugging
@@ -668,32 +727,53 @@ class Auth extends BaseController
                 return redirect()->back()->withInput()->with('error', 'Registration failed. Please try again later.');
             }
 
-            // Check for successful registration
-            if (isset($response['participant']) && $response['participant']) {
-
+            // Check for successful registration - handle both response formats
+            $isSuccess = false;
+            $participant = null;
+            $isNewUser = true;
+            
+            // Check for new API format with status/data wrapper
+            if (isset($response['status']) && $response['status'] === 'success' && isset($response['data']['participant'])) {
+                $isSuccess = true;
+                $participant = $response['data']['participant'];
+                $isNewUser = isset($response['data']['is_new']) ? $response['data']['is_new'] : true;
+            }
+            // Check for direct participant format (current API response)
+            elseif (isset($response['participant'])) {
+                $isSuccess = true;
+                $participant = $response['participant'];
+                $isNewUser = isset($response['is_new']) ? $response['is_new'] : true;
+            }
+            
+            if ($isSuccess && $participant) {
+                
                 // get web settings to check if email verification is required
                 $webSettings = $this->data['webSettings'] ?? [];
-
                 $isVerificationRequired = isset($webSettings['is_verification_required']) && $webSettings['is_verification_required'] == '1';
 
                 // Log the verification requirement
                 log_message('debug', 'Is email verification required: ' . ($isVerificationRequired ? 'Yes' : 'No'));
 
-                // If email verification is required, adjust message accordingly
-                if ($isVerificationRequired) {
+                // Check if user is new from API response
+                
+                if (!$isNewUser) {
+                    $message = 'You are already registered. Please sign in to continue.';
+                } elseif ($isVerificationRequired) {
                     $message = 'Registration successful! Please check your email to verify your account.';
                 } else {
                     $message = 'Registration successful! You can now sign in to continue.';
                 }
 
-                // check if user is already registered form response is_new
-                if (isset($response['is_new']) && $response['is_new'] == false) {
-                    $message = 'You are already registered. Please sign in to continue.';
-                }
-
                 return redirect()->to('sign-in')->with('success', $message);
             } else {
-                $errorMessage = isset($response['errors']) ? implode(' ', $response['errors']) : 'Registration failed. Please try again.';
+                // Handle error response from new API format
+                $errorMessage = 'Registration failed. Please try again.';
+                if (isset($response['message'])) {
+                    $errorMessage = $response['message'];
+                } elseif (isset($response['errors'])) {
+                    $errors = is_array($response['errors']) ? $response['errors'] : [$response['errors']];
+                    $errorMessage = implode(' ', array_values($errors));
+                }
                 return redirect()->back()->withInput()->with('error', $errorMessage);
             }
         } catch (\Exception $e) {
@@ -719,20 +799,62 @@ class Auth extends BaseController
         }
 
         try {
-            $response = $this->makeGetRequest('/auth/verify-email?token=' . $token . '&email=' . $email, [], false);
+            $response = $this->makeGetRequest('/auth/verify-email?token=' . urlencode($token) . '&email=' . urlencode($email), [], false);
 
             // Log response for debugging
             log_message('debug', 'API Email Verification Response: ' . json_encode($response));
 
-            if (!isset($response)) {
+            if (!$response || (isset($response['status']) && $response['status'] !== 'success')) {
                 return redirect()->to('sign-in')->with('error', 'Invalid or expired token. Please request a new verification link.');
             }
 
-            // Token is valid, proceed with email verification
+            // Email verified successfully
             return redirect()->to('sign-in')->with('success', 'Email verified successfully! You can now sign in.');
         } catch (\Exception $e) {
             log_message('error', 'Email verification error: ' . $e->getMessage());
             return redirect()->to('sign-in')->with('error', 'Failed to verify email. Please try again.');
+        }
+    }
+
+    /**
+     * Resend verification email
+     */
+    public function resendVerification()
+    {
+        $email = $this->request->getPost('email');
+
+        if (!$email) {
+            return redirect()->back()->with('error', 'Please provide an email address');
+        }
+
+        try {
+            $resendData = [
+                'email' => $email,
+                'web_url' => $this->currentUrl ?? $_SERVER['HTTP_HOST'] ?? 'default.com',
+            ];
+
+            // Log request for debugging
+            log_message('debug', 'Resend verification request data: ' . json_encode($resendData));
+
+            $response = $this->makePostRequest('/auth/resend-verification', $resendData, [], false, false);
+
+            // Log response for debugging
+            log_message('debug', 'API Resend Verification Response: ' . json_encode($response));
+
+            if (!$response) {
+                return redirect()->back()->with('error', 'Failed to send verification email. Please try again later.');
+            }
+
+            // Check for successful response
+            if (isset($response['status']) && $response['status'] === 'success') {
+                return redirect()->to('sign-in')->with('success', 'Verification email sent successfully. Please check your inbox.');
+            } else {
+                $errorMessage = isset($response['message']) ? $response['message'] : 'Failed to send verification email. Please try again later.';
+                return redirect()->back()->with('error', $errorMessage);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Resend verification error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to send verification email. Please try again later.');
         }
     }
 
@@ -750,6 +872,101 @@ class Auth extends BaseController
     }
 
     /**
+     * API Authentication endpoint (no /api prefix)
+     * POST /auth/sign-in
+     */
+    public function authApiSignIn()
+    {
+        try {
+            // Get JSON input or form data
+            $input = $this->request->getJSON(true) ?? $this->request->getPost();
+            
+            $email = trim($input['email'] ?? '');
+            $password = trim($input['password'] ?? '');
+            $refCode = trim($input['ref_code'] ?? '');
+            $type = (int)($input['type'] ?? 2);
+
+            // Validate required fields based on user type
+            if ($type == 3) { // Ambassador
+                if (!$email || !$refCode) {
+                    return $this->response->setStatusCode(400)->setJSON([
+                        'status' => 'error',
+                        'message' => 'Email and referral code are required for ambassador login'
+                    ]);
+                }
+            } else { // Participant
+                if (!$email || !$password) {
+                    return $this->response->setStatusCode(400)->setJSON([
+                        'status' => 'error',
+                        'message' => 'Email and password are required'
+                    ]);
+                }
+            }
+
+            // Prepare authentication data
+            $authData = [
+                'email' => $email,
+                'type' => $type,
+            ];
+
+            if ($type == 3) {
+                $authData['ref_code'] = $refCode;
+            } else {
+                $authData['password'] = $password;
+            }
+
+            // Add web_url if available
+            if (isset($this->currentUrl)) {
+                $authData['web_url'] = $this->currentUrl;
+            }
+
+            // Log request for debugging
+            log_message('debug', 'API Auth request data: ' . json_encode($authData));
+
+            // Make API call for authentication
+            $response = $this->makePostRequest('/auth/sign-in', $authData, [], false, false);
+
+            log_message('debug', 'API Authentication Response: ' . json_encode($response));
+
+            if (!$response) {
+                return $this->response->setStatusCode(500)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Authentication failed. Please try again later.'
+                ]);
+            }
+
+            if (isset($response['token']) && $response['token']) {
+                // For API response, return the token and user data
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Login successful',
+                    'data' => [
+                        'token' => $response['token'],
+                        'user' => $response['user'],
+                        'expires_in' => 86400 // 24 hours
+                    ]
+                ]);
+            } else {
+                $errorMessage = isset($response['message'])
+                    ? $response['message']
+                    : 'Invalid credentials or server error';
+
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 'error',
+                    'message' => $errorMessage
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'API Authentication error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Authentication failed. Please try again later.'
+            ]);
+        }
+    }
+
+    /**
      * Authorize ambassador login
      */
     public function authorizeAmbassador()
@@ -757,31 +974,22 @@ class Auth extends BaseController
         $email = trim($this->request->getPost('email'));
         $refCode = trim($this->request->getPost('referral_code'));
 
-
         if (!$email || !$refCode) {
-            return redirect()->back()->with('error', 'Please provide both email, referral code');
+            return redirect()->back()->with('error', 'Please provide both email and referral code');
         }
 
         try {
-            // Prepare the data for ambassador authentication
+            // Prepare the data for ambassador authentication using new API format
             $authData = [
                 'email' => $email,
                 'ref_code' => $refCode,
-                'type' => 3, // 3 = ambassador (as defined in the API)
             ];
 
-            // Add web_url if available
-            if (isset($this->currentUrl)) {
-                $authData['web_url'] = $this->currentUrl;
-            }
-
-            // var_dump($authData); // Debugging line to check the data being sent
-
             // Log request for debugging
-            log_message('debug', 'Ambassador auth request data: ' . json_encode($authData));
+            log_message('debug', 'Ambassador sign-in request data: ' . json_encode($authData));
 
-            // Use the same endpoint with different type
-            $response = $this->makePostRequest('/auth/sign-in', $authData, [], false, false);
+            // Use the new ambassador sign-in endpoint
+            $response = $this->makePostRequest('/auth/ambassador/sign-in', $authData, [], false, false);
 
             log_message('debug', 'API Ambassador Authentication Response: ' . json_encode($response));
 
@@ -789,20 +997,47 @@ class Auth extends BaseController
                 return redirect()->back()->with('error', 'Authentication failed. Please check your credentials.');
             }
 
-            if (isset($response['token']) && $response['token']) {
+            // Check for successful authentication - handle both response formats
+            $isSuccess = false;
+            $token = null;
+            $ambassador = null;
+            
+            // Check for new API format with status/data wrapper
+            if (isset($response['status']) && $response['status'] === 'success' && isset($response['data']['token'])) {
+                $isSuccess = true;
+                $token = $response['data']['token'];
+                $ambassador = $response['data']['ambassador'] ?? null;
+            }
+            // Check for direct token/ambassador format (current API response)
+            elseif (isset($response['token']) && isset($response['ambassador'])) {
+                $isSuccess = true;
+                $token = $response['token'];
+                $ambassador = $response['ambassador'];
+            }
+            
+            if ($isSuccess && $token && $ambassador) {
                 $session = session();
 
                 // Store token
-                $session->set('jwt_token', $response['token']);
+                $session->set('jwt_token', $token);
 
-                // Store user data
-                if (isset($response['user'])) {
-                    $session->set('user', $response['user']);
-                    $session->set('isAmbassador', true);
-                }
-
+                // Store ambassador data - prefer ambassador_info if available, fallback to ambassador
+                $ambassadorInfo = $response['data']['ambassador_info'] ?? null;
+                $userData = [
+                    'id' => $ambassador['id'],
+                    'email' => $ambassador['email'],
+                    'full_name' => $ambassadorInfo['full_name'] ?? $ambassador['name'] ?? 'Ambassador',
+                    'name' => $ambassador['name'] ?? $ambassadorInfo['full_name'] ?? 'Ambassador', // Keep backward compatibility
+                    'type' => 3, // Ambassador type
+                    'program_id' => $ambassador['program_id'] ?? null,
+                    'ref_code' => $ambassador['ref_code'] ?? $ambassadorInfo['ref_code'] ?? null,
+                    'institution' => $ambassador['institution'] ?? $ambassadorInfo['institution'] ?? null,
+                ];
+                $session->set('user', $userData);
+                $session->set('isAmbassador', true);
                 $session->set('isLoggedIn', true);
-                log_message('info', 'Ambassador logged in successfully: ' . $response['user']['id']);
+                
+                log_message('info', 'Ambassador logged in successfully: ' . $ambassador['id']);
 
                 return redirect()->to('ambassadors/dashboard');
             } else {
@@ -817,5 +1052,113 @@ class Auth extends BaseController
             log_message('error', 'Ambassador authentication error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Authentication failed. Please try again later.');
         }
+    }
+
+    /**
+     * Get profile from JWT token
+     * GET /auth/profile
+     */
+    public function authProfile()
+    {
+        try {
+            // Get JWT token from Authorization header
+            $token = $this->getJwtTokenFromHeader();
+            
+            if (!$token) {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 'error',
+                    'message' => 'JWT token required'
+                ]);
+            }
+
+            // Validate token with API
+            $response = $this->makeGetRequest('/auth/profile', [], true);
+
+            if ($response && isset($response['user'])) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Profile retrieved successfully',
+                    'data' => [
+                        'user' => $response['user']
+                    ]
+                ]);
+            } else {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Invalid or expired token'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'JWT profile validation error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Token validation failed'
+            ]);
+        }
+    }
+
+    /**
+     * Refresh JWT token
+     * POST /auth/refresh
+     */
+    public function authRefresh()
+    {
+        try {
+            // Get JWT token from Authorization header
+            $token = $this->getJwtTokenFromHeader();
+            
+            if (!$token) {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 'error',
+                    'message' => 'JWT token required'
+                ]);
+            }
+
+            // Refresh token with API
+            $response = $this->makePostRequest('/auth/refresh', [], [], true, false);
+
+            if ($response && isset($response['token'])) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Token refreshed successfully',
+                    'data' => [
+                        'token' => $response['token'],
+                        'expires_in' => 86400 // 24 hours
+                    ]
+                ]);
+            } else {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Token refresh failed'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'JWT token refresh error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Token refresh failed'
+            ]);
+        }
+    }
+
+    /**
+     * Get JWT token from Authorization header
+     * 
+     * @return string|null
+     */
+    private function getJwtTokenFromHeader()
+    {
+        $authHeader = $this->request->getHeader('Authorization');
+        
+        if ($authHeader && $authHeader->getValue()) {
+            $headerValue = $authHeader->getValue();
+            if (preg_match('/Bearer\s+(.*)$/i', $headerValue, $matches)) {
+                return $matches[1];
+            }
+        }
+        
+        return null;
     }
 }

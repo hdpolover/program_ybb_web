@@ -103,7 +103,7 @@ abstract class BaseController extends Controller
         // Handle special cases for localhost and different environments
         if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
             // You can change this to test different domains
-            $this->currentUrl = "istanbulyouthsummit.com"; // Changed from koreayouthsummit.com for testing
+            $this->currentUrl = "japanyouthsummit.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to middleeastyouthsummit.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
@@ -286,10 +286,82 @@ abstract class BaseController extends Controller
     }
 
     /**
+     * Ensure ambassador session data is loaded for topbar functionality
+     */
+    protected function ensureAmbassadorSessionData()
+    {
+        $user = session()->get('user');
+        log_message('debug', 'BaseController - ensureAmbassadorSessionData called. User: ' . json_encode($user));
+        log_message('debug', 'BaseController - isAmbassador: ' . (session()->get('isAmbassador') ? 'true' : 'false'));
+        
+        if (!$user || !session()->get('isAmbassador')) {
+            log_message('debug', 'BaseController - Not an ambassador or no user, returning');
+            return;
+        }
+
+        log_message('debug', 'BaseController - Checking session programs: ' . (session()->has('programs') ? 'exists' : 'missing'));
+        log_message('debug', 'BaseController - User program_id: ' . ($user['program_id'] ?? 'missing'));
+
+        // Check if programs data is already in session and valid
+        $existingPrograms = session()->get('programs') ?? [];
+        $needsToLoadPrograms = empty($existingPrograms) && isset($user['program_id']);
+        
+        if ($needsToLoadPrograms) {
+            log_message('debug', 'BaseController - Loading program data for ambassador program ID: ' . $user['program_id']);
+            try {
+                // Load the ambassador's program data
+                $program = $this->makeGetRequest('/programs/' . $user['program_id'], [], false);
+                
+                log_message('debug', 'BaseController - API response for program: ' . json_encode($program));
+                
+                // Handle the API response structure - program data is in 'program' key
+                $programData = null;
+                if ($program && isset($program['program'])) {
+                    $programData = $program['program'];
+                } else if ($program && isset($program['id'])) {
+                    // Direct program data structure
+                    $programData = $program;
+                }
+                
+                if ($programData && isset($programData['id'])) {
+                    // Store as programs array (expected by TopbarController)
+                    session()->set('programs', [$programData]);
+                    
+                    // Also set the current program ID for TopbarController
+                    session()->set('current_program_id', $programData['id']);
+                    session()->set('current_program', $programData);
+                    
+                    log_message('info', 'BaseController - Successfully loaded ambassador program data: ' . $programData['name'] . ' (ID: ' . $programData['id'] . ')');
+                } else {
+                    log_message('warning', 'BaseController - Failed to load program data for ambassador program ID: ' . $user['program_id']);
+                    // Don't set empty array to allow retries
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'BaseController - Error loading ambassador program data: ' . $e->getMessage());
+                // Don't set empty array to allow retries
+            }
+        } else {
+            log_message('debug', 'BaseController - Skipping program data load: programs exist=' . (session()->has('programs') ? 'yes' : 'no') . ', has program_id=' . (isset($user['program_id']) ? 'yes' : 'no'));
+        }
+
+        // Check if participants data is needed - for ambassadors, we don't have participants
+        // but TopbarController expects this key to exist
+        if (!session()->has('participants')) {
+            session()->set('participants', []);
+            log_message('debug', 'BaseController - Set empty participants array for ambassador');
+        }
+    }
+
+    /**
      * Process and prepare the topbar data for views
      */
     protected function prepareTopbarData()
     {
+        // Check if this is an ambassador and ensure session data is loaded
+        if (session()->get('isAmbassador') && session()->get('user')) {
+            $this->ensureAmbassadorSessionData();
+        }
+
         // Create an instance of TopbarController
         $topbarController = new \App\Controllers\TopbarController();
 

@@ -74,6 +74,11 @@ $routes->post('contact', 'landing\Contact::submit');
 $routes->get('sign-in', 'Auth::index', ['filter' => 'noauth']);
 $routes->get('sign-up', 'Auth::signUp', ['filter' => 'noauth']);
 $routes->post('authorize', 'Auth::authorize', ['filter' => 'noauth']);
+// Authentication API endpoint (no /api prefix)
+// Authentication API routes (no /api prefix but following API patterns)
+$routes->post('auth/sign-in', 'Auth::authApiSignIn', ['filter' => 'noauth']);
+$routes->get('auth/profile', 'Auth::authProfile', ['filter' => 'noauth']);
+$routes->post('auth/refresh', 'Auth::authRefresh', ['filter' => 'noauth']);
 // register
 $routes->post('register', 'Auth::register', ['filter' => 'noauth']);
 $routes->get('sign-out', 'Auth::signOut');
@@ -81,6 +86,8 @@ $routes->get('forgot-password', 'Auth::forgotPassword', ['filter' => 'noauth']);
 $routes->get('reset-password', 'Auth::resetPassword', ['filter' => 'noauth']);
 // verify email
 $routes->get('verify-email', 'Auth::verifyEmail', ['filter' => 'noauth']);
+// resend verification email
+$routes->post('resend-verification', 'Auth::resendVerification', ['filter' => 'noauth']);
 // set new password
 $routes->post('set-new-password', 'Auth::setNewPassword', ['filter' => 'noauth']);
 $routes->post('send-reset-link', 'Auth::sendResetLink', ['filter' => 'noauth']);
@@ -146,6 +153,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->post('payments/make', 'dashboard\Payments::makePayment');
     $routes->get('payments/test-api', 'dashboard\Payments::testPaymentAPI'); // Temporary debug endpoint
     $routes->get('debug/session', 'DebugController::sessionData'); // Debug session endpoint
+    
+    // Payment API endpoints (no /api prefix)
+    $routes->get('payments/participant/(:num)', 'dashboard\Payments::getParticipantPayments/$1');
+    $routes->get('payments/program-payment/(:num)/participant/(:num)', 'dashboard\Payments::getPaymentsByProgramPayment/$1/$2');
+    $routes->get('payments/get/(:num)', 'dashboard\Payments::getPaymentDetails/$1');
     // documents
     $routes->get('documents/program', 'dashboard\Documents::index');
     $routes->get('documents/program/details/(:num)', 'dashboard\Documents::details/$1');
@@ -167,6 +179,18 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
         $routes->get('dashboard', 'ambassador\Dashboard::index');
         $routes->get('referred-participants', 'ambassador\ReferredParticipants::index');
         $routes->get('profile', 'ambassador\Profile::index');
+        $routes->get('payments', 'ambassador\Payments::index');
+        $routes->get('performance', 'ambassador\Performance::index');
+        
+        // dashboard API endpoints (no /api prefix)
+        $routes->get('dashboard/overview', 'ambassador\Dashboard::overview');
+        $routes->get('dashboard/participants', 'ambassador\ReferredParticipants::participants');
+        $routes->get('dashboard/participant-payment/(:num)', 'ambassador\ReferredParticipants::participantPayment/$1');
+        $routes->get('dashboard/payments', 'ambassador\Payments::payments');
+        $routes->get('dashboard/performance', 'ambassador\Performance::performance');
+        
+        // payment analytics data endpoint  
+        $routes->get('payments/data', 'ambassador\Payments::getData');
     });
 });
 
@@ -189,8 +213,22 @@ $routes->post('topbar/updateParticipantSession', 'TopbarController::updatePartic
 // Public receipt download route (no authentication required)
 $routes->get('payments/receipt/(:num)', 'dashboard\Payments::downloadReceipt/$1');
 
+// Debug routes for receipt development (remove in production)
+$routes->get('payments/debugProgramAPI/(:num)', 'dashboard\Payments::debugProgramAPI/$1');
+$routes->get('payments/debugProgramAPI', 'dashboard\Payments::debugProgramAPI');
+$routes->get('payments/testReceiptHTML/(:num)', 'dashboard\Payments::testReceiptHTML/$1');
+
 // API route for getting current user data
 $routes->get('api/user/current', 'TopbarController::getCurrentUser');
+
+// Ambassador Admin API endpoints
+$routes->group('api/ambassadors', function($routes) {
+    $routes->get('/', 'Api\AmbassadorsApiController::index');
+    $routes->get('(:num)', 'Api\AmbassadorsApiController::show/$1');
+    $routes->get('(:num)/referrals', 'Api\AmbassadorsApiController::referrals/$1');
+    $routes->get('(:num)/generate-link', 'Api\AmbassadorsApiController::generateLink/$1');
+    $routes->get('check-query', 'Api\AmbassadorsApiController::checkQuery');
+});
 
 // Cache management routes (admin only in production)
 $routes->get('cache/clear', 'CacheController::clearAll');
