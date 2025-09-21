@@ -147,6 +147,16 @@ class Dashboard extends BaseController
                 ])->setStatusCode(400);
             }
 
+            // Additional validation: check if participant_id belongs to current user
+            $sessionParticipantId = session()->get('current_participant_id');
+            if ($sessionParticipantId && $sessionParticipantId !== $participantId) {
+                log_message('warning', 'switchCategory: Unauthorized attempt to switch category for participant ' . $participantId . ' by user with participant ' . $sessionParticipantId);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Unauthorized: You can only switch your own registration category'
+                ])->setStatusCode(403);
+            }
+
             // Check if user is logged in and get session data
             if (!session()->get('isLoggedIn')) {
                 log_message('error', 'switchCategory: User not authenticated');

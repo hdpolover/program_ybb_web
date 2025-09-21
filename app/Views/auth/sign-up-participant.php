@@ -40,6 +40,18 @@
                                         <div>
                                             <h5 class="text-primary">Participate in <?= $program['name'] ?? 'Our Programs' ?></h5>
                                             <p class="text-muted">Create your account to get started.</p>
+                                            <?php if (!empty($registrationType)): ?>
+                                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                                    <i class="ri-information-line me-1"></i>
+                                                    <strong>Registration Type:</strong> 
+                                                    <?php if ($registrationType === 'fully_funded'): ?>
+                                                        <span class="text-success">Fully Funded</span> - Reimbursement program with essays and interviews
+                                                    <?php else: ?>
+                                                        <span class="text-primary">Self Funded</span> - Guaranteed participation with standard payment
+                                                    <?php endif; ?>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
 
                                         <?php if (session()->has('error')): ?>
@@ -61,6 +73,8 @@
                                                 <!-- Hidden fields for ambassador referral -->
                                                 <input type="hidden" name="ambassador_id" value="<?= $ambassadorId ?? '' ?>">
                                                 <input type="hidden" name="q" value="<?= $ambassadorQuery ?? '' ?>">
+                                                <!-- Hidden field for registration type (category) -->
+                                                <input type="hidden" name="registration_type" value="<?= $registrationType ?? '' ?>">
 
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span class="text-danger">*</span></label>
