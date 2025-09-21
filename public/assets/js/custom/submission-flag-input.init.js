@@ -66,6 +66,14 @@ File: flag input Js File
         Array.from(item.querySelectorAll(".dropdown-menu li")).forEach(function (subitem) {
             var optionFlagImg = subitem.querySelector(".options-flagimg").getAttribute("src");
             subitem.addEventListener("click", function () {
+                // Remove active class from all items in this dropdown
+                Array.from(item.querySelectorAll(".dropdown-menu li")).forEach(function (listItem) {
+                    listItem.classList.remove("active");
+                });
+                
+                // Add active class to the clicked item
+                subitem.classList.add("active");
+                
                 var optionCodeNo = subitem.querySelector(".countrylist-codeno").innerHTML;
                 if (item.querySelector("button")) {
                     item.querySelector("button img").setAttribute("src", optionFlagImg);

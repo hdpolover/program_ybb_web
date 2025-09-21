@@ -397,7 +397,12 @@
             };
 
             // Get participant ID from session
-            const participant_id = <?= $currentParticipant['id'] ?>;
+            const participant_id = <?= isset($participant['id']) ? $participant['id'] : 'null' ?>;
+
+            if (!participant_id) {
+                console.error('Participant ID not found');
+                return;
+            }
 
             console.log('Submitting entry data:', formData);
 

@@ -190,7 +190,12 @@
             };
 
             // Get participant ID from session
-            const participant_id = <?= $participant['id'] ?>;
+            const participant_id = <?= isset($participant['id']) ? $participant['id'] : 'null' ?>;
+
+            if (!participant_id) {
+                console.error('Participant ID not found');
+                return;
+            }
 
             // Send the data to the server
             fetch(`/submission/professional/${participant_id}/update`, {
