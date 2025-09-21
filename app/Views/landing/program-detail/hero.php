@@ -49,13 +49,11 @@
 
                 <div class="mt-4 pt-2">
                     <?php
-                    //  generate slug
-                    helper('url'); // Ensure the helper is loaded
-                    $slug = create_slug($title);
-
+                    // Use the actual program slug from the URL instead of generating from title
+                    $slug = $program_slug ?? (isset($program['slug']) ? $program['slug'] : create_slug($title));
                     $apply_url = "/sign-up?program=" . urlencode($slug);
                     ?>
-                    <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] == "1") : ?>
+                    <?php if (is_registration_actually_available($program)) : ?>
                         <a href="<?= base_url($apply_url) ?>" class="btn btn-success btn-lg">
                             <i class="ri-user-add-line me-1"></i> Apply Now
                         </a>

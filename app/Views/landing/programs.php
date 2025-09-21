@@ -106,11 +106,11 @@
                                             
                                             <div class="mt-auto text-center">
                                                 <?php 
-                                                // Create slug from program name for detail page (matching active program card format)
+                                                // Use existing slug from program data if available, otherwise generate from name
                                                 helper('url'); // Ensure the helper is loaded
-                                                $slug = create_slug($program['name'] ?? '');
+                                                $slug = $program['slug'] ?? create_slug($program['name'] ?? '');
                                                 ?>
-                                                <a href="<?= base_url('programs/' . $slug . '/details') ?>" class="btn btn-outline-primary btn-sm">
+                                                <a href="<?= base_url('programs/' . $slug) ?>" class="btn btn-outline-primary btn-sm">
                                                     <i class="ri-eye-line me-1"></i> View Details
                                                 </a>
                                             </div>

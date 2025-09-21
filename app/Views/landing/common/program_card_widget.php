@@ -30,9 +30,9 @@ $start_date = $program['start_date'] ?? null;
 $end_date = $program['end_date'] ?? null;
 $status = $program['status'] ?? 'Upcoming'; // Default status
 
-//  generate slug
+// Use existing slug from program data if available, otherwise generate from title
 helper('url'); // Ensure the helper is loaded
-$slug = create_slug($title);
+$slug = $program['slug'] ?? create_slug($title);
 
 // Calculate duration (in days) from start_date and end_date
 $duration = null;
@@ -78,7 +78,7 @@ $formatted_start_date = !empty($start_date) ? date('M d, Y', strtotime($start_da
 $formatted_end_date = !empty($end_date) ? date('M d, Y', strtotime($end_date)) : null;
 
 // Build the URLs with program slug
-$details_url = "/programs/{$slug}/details";
+$details_url = "/programs/{$slug}";
 $apply_url = "/sign-up?program=" . urlencode($slug);
 
 // Map status to color classes and labels
@@ -822,7 +822,7 @@ try {
 
                 <div class="actions mt-auto">
                     <a href="<?= esc($details_url) ?>" class="btn btn-primary px-4"><i class="ri-information-line me-1"></i> Details</a>
-                    <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] != 0): ?>
+                    <?php if (is_registration_actually_available($program)): ?>
                         <!-- Show general Apply button only if no registration payments are available -->
                         <?php if (!isset($program['registration_payments']) || empty($program['registration_payments'])): ?>
                             <a href="<?= esc($apply_url) ?>" class="btn btn-success px-4"><i class="ri-user-add-line me-1"></i> Apply</a>

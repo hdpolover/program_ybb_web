@@ -4,18 +4,25 @@
  * Application CTA Component
  * 
  * Displays a call-to-action for program applications
- * 
- * @param array $program The program data array
+                <div class="text-center">
+                    <?php if (is_registration_actually_available($program)): ?>
+                        <a href="<?= $apply_url ?>" class="btn btn-primary">
+                            <i class="ri-user-add-line me-1"></i> <?= $buttonText ?>
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-light" disabled>
+                            <i class="ri-time-line me-1"></i> Applications Closed
+                        </button>
+                    <?php endif; ?>aram array $program The program data array
  * @param string $style (Optional) Style of the CTA ('card', 'banner', 'minimal')
  */
 $style = $style ?? 'card';
 $buttonText = $buttonText ?? 'Apply Now';
 $bgClass = $bgClass ?? 'bg-primary';
 
-//  generate slug
+// Use the actual program slug from the URL instead of generating from title
 helper('url'); // Ensure the helper is loaded
-$slug = create_slug($title);
-
+$slug = $program_slug ?? (isset($program['slug']) ? $program['slug'] : create_slug($title));
 $apply_url = "/sign-up?program=" . urlencode($slug);
 ?>
 
@@ -34,7 +41,7 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                         </p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                        <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] == "1"): ?>
+                        <?php if (is_registration_actually_available($program)): ?>
                             <a href="<?= base_url($apply_url) ?>" class="btn btn-light">
                                 <i class="ri-user-add-line me-1"></i> <?= $buttonText ?>
                             </a>
@@ -58,7 +65,7 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                 <?php endif; ?>
             </div>
             <div>
-                <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] == "1"): ?>
+                <?php if (is_registration_actually_available($program)): ?>
                     <a href="<?= $apply_url ?>" class="btn btn-sm btn-primary">
                         <i class="ri-user-add-line me-1"></i> <?= $buttonText ?>
                     </a>
@@ -104,7 +111,7 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
                 </div>
 
                 <div class="d-grid">
-                    <?php if (isset($program['is_registration_open']) && $program['is_registration_open'] == "1"): ?>
+                    <?php if (is_registration_actually_available($program)): ?>
                         <a href="<?= $apply_url ?>" class="btn btn-primary">
                             <i class="ri-user-add-line me-1"></i> <?= $buttonText ?>
                         </a>

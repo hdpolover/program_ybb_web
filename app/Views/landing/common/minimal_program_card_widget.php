@@ -21,9 +21,9 @@ $start_date = $program['start_date'] ?? null;
 $end_date = $program['end_date'] ?? null;
 $status = $program['status'] ?? 'Upcoming'; // Default status
 
-//  generate slug
+// Use existing slug from program data if available, otherwise generate from title
 helper('url'); // Ensure the helper is loaded
-$slug = create_slug($title);
+$slug = $program['slug'] ?? create_slug($title);
 
 // Format dates for display
 $formatted_start_date = !empty($start_date) ? date('M d, Y', strtotime($start_date)) : null;
@@ -63,8 +63,14 @@ $apply_url = "/sign-up?program=" . urlencode($slug);
         
         <p class="card-text small text-muted mb-3"><?= esc($description) ?></p>
         
-        <a href="<?= esc($apply_url) ?>" class="btn btn-sm btn-outline-primary w-100">
-            <i class="ri-user-add-line me-1"></i> Apply Now
-        </a>
+        <?php if (is_registration_actually_available($program)) : ?>
+            <a href="<?= esc($apply_url) ?>" class="btn btn-sm btn-outline-primary w-100">
+                <i class="ri-user-add-line me-1"></i> Apply Now
+            </a>
+        <?php else: ?>
+            <button class="btn btn-sm btn-outline-secondary w-100" disabled>
+                <i class="ri-calendar-event-line me-1"></i> Registration Closed
+            </button>
+        <?php endif; ?>
     </div>
 </div>

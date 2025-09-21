@@ -120,6 +120,7 @@ class Programs extends BaseController
             'faqs' => $program_faqs,
             'rundowns' => $program_rundowns,
             'speakers' => $program_speakers,
+            'program_slug' => $slug, // Pass the actual slug from URL
         ];
 
         // var_dump($program_rundowns); // Debugging line to check the data being passed to the view
