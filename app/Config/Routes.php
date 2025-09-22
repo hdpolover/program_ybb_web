@@ -235,6 +235,15 @@ $routes->get('cache/clear', 'CacheController::clearAll');
 $routes->get('cache/clear/(:any)', 'CacheController::clearPattern/$1');
 $routes->get('cache/stats', 'CacheController::stats');
 
+// Chat Widget API routes (public endpoints)
+$routes->group('api/chat', function($routes) {
+    $routes->post('/', 'ChatController::sendMessage');
+    $routes->post('send', 'ChatController::sendMessage');
+    $routes->get('history', 'ChatController::getChatHistory');
+    $routes->get('status', 'ChatController::getStatus');
+    $routes->post('typing', 'ChatController::typing');
+});
+
 /*
  * --------------------------------------------------------------------
  * Additional Routing

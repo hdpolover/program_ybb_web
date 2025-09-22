@@ -95,5 +95,5 @@ define('EVENT_PRIORITY_HIGH', 10);
 
 // In app/Config/Constants.php (or any custom config file)
 define('BASE_API_URL', 'https://admin.ybbfoundation.com/api');
-
-define('DEV_BASE_API_URL', 'http://localhost:8080/api');
+// Define development API URL (for local development)
+define('DEV_BASE_API_URL', 'http://localhost:8100/api');

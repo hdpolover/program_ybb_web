@@ -4,7 +4,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="text-center mb-5">
-                    <h2 class="mb-3 fw-semibold"><?= $category['name'] . ' Programs ' ?? 'Programs' ?></h2>
+                    <h2 class="mb-3 fw-semibold"><?= ($category['name'] ?? 'Our') . ' Programs' ?></h2>
                     <p class="text-muted">Explore our active programs and initiatives</p>
                 </div>
             </div>
