@@ -228,6 +228,8 @@ class ChatWidget {
      */
     openChat() {
         this.elements.window.style.display = 'flex';
+        // Hide the chat button when window opens
+        this.elements.button.classList.add('hidden');
         // Trigger animation after display
         setTimeout(() => {
             this.elements.window.classList.add('show');
@@ -246,6 +248,8 @@ class ChatWidget {
         this.elements.window.classList.remove('show');
         setTimeout(() => {
             this.elements.window.style.display = 'none';
+            // Show the chat button again when window is closed
+            this.elements.button.classList.remove('hidden');
         }, 300);
         
         this.isOpen = false;

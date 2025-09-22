@@ -21,7 +21,7 @@
 /* Chat Widget Container */
 .chat-widget {
     position: fixed;
-    z-index: 9999;
+    z-index: 999999 !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     font-size: 14px;
     line-height: 1.5;
@@ -54,16 +54,25 @@
     position: relative;
     width: 60px;
     height: 60px;
-    background: var(--chat-primary);
+    background: var(--chat-primary) !important;
     border-radius: 50%;
     cursor: pointer;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     box-shadow: var(--chat-shadow);
     transition: var(--chat-transition);
     border: none;
     outline: none;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.chat-button.hidden {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: scale(0.8);
+    pointer-events: none;
 }
 
 .chat-button:hover {
