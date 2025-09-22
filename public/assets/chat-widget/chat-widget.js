@@ -275,9 +275,9 @@ class ChatWidget {
      * Open chat window
      */
     openChat() {
-        this.elements.window.style.display = 'flex';
-        // Hide the chat button when window opens
+        // Immediately hide the chat button and show the window
         this.elements.button.classList.add('hidden');
+        this.elements.window.style.display = 'flex';
         // Trigger animation after display
         setTimeout(() => {
             this.elements.window.classList.add('show');
@@ -294,9 +294,9 @@ class ChatWidget {
      */
     closeChat() {
         this.elements.window.classList.remove('show');
+        // Immediately show the chat button and hide the window after animation
         setTimeout(() => {
             this.elements.window.style.display = 'none';
-            // Show the chat button again when window is closed
             this.elements.button.classList.remove('hidden');
         }, 300);
         

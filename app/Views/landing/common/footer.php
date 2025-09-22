@@ -300,6 +300,10 @@
     transform: scale(0.95);
 }
 
+.chat-button.hidden {
+    display: none !important;
+}
+
 @keyframes pulse {
     0% {
         box-shadow: 0 6px 24px rgba(0, 123, 255, 0.4);
@@ -320,7 +324,7 @@
 
 .chat-window {
     position: absolute;
-    bottom: 80px;
+    bottom: 0;
     right: 0;
     width: 380px;
     height: 520px;
@@ -330,7 +334,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transform: scale(0.8) translateY(20px);
+    transform: scale(0.1) translateY(0);
+    transform-origin: bottom right;
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     border: 1px solid rgba(0, 123, 255, 0.1);
@@ -629,50 +634,123 @@
 
 @media (max-width: 768px) {
     .chat-window {
-        width: 320px;
-        height: 450px;
-        bottom: 90px;
-        right: 10px;
+        width: 280px;
+        height: 380px;
+        bottom: 10px;
+        right: 0;
+        border-radius: 12px;
     }
     
     .chat-widget.bottom-right {
-        bottom: 80px;
-        right: 20px;
+        bottom: 70px;
+        right: 15px;
     }
     
     .chat-button {
-        width: 56px;
-        height: 56px;
+        width: 52px;
+        height: 52px;
     }
     
     .chat-messages {
-        padding: 16px;
+        padding: 12px;
+        font-size: 14px;
     }
     
     .chat-header {
-        padding: 16px;
+        padding: 12px 16px;
     }
     
     .chat-input-wrapper {
-        padding: 12px;
+        padding: 10px 12px;
+    }
+    
+    .chat-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 10px 12px;
+    }
+    
+    .chat-send-btn {
+        width: 36px;
+        height: 36px;
     }
 }
 
 @media (max-width: 480px) {
     .chat-window {
         position: fixed;
-        top: 20px;
-        left: 20px;
-        right: 20px;
-        bottom: 20px;
+        top: 100px;
+        left: 15px;
+        right: 15px;
+        bottom: 80px;
         width: auto;
         height: auto;
-        border-radius: 12px;
+        border-radius: 16px;
+        max-height: calc(100vh - 180px);
     }
     
     .chat-widget.bottom-right {
-        bottom: 20px;
-        right: 20px;
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .chat-button {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .chat-header {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
+    
+    .chat-title {
+        font-size: 16px;
+    }
+    
+    .chat-messages {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .chat-input {
+        font-size: 16px;
+        padding: 12px 14px;
+        border-radius: 20px;
+    }
+    
+    .chat-input-wrapper {
+        padding: 8px 12px 12px 12px;
+    }
+    
+    .chat-send-btn {
+        width: 40px;
+        height: 40px;
+        margin-left: 8px;
+    }
+    
+    /* Improve touch targets */
+    .chat-control-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px;
+    }
+    
+    /* Better message bubbles for mobile */
+    .message {
+        margin-bottom: 12px;
+    }
+    
+    .message-content {
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    /* Prevent text selection issues on mobile */
+    .chat-header, .chat-control-btn {
+        -webkit-user-select: none;
+        user-select: none;
     }
 }
 
@@ -779,9 +857,11 @@ document.addEventListener("DOMContentLoaded", function() {
             chatWindow.classList.remove('show');
             setTimeout(() => {
                 chatWindow.style.display = 'none';
+                chatButton.classList.remove('hidden');
             }, 300);
         } else {
             // Opening
+            chatButton.classList.add('hidden');
             chatWindow.style.display = 'flex';
             setTimeout(() => {
                 chatWindow.classList.add('show');
