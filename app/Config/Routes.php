@@ -55,6 +55,7 @@ $routes->post('ajax/error/(:num)', 'AjaxHandler::error/$1');
 $routes->get('/', 'landing\Home::index');
 $routes->get('programs', 'landing\Programs::index');
 $routes->get('programs/(:any)/details', 'landing\Programs::detail/$1');
+$routes->get('programs/(:any)', 'landing\Programs::detail/$1');
 $routes->get('insights', 'landing\Insights::index');
 $routes->get('gallery', 'landing\Gallery::index');
 $routes->get('partners-sponsors', 'landing\PartnersSponsors::index');

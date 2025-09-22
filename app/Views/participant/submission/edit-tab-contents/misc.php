@@ -247,7 +247,12 @@
             };
 
             // Get participant ID from session
-            const participant_id = <?= $participant['id'] ?>;
+            const participant_id = <?= isset($participant['id']) ? $participant['id'] : 'null' ?>;
+
+            if (!participant_id) {
+                console.error('Participant ID not found');
+                return;
+            }
 
             // Send API request
             fetch(`/submission/miscs/${participant_id}/update`, {

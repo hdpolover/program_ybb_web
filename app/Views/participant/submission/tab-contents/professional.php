@@ -17,7 +17,7 @@
                                 <div class="mb-4">
                                     <h6 class="fw-semibold">Institution</h6>
                                     <div class="text-muted">
-                                        <?= $participant['institution'] ?? '-' ?>
+                                        <?= (!empty($participant['institution'])) ? $participant['institution'] : '-' ?>
                                     </div>
                                 </div>
                             </div>
@@ -35,7 +35,7 @@
                                 <div class="mb-4">
                                     <h6 class="fw-semibold">Organizations</h6>
                                     <div class="text-muted">
-                                        <?= nl2br($participant['organizations'] ?? '-') ?>
+                                        <?= (!empty($participant['organizations'])) ? nl2br($participant['organizations']) : '-' ?>
                                     </div>
                                 </div>
                             </div>
@@ -48,7 +48,7 @@
                                 <div class="mb-4">
                                     <h6 class="fw-semibold">Experiences</h6>
                                     <div class="text-muted">
-                                        <?= nl2br($participant['experiences'] ?? '-')  ?>
+                                        <?= (!empty($participant['experiences'])) ? nl2br($participant['experiences']) : '-' ?>
                                     </div>
                                 </div>
                             </div>
@@ -57,7 +57,7 @@
                                 <div class="mb-4">
                                     <h6 class="fw-semibold">Achievements & Awards</h6>
                                     <div class="text-muted">
-                                        <?= nl2br($participant['achievements'] ?? '-') ?>
+                                        <?= (!empty($participant['achievements'])) ? nl2br($participant['achievements']) : '-' ?>
                                     </div>
                                 </div>
                             </div>

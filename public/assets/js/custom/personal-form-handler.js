@@ -66,24 +66,33 @@ document.addEventListener('DOMContentLoaded', function () {
      * Extract phone data from phone input fields
      */
     function getPhoneInputData(inputId) {
+        console.log(`=== Getting phone data for ${inputId} ===`);
+        
         const inputElement = document.getElementById(inputId);
-        if (!inputElement) return {
-            code: '',
-            number: '',
-            full: '',
-            flag: ''
-        };
+        if (!inputElement) {
+            console.error(`Input element ${inputId} not found`);
+            return {
+                code: '',
+                number: '',
+                full: '',
+                flag: ''
+            };
+        }
 
         const container = inputElement.closest('[data-input-flag]');
-        if (!container) return {
-            code: '',
-            number: '',
-            full: '',
-            flag: ''
-        };
+        if (!container) {
+            console.error(`Container with data-input-flag not found for ${inputId}`);
+            return {
+                code: '',
+                number: '',
+                full: '',
+                flag: ''
+            };
+        }
 
         // Find the active item in the dropdown - it has the most accurate data
         const activeItem = container.querySelector('.dropdown-menu-list li.active');
+        console.log(`Active item for ${inputId}:`, activeItem);
 
         // Default values if nothing is found
         let code = '';
@@ -95,32 +104,40 @@ document.addEventListener('DOMContentLoaded', function () {
             const itemCodeElement = activeItem.querySelector('.countrylist-codeno');
             if (itemCodeElement) {
                 code = itemCodeElement.textContent.trim();
+                console.log(`Got code from active item: ${code}`);
             }
 
             // Get flag from the active item
             const itemFlagImg = activeItem.querySelector('.options-flagimg');
             if (itemFlagImg && itemFlagImg.src) {
                 flag = itemFlagImg.src.split('/').pop().split('.')[0];
+                console.log(`Got flag from active item: ${flag}`);
             }
         } else {
+            console.log(`No active item found for ${inputId}, falling back to button elements`);
             // Fallback to button elements if no active item
             const codeElement = container.querySelector('.country-codeno');
             if (codeElement) {
                 code = codeElement.textContent.trim();
+                console.log(`Got code from button: ${code}`);
             }
 
             const flagImg = container.querySelector('.country-flagimg');
             if (flagImg && flagImg.src) {
                 flag = flagImg.src.split('/').pop().split('.')[0];
+                console.log(`Got flag from button: ${flag}`);
             }
         }
 
-        return {
+        const result = {
             code: code,
             number: number,
             full: code + number,
             flag: flag
         };
+
+        console.log(`Phone data for ${inputId}:`, result);
+        return result;
     }
 
     // ======= INITIALIZATION =======
@@ -216,18 +233,33 @@ document.addEventListener('DOMContentLoaded', function () {
      * Initialize phone number fields from database values
      */
     function initializePhoneNumbers() {
+        console.log('=== INITIALIZING PHONE NUMBERS ===');
+        
+        // Get saved values
+        const savedCountryCode = document.getElementById('saved-country-code')?.value || '+1';
+        const savedPhoneFlag = document.getElementById('saved-phone-flag')?.value || 'us';
+        const savedEmergencyCode = document.getElementById('saved-emergency-country-code')?.value || '+1';
+        const savedEmergencyFlag = document.getElementById('saved-emergency-phone-flag')?.value || 'us';
+        
+        console.log('Saved values:', {
+            personalCode: savedCountryCode,
+            personalFlag: savedPhoneFlag,
+            emergencyCode: savedEmergencyCode,
+            emergencyFlag: savedEmergencyFlag
+        });
+        
         // Initialize personal phone number
         initializeSinglePhoneNumber(
             'personal-phone',
-            document.getElementById('saved-country-code')?.value || '+1',
-            document.getElementById('saved-phone-flag')?.value || 'us'
+            savedCountryCode,
+            savedPhoneFlag
         );
 
         // Initialize emergency contact phone
         initializeSinglePhoneNumber(
             'emergency-phone',
-            document.getElementById('saved-emergency-country-code')?.value || '+1',
-            document.getElementById('saved-emergency-phone-flag')?.value || 'us'
+            savedEmergencyCode,
+            savedEmergencyFlag
         );
     }
 
@@ -252,18 +284,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 let matchFound = false;
 
-                // Clean saved code (sometimes it might have + in the beginning)
-                const cleanedCode = savedCode.replace(/\+/g, '').trim();
+                // Clean saved code - ensure it has + at the beginning and remove any extra spaces
+                let cleanedCode = savedCode ? savedCode.toString().trim() : '';
+                
+                // If the code doesn't start with +, add it
+                if (cleanedCode && !cleanedCode.startsWith('+')) {
+                    cleanedCode = '+' + cleanedCode;
+                }
+
+                console.log(`Initializing ${inputId} with code: "${cleanedCode}" and flag: "${savedFlag}"`);
 
                 // Try to find the matching country in the dropdown
                 dropdownItems.forEach(item => {
                     // Remove any existing active classes first
                     item.classList.remove('active');
 
-                    // Get country code from item (clean it too just in case)
+                    // Get country code from item
                     const itemCodeElement = item.querySelector('.countrylist-codeno');
-                    const itemCode = itemCodeElement ?
-                        itemCodeElement.textContent.replace(/\+/g, '').trim() : '';
+                    const itemCode = itemCodeElement ? itemCodeElement.textContent.trim() : '';
 
                     // Get flag from item
                     const itemFlagImg = item.querySelector('.options-flagimg');
@@ -271,9 +309,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     const itemFlag = itemFlagSrc ?
                         itemFlagSrc.split('/').pop().split('.')[0] : '';
 
+                    console.log(`Comparing: stored="${cleanedCode}" vs item="${itemCode}", flag stored="${savedFlag}" vs item="${itemFlag}"`);
+
                     // Match by code or flag
                     if ((cleanedCode && itemCode === cleanedCode) ||
                         (savedFlag && itemFlag === savedFlag)) {
+
+                        console.log(`Match found for ${inputId}! Setting active and updating display.`);
 
                         // Mark as active
                         item.classList.add('active');
@@ -291,20 +333,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                // If no match was found, try to default to the first item
-                if (!matchFound && dropdownItems.length > 0) {
-                    const firstItem = dropdownItems[0];
-                    firstItem.classList.add('active');
+                // If no match was found, log for debugging and try default
+                if (!matchFound) {
+                    console.log(`No match found for ${inputId} with code "${cleanedCode}" and flag "${savedFlag}". Available codes:`, 
+                        Array.from(dropdownItems).map(item => item.querySelector('.countrylist-codeno')?.textContent.trim()));
+                    
+                    // Try to default to the first item
+                    if (dropdownItems.length > 0) {
+                        const firstItem = dropdownItems[0];
+                        firstItem.classList.add('active');
 
-                    const firstItemFlagImg = firstItem.querySelector('.options-flagimg');
-                    const firstItemCodeElement = firstItem.querySelector('.countrylist-codeno');
+                        const firstItemFlagImg = firstItem.querySelector('.options-flagimg');
+                        const firstItemCodeElement = firstItem.querySelector('.countrylist-codeno');
 
-                    if (flagImg && firstItemFlagImg) {
-                        flagImg.setAttribute('src', firstItemFlagImg.getAttribute('src'));
-                    }
+                        if (flagImg && firstItemFlagImg) {
+                            flagImg.setAttribute('src', firstItemFlagImg.getAttribute('src'));
+                        }
 
-                    if (codeElement && firstItemCodeElement) {
-                        codeElement.textContent = firstItemCodeElement.textContent;
+                        if (codeElement && firstItemCodeElement) {
+                            codeElement.textContent = firstItemCodeElement.textContent;
+                        }
                     }
                 }
             }
@@ -529,6 +577,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 return;
             }
+
+            // Debug: Log the form data before sending
+            console.log('=== PHONE NUMBER DEBUG TRACE ===');
+            console.log('Saved country code from hidden field:', document.getElementById('saved-country-code')?.value);
+            console.log('Saved emergency country code:', document.getElementById('saved-emergency-country-code')?.value);
+            console.log('Current personal phone display:', document.querySelector('#personal-phone').closest('[data-input-flag]').querySelector('.country-codeno')?.textContent);
+            console.log('Current emergency phone display:', document.querySelector('#emergency-phone').closest('[data-input-flag]').querySelector('.country-codeno')?.textContent);
+            
+            // Test the phone data collection functions
+            const personalPhoneData = getPhoneInputData('personal-phone');
+            const emergencyPhoneData = getPhoneInputData('emergency-phone');
+            
+            console.log('Personal phone data collected:', personalPhoneData);
+            console.log('Emergency phone data collected:', emergencyPhoneData);
+            
+            // Check dropdown states
+            const personalContainer = document.querySelector('#personal-phone').closest('[data-input-flag]');
+            const emergencyContainer = document.querySelector('#emergency-phone').closest('[data-input-flag]');
+            
+            console.log('Personal phone active item:', personalContainer?.querySelector('.dropdown-menu-list li.active'));
+            console.log('Emergency phone active item:', emergencyContainer?.querySelector('.dropdown-menu-list li.active'));
+            
+            console.log('Form data being sent to API:', JSON.stringify(formData, null, 2));
 
 
             // Send the data to the server

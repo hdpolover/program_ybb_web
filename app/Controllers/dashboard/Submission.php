@@ -203,6 +203,19 @@ class Submission extends BaseController
 
         // Log the received data
         log_message('debug', 'updatePersonal - Request Data: ' . json_encode($requestData));
+        
+        // Specifically log phone-related data
+        if (isset($requestData['participant'])) {
+            $phoneData = [
+                'country_code' => $requestData['participant']['country_code'] ?? 'NOT SET',
+                'phone_number' => $requestData['participant']['phone_number'] ?? 'NOT SET', 
+                'phone_flag' => $requestData['participant']['phone_flag'] ?? 'NOT SET',
+                'emergency_country_code' => $requestData['participant']['emergency_country_code'] ?? 'NOT SET',
+                'emergency_account' => $requestData['participant']['emergency_account'] ?? 'NOT SET',
+                'emergency_phone_flag' => $requestData['participant']['emergency_phone_flag'] ?? 'NOT SET'
+            ];
+            log_message('debug', 'updatePersonal - Phone Data Received: ' . json_encode($phoneData));
+        }
 
         // Extract required fields from request data
         if (empty($requestData)) {

@@ -235,6 +235,12 @@ class Auth extends BaseController
         $registrationType = $this->request->getGet('type');
         log_message('debug', 'Registration type from query: ' . ($registrationType ?? 'not provided'));
         
+        // Validate registration type to prevent invalid values
+        if ($registrationType && !in_array($registrationType, ['self_funded', 'fully_funded'])) {
+            log_message('warning', 'Invalid registration type provided: ' . $registrationType);
+            $registrationType = null; // Reset to null if invalid
+        }
+        
         $programData = null;
 
         // If program slug is provided, fetch program data
@@ -706,6 +712,15 @@ class Auth extends BaseController
             'password' => $password,
             'web_url' => $this->currentUrl ?? $_SERVER['HTTP_HOST'] ?? 'default.com',
         ];
+
+        // Include registration type (category) if provided
+        $registrationType = $this->request->getPost('registration_type'); // From hidden field
+        if ($registrationType && in_array($registrationType, ['self_funded', 'fully_funded'])) {
+            $registerData['category'] = $registrationType;
+            log_message('debug', 'Registration category set to: ' . $registrationType);
+        } else {
+            log_message('warning', 'No valid registration type provided, API will use default');
+        }
 
         // Include ambassador referral information
         if ($ambassadorId) {

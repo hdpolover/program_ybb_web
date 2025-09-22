@@ -87,7 +87,7 @@
                 <div class="mb-3">
                     <label class="form-label" for="personal-phone">Personal Phone Number</label>
                     <div class="input-group" data-input-flag>
-                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="<?= base_url('/assets/images/flags/' . ($participant['phone_flag'] ?? 'us') . '.svg') ?>" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno">+ <?= $participant['phone_code'] ?? '1' ?></span></button>
+                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="<?= base_url('/assets/images/flags/' . ($participant['phone_flag'] ?? 'us') . '.svg') ?>" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno">+<?= $participant['country_code'] ?? '1' ?></span></button>
                         <input type="text" class="form-control rounded-end flag-input" id="personal-phone" value="<?= $participant['phone_number'] ?? '' ?>" placeholder="Enter phone number" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');" required />
                         <div class="dropdown-menu w-100">
                             <div class="p-2 px-3 pt-1 searchlist-input">
@@ -105,7 +105,7 @@
                 <div class="mb-3">
                     <label class="form-label" for="emergency-phone">Emergency Contact Phone Number</label>
                     <div class="input-group" data-input-flag>
-                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="<?= base_url('/assets/images/flags/' . ($participant['emergency_phone_flag'] ?? 'us') . '.svg') ?>" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno"><?= $participant['emergency_country_code'] ?? '1' ?></span></button>
+                        <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false"><img src="<?= base_url('/assets/images/flags/' . ($participant['emergency_phone_flag'] ?? 'us') . '.svg') ?>" alt="flag img" height="20" class="country-flagimg rounded"><span class="ms-2 country-codeno">+<?= $participant['emergency_country_code'] ?? '1' ?></span></button>
                         <input type="text" class="form-control rounded-end flag-input" id="emergency-phone" value="<?= $participant['emergency_account'] ?? '' ?>" placeholder="Enter phone number" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');" required />
                         <div class="dropdown-menu w-100">
                             <div class="p-2 px-3 pt-1 searchlist-input">
@@ -198,7 +198,7 @@
 </div>
 
 <!-- Hidden fields for data storage -->
-<input type="hidden" id="participant-id-holder" value="<?= $participant['id'] ?>">
+<input type="hidden" id="participant-id-holder" value="<?= isset($participant['id']) ? $participant['id'] : '' ?>">
 <input type="hidden" id="saved-nationality" value="<?= $participant['nationality'] ?? '' ?>">
 <input type="hidden" id="saved-nationality-code" value="<?= $participant['nationality_code'] ?? '' ?>">
 <input type="hidden" id="saved-nationality-flag" value="<?= $participant['nationality_flag'] ?? '' ?>">
