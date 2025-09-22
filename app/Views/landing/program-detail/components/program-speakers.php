@@ -59,7 +59,7 @@
                                             <img src="<?= $speaker['photo_url'] ?>" 
                                                  alt="<?= htmlspecialchars($speaker['name']) ?>"
                                                  class="speaker-image"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                 onerror="console.error('Speaker image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                             <!-- Fallback avatar -->
                                             <div class="speaker-avatar-fallback" style="display: none;">
                                                 <div class="avatar-lg bg-primary bg-gradient rounded-circle d-flex align-items-center justify-content-center">
@@ -451,6 +451,13 @@ function openSpeakerModal(speaker) {
     if (speaker.photo_url) {
         modalImageLarge.src = speaker.photo_url;
         modalImageLarge.style.display = 'block';
+        
+        // Add error handler to see if image fails to load
+        modalImageLarge.onerror = function() {
+            console.error('Failed to load speaker image:', speaker.photo_url);
+            // Show fallback
+            modalImageLarge.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNGM0Y0RjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzZCNzI4MCIgZm9udC1zaXplPSI0OCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iYm9sZCI+' + btoa(speaker.name.charAt(0).toUpperCase()) + '</text></svg>';
+        };
     } else {
         modalImageLarge.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNGM0Y0RjYiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzZCNzI4MCIgZm9udC1zaXplPSI0OCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iYm9sZCI+' + btoa(speaker.name.charAt(0).toUpperCase()) + '</text></svg>';
         modalImageLarge.style.display = 'block';

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * This file is part of CodeIgniter 4 framework.
  *
@@ -13,7 +15,6 @@ namespace CodeIgniter\Session\Handlers;
 
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Session\Exceptions\SessionException;
-use Config\App as AppConfig;
 use Config\Session as SessionConfig;
 use Memcached;
 use ReturnTypeWillChange;
@@ -54,31 +55,24 @@ class MemcachedHandler extends BaseHandler
     /**
      * @throws SessionException
      */
-    public function __construct(AppConfig $config, string $ipAddress)
+    public function __construct(SessionConfig $config, string $ipAddress)
     {
         parent::__construct($config, $ipAddress);
 
-        /** @var SessionConfig|null $session */
-        $session = config('Session');
-
-        $this->sessionExpiration = ($session instanceof SessionConfig)
-            ? $session->expiration : $config->sessionExpiration;
+        $this->sessionExpiration = $config->expiration;
 
         if (empty($this->savePath)) {
             throw SessionException::forEmptySavepath();
         }
 
         // Add sessionCookieName for multiple session cookies.
-        $this->keyPrefix .= ($session instanceof SessionConfig)
-            ? $session->cookieName : $config->sessionCookieName . ':';
+        $this->keyPrefix .= $config->cookieName . ':';
 
         if ($this->matchIP === true) {
             $this->keyPrefix .= $this->ipAddress . ':';
         }
 
-        if (! empty($this->keyPrefix)) {
-            ini_set('memcached.sess_prefix', $this->keyPrefix);
-        }
+        ini_set('memcached.sess_prefix', $this->keyPrefix);
     }
 
     /**
@@ -99,12 +93,12 @@ class MemcachedHandler extends BaseHandler
         }
 
         if (
-            ! preg_match_all(
+            preg_match_all(
                 '#,?([^,:]+)\:(\d{1,5})(?:\:(\d+))?#',
                 $this->savePath,
                 $matches,
-                PREG_SET_ORDER
-            )
+                PREG_SET_ORDER,
+            ) < 1
         ) {
             $this->memcached = null;
             $this->logger->error('Session: Invalid Memcached save path format: ' . $this->savePath);
@@ -116,7 +110,7 @@ class MemcachedHandler extends BaseHandler
             // If Memcached already has this server (or if the port is invalid), skip it
             if (in_array($match[1] . ':' . $match[2], $serverList, true)) {
                 $this->logger->debug(
-                    'Session: Memcached server pool already has ' . $match[1] . ':' . $match[2]
+                    'Session: Memcached server pool already has ' . $match[1] . ':' . $match[2],
                 );
 
                 continue;
@@ -124,14 +118,14 @@ class MemcachedHandler extends BaseHandler
 
             if (! $this->memcached->addServer($match[1], (int) $match[2], $match[3] ?? 0)) {
                 $this->logger->error(
-                    'Could not add ' . $match[1] . ':' . $match[2] . ' to Memcached server pool.'
+                    'Could not add ' . $match[1] . ':' . $match[2] . ' to Memcached server pool.',
                 );
             } else {
                 $serverList[] = $match[1] . ':' . $match[2];
             }
         }
 
-        if (empty($serverList)) {
+        if ($serverList === []) {
             $this->logger->error('Session: Memcached server pool is empty.');
 
             return false;
@@ -273,7 +267,7 @@ class MemcachedHandler extends BaseHandler
         $attempt = 0;
 
         do {
-            if ($this->memcached->get($lockKey)) {
+            if ($this->memcached->get($lockKey) !== false) {
                 sleep(1);
 
                 continue;
@@ -281,7 +275,7 @@ class MemcachedHandler extends BaseHandler
 
             if (! $this->memcached->set($lockKey, Time::now()->getTimestamp(), 300)) {
                 $this->logger->error(
-                    'Session: Error while trying to obtain lock for ' . $this->keyPrefix . $sessionID
+                    'Session: Error while trying to obtain lock for ' . $this->keyPrefix . $sessionID,
                 );
 
                 return false;
@@ -293,7 +287,7 @@ class MemcachedHandler extends BaseHandler
 
         if ($attempt === 30) {
             $this->logger->error(
-                'Session: Unable to obtain lock for ' . $this->keyPrefix . $sessionID . ' after 30 attempts, aborting.'
+                'Session: Unable to obtain lock for ' . $this->keyPrefix . $sessionID . ' after 30 attempts, aborting.',
             );
 
             return false;
@@ -315,7 +309,7 @@ class MemcachedHandler extends BaseHandler
                 && $this->memcached->getResultCode() !== Memcached::RES_NOTFOUND
             ) {
                 $this->logger->error(
-                    'Session: Error while trying to free lock for ' . $this->lockKey
+                    'Session: Error while trying to free lock for ' . $this->lockKey,
                 );
 
                 return false;

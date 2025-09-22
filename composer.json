@@ -5,15 +5,15 @@
     "homepage": "https://codeigniter.com",
     "license": "MIT",
     "require": {
-        "php": "^7.4 || ^8.0",
+        "php": "^8.1",
         "ext-intl": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
         "dompdf/dompdf": "^3.1",
         "endroid/qr-code": "^5.1",
         "intervention/image": "^3.11",
-        "laminas/laminas-escaper": "^2.9",
-        "psr/log": "^1.1"
+        "laminas/laminas-escaper": "^2.17",
+        "psr/log": "^3.0"
     },
     "require-dev": {
         "kint-php/kint": "^5.0.4",

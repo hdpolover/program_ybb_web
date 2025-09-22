@@ -219,6 +219,13 @@ $routes->get('payments/debugProgramAPI/(:num)', 'dashboard\Payments::debugProgra
 $routes->get('payments/debugProgramAPI', 'dashboard\Payments::debugProgramAPI');
 $routes->get('payments/testReceiptHTML/(:num)', 'dashboard\Payments::testReceiptHTML/$1');
 
+// Production Debug Routes (secured with key and IP)
+$routes->get('prod-debug', 'ProductionDebugController::index');
+$routes->get('prod-debug/logs', 'ProductionDebugController::logs');
+$routes->get('prod-debug/clear-cache', 'ProductionDebugController::clearCache');
+$routes->get('prod-debug/test-db', 'ProductionDebugController::testDb');
+$routes->get('prod-debug/php-info', 'ProductionDebugController::phpInfo');
+
 // API route for getting current user data
 $routes->get('api/user/current', 'TopbarController::getCurrentUser');
 
@@ -235,6 +242,15 @@ $routes->group('api/ambassadors', function($routes) {
 $routes->get('cache/clear', 'CacheController::clearAll');
 $routes->get('cache/clear/(:any)', 'CacheController::clearPattern/$1');
 $routes->get('cache/stats', 'CacheController::stats');
+
+// Chat Widget API routes (public endpoints)
+$routes->group('api/chat', function($routes) {
+    $routes->post('/', 'ChatController::sendMessage');
+    $routes->post('send', 'ChatController::sendMessage');
+    $routes->get('history', 'ChatController::getChatHistory');
+    $routes->get('status', 'ChatController::getStatus');
+    $routes->post('typing', 'ChatController::typing');
+});
 
 /*
  * --------------------------------------------------------------------
