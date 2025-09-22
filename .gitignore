@@ -1,10 +1,13 @@
 # CodeIgniter 4 specific ignores
 writable/debugbar/
-writable/cache/images/
+writable/cache/*
+!writable/cache/index.html
 writable/logs/*
 !writable/logs/index.html
 writable/session/*
 !writable/session/index.html
+writable/uploads/*
+!writable/uploads/index.html
 
 # Composer dependencies
 /vendor/
@@ -32,3 +35,14 @@ nbproject/
 *.log
 *.tmp
 *.temp
+*.cache
+*~
+
+# PHP specific caches
+opcache/
+*.opcache
+
+# System and application caches
+cache/
+tmp/
+temp/
