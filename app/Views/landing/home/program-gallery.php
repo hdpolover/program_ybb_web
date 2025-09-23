@@ -96,7 +96,7 @@
                                                         data-title="<?= htmlspecialchars($title) ?>"
                                                         data-description="<?= htmlspecialchars($description) ?>"
                                                         data-src="<?= $img_url ?>">
-                                                        <img src="<?= function_exists('compress_image') ? compress_image($img_url, 600, 400, 80, true) : $img_url; ?>"
+                                                        <img src="<?= function_exists('compress_gallery_image') ? compress_gallery_image($img_url) : $img_url; ?>"
                                                             alt="<?= htmlspecialchars($title) ?>"
                                                             class="img-fluid gallery-img"
                                                             style="width: 100%; height: 250px; object-fit: cover; transition: transform 0.3s ease;">

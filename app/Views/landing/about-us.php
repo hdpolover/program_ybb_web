@@ -86,7 +86,7 @@
                             <?php
                             $random_photo = $program_photos[array_rand($program_photos)]['img_url'];
                             ?>
-                            <img src="<?= compress_image($random_photo,  600, 400, 80, true); ?>" alt="Random Program Photo" class="img-fluid" style="width: 100%; height: auto;">
+                            <img src="<?= compress_gallery_image($random_photo); ?>" alt="Random Program Photo" class="img-fluid" style="width: 100%; height: auto;">
                         </div>
                     </div>
                     <div class="col-lg-8">
@@ -108,7 +108,7 @@
                 <?php
                 $random_photo_left = $program_photos[array_rand($program_photos)]['img_url'];
                 ?>
-                <img src="<?= compress_image($random_photo_left,  600, 400, 80, true); ?> ?>" alt="Random Program Photo Left" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
+                <img src="<?= compress_gallery_image($random_photo_left, 800, 600); ?> ?>" alt="Random Program Photo Left" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
                 </div>
             </div>
             <div class="col-lg-6 p-0">
@@ -116,7 +116,7 @@
                 <?php
                 $random_photo_right = $program_photos[array_rand($program_photos)]['img_url'];
                 ?>
-                <img src="<?= compress_image($random_photo_right,  600, 400, 100, true); ?> ?>" alt="Random Program Photo Right" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
+                <img src="<?= compress_gallery_image($random_photo_right, 800, 600); ?> ?>" alt="Random Program Photo Right" class="img-fluid" style="width: 100%; height: 100vh; object-fit: cover;">
                 </div>
             </div>
             </div>

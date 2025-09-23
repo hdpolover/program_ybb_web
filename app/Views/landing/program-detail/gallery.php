@@ -37,7 +37,7 @@
                             <div class="gallery-img-container position-relative overflow-hidden">
                                 <img
                                     src="<?= $hasGallery ?
-                                               (function_exists('compress_image') ? compress_image($image['url'], 600, 400, 80, true) : $image['url']) :
+                                               (function_exists('compress_gallery_image') ? compress_gallery_image($image['url']) : $image['url']) :
                                                $image ?>"
                                     class="card-img-top gallery-img"
                                     alt="<?= $hasGallery ? ($image['caption'] ?? 'Gallery Image') : 'Program Image ' . ($index + 1) ?>"

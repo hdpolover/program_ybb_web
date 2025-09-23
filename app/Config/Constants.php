@@ -97,3 +97,37 @@ define('EVENT_PRIORITY_HIGH', 10);
 define('BASE_API_URL', 'https://admin.ybbfoundation.com/api');
 // Define development API URL (for local development)
 define('DEV_BASE_API_URL', 'http://localhost:8080/api');
+
+/*
+|--------------------------------------------------------------------------
+| Image Processing Settings
+|--------------------------------------------------------------------------
+| 
+| You can disable image processing to prevent timeout issues during development
+| or if you're experiencing performance problems.
+*/
+// define('DISABLE_IMAGE_PROCESSING', true); // Uncomment to disable image processing
+define('SAFE_IMAGE_PROCESSING_ONLY', true); // Only process local and trusted images
+
+/*
+|--------------------------------------------------------------------------
+| Production Error Handling
+|--------------------------------------------------------------------------
+| 
+| Enable this in production to prevent sensitive information exposure
+*/
+// Check if ENVIRONMENT is defined and handle production settings
+if (defined('ENVIRONMENT') && ENVIRONMENT === 'production') {
+    // In production, disable error display and ensure logging
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    ini_set('log_errors', 1);
+} elseif (!defined('ENVIRONMENT')) {
+    // Fallback: detect environment from CI_ENVIRONMENT variable if ENVIRONMENT not defined yet
+    $env = $_ENV['CI_ENVIRONMENT'] ?? $_SERVER['CI_ENVIRONMENT'] ?? getenv('CI_ENVIRONMENT') ?? 'development';
+    if ($env === 'production') {
+        ini_set('display_errors', 0);
+        ini_set('display_startup_errors', 0);
+        ini_set('log_errors', 1);
+    }
+}

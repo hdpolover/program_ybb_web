@@ -26,6 +26,35 @@ class App extends BaseConfig
         // Set base URL dynamically
         $this->baseURL = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http")
             . "://" . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "/";
+            
+        // Set environment based on domain
+        $this->setEnvironmentForDomain();
+    }
+    
+    /**
+     * Set environment based on the current domain
+     */
+    private function setEnvironmentForDomain(): void
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $productionDomains = [
+            'istanbulyouthsummit.com',
+            'www.istanbulyouthsummit.com',
+            'koreayouthsummit.com', 
+            'www.koreayouthsummit.com',
+            'japanyouthsummit.com',
+            'www.japanyouthsummit.com',
+            'middleeastyouthsummit.com',
+            'www.middleeastyouthsummit.com',
+            'worldyouthfest.com',
+            'www.worldyouthfest.com',
+            'youthacademicforum.com',
+            'www.youthacademicforum.com'
+        ];
+        
+        if (in_array($host, $productionDomains)) {
+            $_ENV['CI_ENVIRONMENT'] = 'production';
+        }
     }
 
     /**

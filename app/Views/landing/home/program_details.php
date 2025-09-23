@@ -47,9 +47,9 @@
             <div class="col-lg-6 order-lg-2">
                 <div class="position-relative mb-4 mb-lg-0">
                     <?php if ($photo1): ?>
-                        <img src="<?= compress_image($photo1['img_url'], 600, 400, 80, true); ?>" alt="<?= htmlspecialchars($photo1['title'] ?? 'Program image') ?>" class="img-fluid rounded-4 shadow-lg">
+                        <img src="<?= compress_gallery_image($photo1['img_url'], 600, 400); ?>" alt="<?= htmlspecialchars($photo1['title'] ?? 'Program image') ?>" class="img-fluid rounded-4 shadow-lg">
                         <?php if ($photo2): ?>
-                            <img src="<?= compress_image($photo2['img_url'], 300, 200, 80, true); ?>" alt="<?= htmlspecialchars($photo2['title'] ?? 'Program image') ?>" class="img-fluid rounded-4 shadow-lg position-absolute" style="bottom: -25%; right: -10%; max-width: 50%; border: 5px solid #fff;">
+                            <img src="<?= compress_card_image($photo2['img_url'], 300, 200); ?>" alt="<?= htmlspecialchars($photo2['title'] ?? 'Program image') ?>" class="img-fluid rounded-4 shadow-lg position-absolute" style="bottom: -25%; right: -10%; max-width: 50%; border: 5px solid #fff;">
                         <?php endif; ?>
                     <?php else: ?>
                         <img src="/assets/images/default-program.jpg" alt="Default program image" class="img-fluid rounded-4 shadow-lg">
@@ -84,7 +84,7 @@
 
                             <?php if ($photo4): ?>
                                 <div class="mt-4">
-                                    <img src="<?= compress_image($photo4['img_url'], 400, 200, 80, true); ?>" alt="<?= htmlspecialchars($photo4['title'] ?? 'Goals') ?>" class="img-fluid rounded-3 w-100" style="height: 140px; object-fit: cover;">
+                                    <img src="<?= compress_card_image($photo4['img_url']); ?>" alt="<?= htmlspecialchars($photo4['title'] ?? 'Goals') ?>" class="img-fluid rounded-3 w-100" style="height: 140px; object-fit: cover;">
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -110,7 +110,7 @@
 
                             <?php if ($photo5): ?>
                                 <div class="mt-4">
-                                    <img src="<?= compress_image($photo5['img_url'], 400, 200, 80, true); ?>" alt="<?= htmlspecialchars($photo5['title'] ?? 'Agenda') ?>" class="img-fluid rounded-3 w-100" style="height: 140px; object-fit: cover;">
+                                    <img src="<?= compress_card_image($photo5['img_url']); ?>" alt="<?= htmlspecialchars($photo5['title'] ?? 'Agenda') ?>" class="img-fluid rounded-3 w-100" style="height: 140px; object-fit: cover;">
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -136,7 +136,7 @@
 
                             <?php if ($photo3): ?>
                                 <div class="mt-4">
-                                    <img src="<?= compress_image($photo3['img_url'], 400, 200, 80, true); ?>" alt="<?= htmlspecialchars($photo3['title'] ?? 'Benefits') ?>" class="img-fluid rounded-3 w-100" style="height: 140px; object-fit: cover;">
+                                    <img src="<?= compress_card_image($photo3['img_url']); ?>" alt="<?= htmlspecialchars($photo3['title'] ?? 'Benefits') ?>" class="img-fluid rounded-3 w-100" style="height: 140px; object-fit: cover;">
                                 </div>
                             <?php endif; ?>
                         </div>

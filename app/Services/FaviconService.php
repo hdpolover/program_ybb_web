@@ -12,7 +12,7 @@ class FaviconService
     protected $config;
     protected string $publicPath;
     protected string $cacheFile;
-    protected ImageManager $imageManager;
+    protected ?ImageManager $imageManager;
 
     public function __construct()
     {
@@ -37,7 +37,15 @@ class FaviconService
         // Set public path
         $this->publicPath = defined('FCPATH') ? FCPATH : (__DIR__ . '/../../public/');
         $this->cacheFile = $this->publicPath . $this->config->cacheDir . '/favicon.cache';
-        $this->imageManager = new ImageManager(new Driver());
+        
+        // Try to initialize ImageManager with error handling
+        try {
+            $this->imageManager = new ImageManager(new Driver());
+        } catch (\Throwable $e) {
+            // Log the error and disable favicon generation for this request
+            log_message('error', 'FaviconService: Failed to initialize ImageManager: ' . $e->getMessage());
+            $this->imageManager = null;
+        }
     }
 
     /**
@@ -77,6 +85,12 @@ class FaviconService
     public function generate(): bool
     {
         try {
+            // Check if ImageManager is available
+            if ($this->imageManager === null) {
+                log_message('warning', 'FaviconService: ImageManager not available, skipping favicon generation');
+                return false;
+            }
+
             $logoPath = $this->publicPath . $this->config->logoPath;
 
             // If logo doesn't exist, return false

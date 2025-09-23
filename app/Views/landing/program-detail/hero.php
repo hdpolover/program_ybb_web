@@ -22,7 +22,7 @@
                         ?>
                                 <div class="avatar-group-item">
                                     <?php if (function_exists('compress_image')): ?>
-                                        <img src="<?= compress_image($participant_photos[$i], 40, 40, 80) ?>" alt="" class="rounded-circle avatar-sm">
+                                        <img src="<?= compress_thumbnail($participant_photos[$i], 40, 40) ?>" alt="" class="rounded-circle avatar-sm">
                                     <?php else: ?>
                                         <img src="<?= $participant_photos[$i] ?>" alt="" class="rounded-circle avatar-sm">
                                     <?php endif; ?>

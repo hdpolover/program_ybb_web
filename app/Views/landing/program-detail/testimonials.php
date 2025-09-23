@@ -31,7 +31,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
                                     <?php if (isset($testimonial['avatar_url']) && !empty($testimonial['avatar_url'])) : ?>
-                                        <img src="<?= function_exists('compress_image') ? compress_image($testimonial['avatar_url'], 100, 100, 80, true) : $testimonial['avatar_url'] ?>" alt="<?= $testimonial['name'] ?? 'Participant' ?>" class="avatar-sm rounded-circle">
+                                        <img src="<?= function_exists('compress_thumbnail') ? compress_thumbnail($testimonial['avatar_url'], 100, 100) : $testimonial['avatar_url'] ?>" alt="<?= $testimonial['name'] ?? 'Participant' ?>" class="avatar-sm rounded-circle">
                                     <?php else : ?>
                                         <div class="avatar-sm">
                                             <span class="avatar-title bg-primary text-white rounded-circle">

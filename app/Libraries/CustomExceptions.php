@@ -14,6 +14,22 @@ use Throwable;
 class CustomExceptions extends Exceptions
 {
     /**
+     * Initialize the exception handler with proper services
+     */
+    public function __construct(\Config\Exceptions $config)
+    {
+        parent::__construct($config);
+        
+        // Ensure request and response are available
+        if (!$this->request) {
+            $this->request = Services::request();
+        }
+        if (!$this->response) {
+            $this->response = Services::response();
+        }
+    }
+
+    /**
      * We're overriding the exceptionHandler method instead of render
      * This method is publicly accessible and is called by the error handler
      */
@@ -65,6 +81,14 @@ class CustomExceptions extends Exceptions
                 return;
             }
             
+            // Ensure we have valid request and response objects
+            if (!$this->response) {
+                $this->response = Services::response();
+            }
+            if (!$this->request) {
+                $this->request = Services::request();
+            }
+            
             // Set the status code
             $this->response->setStatusCode($statusCode);
             
@@ -79,7 +103,8 @@ class CustomExceptions extends Exceptions
             }
             
             // For non-HTML requests (API, etc.), return JSON
-            if (strpos($this->request->getHeaderLine('accept'), 'text/html') === false) {
+            $acceptHeader = $this->request->getHeaderLine('accept');
+            if (!$acceptHeader || strpos($acceptHeader, 'text/html') === false) {
                 $this->respond(ENVIRONMENT === 'development' ? $this->collectVars($exception, $statusCode) : '', $statusCode)->send();
                 exit($exitCode);
             }
@@ -167,6 +192,17 @@ class CustomExceptions extends Exceptions
     {
         // Set the status code to 504 (Gateway Timeout)
         $statusCode = 504;
+        
+        // Ensure we have a valid response object
+        if (!$this->response) {
+            $this->response = Services::response();
+        }
+        
+        // Ensure we have a valid request object
+        if (!$this->request) {
+            $this->request = Services::request();
+        }
+        
         $this->response->setStatusCode($statusCode);
         
         // Set HTTP headers
@@ -179,7 +215,8 @@ class CustomExceptions extends Exceptions
             ), true, $statusCode);
         }
           // For non-HTML requests (API, etc.), return JSON
-        if (strpos($this->request->getHeaderLine('accept'), 'text/html') === false) {
+        $acceptHeader = $this->request->getHeaderLine('accept');
+        if (!$acceptHeader || strpos($acceptHeader, 'text/html') === false) {
             // Use the AjaxHandler controller for consistent handling
             $ajaxHandler = new \App\Controllers\AjaxHandler();
             $response = $ajaxHandler->timeout();
