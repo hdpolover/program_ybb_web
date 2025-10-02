@@ -34,6 +34,20 @@
                         <span></span>
                     </span>
                 </button>
+                
+                <!-- Time and Date Widget -->
+                <div class="header-item ms-3 d-none d-lg-block d-flex align-items-center">
+                    <div class="datetime-widget" title="Official Server Time - Click for details | Use this time for all deadlines and submissions">
+                        <div class="d-flex align-items-center w-100">
+                            <i class="ri-time-line text-primary me-2 fs-16"></i>
+                            <div class="datetime-content flex-grow-1">
+                                <div class="fs-10 text-uppercase text-primary fw-semibold mb-1 lh-1">Official Time</div>
+                                <div id="current-time" class="fw-medium fs-13 text-dark mb-0">Loading...</div>
+                                <div id="current-date" class="fs-11 text-muted">Official Server Time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="d-flex align-items-center">
@@ -106,6 +120,7 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="dropdown ms-sm-3 header-item topbar-user">
                         <button type="button" class="btn btn-soft-primary rounded-pill px-3" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-user-id="<?= session()->get('user')['id'] ?? '' ?>">
                             <span class="d-flex align-items-center">
@@ -205,3 +220,6 @@
 
 <!-- Topbar JavaScript -->
 <script src="<?= base_url('assets/js/topbar.js') ?>"></script>
+
+<!-- DateTime Widget JavaScript -->
+<script src="<?= base_url('assets/js/datetime-widget.js') ?>"></script>

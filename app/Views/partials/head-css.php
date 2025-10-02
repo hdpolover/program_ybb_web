@@ -8,6 +8,8 @@
 <link href="/assets/css/app.min.css" rel="stylesheet" type="text/css" />
 <!-- custom Css-->
 <link href="/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
+<!-- DateTime Widget Css -->
+<link href="/assets/css/datetime-widget.css" rel="stylesheet" type="text/css" />
 <!-- Add to head -->
 <link title="timeline-styles" rel="stylesheet" href="https://cdn.knightlab.com/libs/timeline3/latest/css/timeline.css">
 <script src="https://cdn.knightlab.com/libs/timeline3/latest/js/timeline.js"></script>

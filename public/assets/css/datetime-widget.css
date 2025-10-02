@@ -1,0 +1,85 @@
+/**
+ * DateTime Widget Styles
+ * Minimal CSS for the server-synced time and date widget in the topbar
+ */
+
+.datetime-widget {
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    min-width: 160px;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px; /* Ensure proper height for centering */
+}
+
+.datetime-widget:hover {
+    background-color: rgba(13, 110, 253, 0.08);
+    transform: translateY(-1px);
+}
+
+.datetime-widget::after {
+    content: "�";
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.datetime-content {
+    line-height: 1.3;
+    text-align: center;
+}
+
+.datetime-widget .text-primary {
+    color: #0d6efd !important;
+}
+
+.datetime-widget .fs-10 {
+    font-size: 0.65rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+#current-time {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #212529 !important;
+    margin-bottom: 2px;
+    font-size: 0.875rem;
+}
+
+#current-date {
+    font-weight: 400;
+    color: #6c757d !important;
+    letter-spacing: 0.2px;
+    font-size: 0.7rem;
+    margin-top: 0;
+    line-height: 1.2;
+}
+
+/* Better integration with topbar */
+.header-item .datetime-widget {
+    vertical-align: middle;
+}
+
+/* Ensure proper alignment within the topbar container */
+.header-item.d-flex {
+    height: 100%;
+    align-items: center !important;
+}
+
+/* Responsive design - hide on smaller screens to match d-none d-lg-block */
+@media (max-width: 991.98px) {
+    .datetime-widget {
+        display: none !important;
+    }
+}

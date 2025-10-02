@@ -744,9 +744,10 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                             <!-- Payment is active and participant has access -->
                                                                             <button type="button" class="btn btn-sm btn-success payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                                                                 data-payment-id="<?= $programPayment['id'] ?? ''; ?>"
-                                                                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
-                                                                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
-                                                                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                                                                data-payment-name="<?= esc($programPayment['name'] ?? 'Program Payment'); ?>"
+                                                                                data-payment-amount="<?= number_format((float)($programPayment['usd_amount'] ?? 0), 2, '.', ''); ?>"
+                                                                                data-payment-category="<?= esc($programPayment['category'] ?? ''); ?>"
+                                                                                data-payment-object="<?= esc(json_encode($programPayment)); ?>"
                                                                                 data-payment-index="<?= $key; ?>"
                                                                                 title="Make Payment">
                                                                                 <i class="ri-bank-card-line align-middle me-1"></i> Pay Now
@@ -792,9 +793,10 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                                                                             <!-- Payment is active and participant has access -->
                                                                             <button type="button" class="btn btn-sm btn-danger payment-button" data-bs-toggle="modal" data-bs-target="#makePaymentModal"
                                                                                 data-payment-id="<?= $programPayment['id']; ?>"
-                                                                                data-payment-name="<?= $programPayment['name'] ?? 'Program Payment'; ?>"
-                                                                                data-payment-amount="<?= $programPayment['usd_amount'] ?? '0.00'; ?>"
-                                                                                data-payment-category="<?= $programPayment['category'] ?? ''; ?>"
+                                                                                data-payment-name="<?= esc($programPayment['name'] ?? 'Program Payment'); ?>"
+                                                                                data-payment-amount="<?= number_format((float)($programPayment['usd_amount'] ?? 0), 2, '.', ''); ?>"
+                                                                                data-payment-category="<?= esc($programPayment['category'] ?? ''); ?>"
+                                                                                data-payment-object="<?= esc(json_encode($programPayment)); ?>"
                                                                                 data-payment-index="<?= $key; ?>"
                                                                                 title="Try Payment Again">
                                                                                 <i class="ri-refresh-line align-middle me-1"></i> Try Again

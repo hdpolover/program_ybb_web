@@ -3,6 +3,9 @@
 namespace App\Controllers;
 
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\HTTP\RequestInterface;
+use CodeIgniter\HTTP\ResponseInterface;
+use Psr\Log\LoggerInterface;
 
 class TopbarController extends BaseController
 {
@@ -11,7 +14,7 @@ class TopbarController extends BaseController
     /**
      * Constructor
      */
-    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
     }
@@ -169,6 +172,165 @@ class TopbarController extends BaseController
             return $this->response->setStatusCode(500)->setJSON([
                 'success' => false,
                 'message' => 'An error occurred during registration: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get server time and timezone information
+     * 
+     * @return ResponseInterface
+     */
+    public function getServerTime(): ResponseInterface
+    {        
+        try {
+            // Get server timezone configuration from CodeIgniter config
+            $configuredTimezone = config('App')->appTimezone ?? 'Asia/Jakarta';
+            
+            // Set PHP's default timezone to match CodeIgniter config
+            if (date_default_timezone_get() !== $configuredTimezone) {
+                date_default_timezone_set($configuredTimezone);
+                log_message('info', 'Server time endpoint - PHP timezone updated to: ' . $configuredTimezone);
+            }
+            
+            // Add debug logging to see what timezone is being used
+            log_message('debug', 'Server time endpoint - configured timezone: ' . $configuredTimezone);
+            log_message('debug', 'Server time endpoint - PHP default timezone: ' . date_default_timezone_get());
+            
+            // Validate and create timezone
+            try {
+                $timezone = new \DateTimeZone($configuredTimezone);
+                log_message('debug', 'Server time endpoint - successfully created timezone: ' . $timezone->getName());
+            } catch (\Exception $e) {
+                // Fallback to Asia/Jakarta, then UTC if that fails too
+                log_message('warning', 'Invalid timezone configured: ' . $configuredTimezone . '. Error: ' . $e->getMessage());
+                try {
+                    $timezone = new \DateTimeZone('Asia/Jakarta');
+                    log_message('info', 'Server time endpoint - using fallback timezone: Asia/Jakarta');
+                } catch (\Exception $e2) {
+                    log_message('error', 'Failed to set Asia/Jakarta timezone, using UTC: ' . $e2->getMessage());
+                    $timezone = new \DateTimeZone('UTC');
+                }
+            }
+            
+            $now = new \DateTime('now', $timezone);
+            
+            // Format time and date
+            $time24 = $now->format('H:i:s'); // 24-hour format
+            $time12 = $now->format('g:i:s A'); // 12-hour format with AM/PM
+            $date = $now->format('Y-m-d'); // ISO date format
+            $dateFormatted = $now->format('D, M j, Y'); // Human-readable format
+            
+            // Get comprehensive timezone info
+            $timezoneInfo = [
+                'name' => $timezone->getName(),
+                'abbreviation' => $now->format('T'), // Timezone abbreviation (e.g., WIB, UTC, PST)
+                'offset' => $now->format('P'), // Timezone offset (+07:00, -05:00, etc.)
+                'offset_seconds' => $timezone->getOffset($now) // Offset in seconds from UTC
+            ];
+            
+            // Comprehensive server time data matching the specified response format
+            $serverTimeData = [
+                'timestamp' => $now->getTimestamp(), // Unix timestamp
+                'iso' => $now->format('c'), // ISO 8601 format with timezone
+                'time_24' => $time24,
+                'time_12' => $time12,
+                'date' => $date,
+                'date_formatted' => $dateFormatted,
+                'timezone_name' => $timezone->getName(), // Add timezone_name as separate field
+                'timezone' => $timezoneInfo, // Keep timezone object as well
+                'day_of_week' => $now->format('l'), // Full day name
+                'week_of_year' => $now->format('W'), // Week number of year
+            ];
+            
+            // Add debug info in development environment
+            if (ENVIRONMENT === 'development') {
+                $serverTimeData['debug_info'] = [
+                    'configured_timezone' => $configuredTimezone,
+                    'php_default_timezone' => date_default_timezone_get(),
+                    'timezone_object_name' => $timezone->getName(),
+                    'app_config_timezone' => config('App')->appTimezone ?? 'not_set'
+                ];
+            }
+            
+            // Set appropriate cache headers (cache for 1 second to avoid excessive requests)
+            $this->response->setHeader('Cache-Control', 'public, max-age=1');
+            $this->response->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 1) . ' GMT');
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'server_time' => $serverTimeData
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Server time error: ' . $e->getMessage());
+            log_message('error', 'Server time error trace: ' . $e->getTraceAsString());
+            
+            return $this->response->setStatusCode(500)->setJSON([
+                'success' => false,
+                'message' => 'Unable to get server time: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Debug timezone configuration - temporary endpoint for troubleshooting
+     * 
+     * @return ResponseInterface
+     */
+    public function debugTimezone(): ResponseInterface
+    {
+        try {
+            // Get all timezone related information
+            $appConfig = config('App');
+            $configuredTimezone = $appConfig->appTimezone ?? 'not_set';
+            $phpTimezone = date_default_timezone_get();
+            
+            // Try to create timezone objects
+            $timezoneTests = [];
+            
+            foreach (['Asia/Jakarta', 'UTC', $configuredTimezone, $phpTimezone] as $tz) {
+                try {
+                    $testTz = new \DateTimeZone($tz);
+                    $testTime = new \DateTime('now', $testTz);
+                    $timezoneTests[$tz] = [
+                        'valid' => true,
+                        'name' => $testTz->getName(),
+                        'abbreviation' => $testTime->format('T'),
+                        'offset' => $testTime->format('P'),
+                        'current_time' => $testTime->format('Y-m-d H:i:s T')
+                    ];
+                } catch (\Exception $e) {
+                    $timezoneTests[$tz] = [
+                        'valid' => false,
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+            
+            $debugInfo = [
+                'success' => true,
+                'debug_info' => [
+                    'app_config_timezone' => $configuredTimezone,
+                    'php_default_timezone' => $phpTimezone,
+                    'environment' => ENVIRONMENT,
+                    'timezone_tests' => $timezoneTests,
+                    'server_info' => [
+                        'php_version' => PHP_VERSION,
+                        'current_timestamp' => time(),
+                        'current_date_utc' => gmdate('Y-m-d H:i:s T'),
+                        'current_date_local' => date('Y-m-d H:i:s T')
+                    ]
+                ]
+            ];
+            
+            return $this->response->setJSON($debugInfo);
+            
+        } catch (\Exception $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }

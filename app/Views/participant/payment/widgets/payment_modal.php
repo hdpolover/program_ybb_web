@@ -74,6 +74,13 @@
                                         </span>
                                     </h5>
                                 </div>
+                                
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="ri-information-line me-1"></i>
+                                        <strong>Note:</strong> The final amount on the payment gateway may slightly differ due to processing fees, taxes, or updated exchange rates.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -379,19 +386,24 @@
                     const paymentData = button.getAttribute('data-payment-object');
                     let selectedPayment = null;
 
+                    console.log('=== PAYMENT MODAL DEBUG ===');
                     console.log('Modal triggered with payment ID:', paymentId);
+                    console.log('Payment amount received:', paymentAmount);
+                    console.log('Payment name:', paymentName);
+                    console.log('Payment category:', paymentCategory);
+                    console.log('Button element:', button);
 
-                    // Calculate IDR amount
+                    // Calculate IDR amount - ensure paymentAmount is a valid number
                     const usdInIdr = <?= $webSettings['usd_in_idr'] ?>;
-                    const idrAmount = paymentAmount * usdInIdr;
+                    const usdAmount = parseFloat(paymentAmount) || 0;
+                    const idrAmount = usdAmount * usdInIdr;
+                    
+                    console.log('USD Amount:', usdAmount, 'IDR Rate:', usdInIdr, 'IDR Amount:', idrAmount);
                     
                     // Set the IDR amount in the modal
                     const amountInIdrElement = document.getElementById('amount_in_idr');
                     if (amountInIdrElement) {
-                        amountInIdrElement.textContent = new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR'
-                        }).format(idrAmount);
+                        amountInIdrElement.textContent = new Intl.NumberFormat('id-ID').format(idrAmount) + ' IDR';
                     }
 
                     // Try parsing the full payment object if available
@@ -406,6 +418,7 @@
 
                     // Set payment data in form
                     if (selectedPayment) {
+                        console.log('Using parsed payment object:', selectedPayment);
                         document.getElementById('program_payment_id').value = selectedPayment.id;
                         document.getElementById('payment_amount').value = selectedPayment.usd_amount;
                         
@@ -420,8 +433,9 @@
                         }
                     } else {
                         // Fallback to individual attributes
-                        document.getElementById('program_payment_id').value = paymentId;
-                        document.getElementById('payment_amount').value = paymentAmount;
+                        console.log('Using individual attributes - ID:', paymentId, 'Amount:', paymentAmount, 'Name:', paymentName);
+                        document.getElementById('program_payment_id').value = paymentId || '';
+                        document.getElementById('payment_amount').value = paymentAmount || '0.00';
                         
                         const descElement = document.getElementById('payment_description');
                         if (descElement) {
@@ -430,7 +444,9 @@
                         
                         const amountElement = document.getElementById('payment_amount_display');
                         if (amountElement) {
-                            amountElement.textContent = '$' + parseFloat(paymentAmount || 0).toFixed(2);
+                            const displayAmount = parseFloat(paymentAmount || 0).toFixed(2);
+                            amountElement.textContent = '$' + displayAmount;
+                            console.log('Set display amount to:', displayAmount);
                         }
                     }
                 }

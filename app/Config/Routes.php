@@ -153,6 +153,13 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
     $routes->post('payments/make', 'dashboard\Payments::makePayment');
     $routes->get('payments/test-api', 'dashboard\Payments::testPaymentAPI'); // Temporary debug endpoint
+    $routes->get('payments/debug-detail/(:num)/(:num)', 'dashboard\Payments::debugProgramPaymentDetail/$1/$2'); // Debug program payment detail
+    $routes->get('payments/debug-detail/(:num)', 'dashboard\Payments::debugProgramPaymentDetail/$1'); // Debug with default participant
+    $routes->get('payments/debug-detail', 'dashboard\Payments::debugProgramPaymentDetail'); // Debug with defaults
+    $routes->get('payments/debug-modal/(:num)', 'dashboard\Payments::debugModalData/$1'); // Debug modal data
+    $routes->get('payments/debug-modal', 'dashboard\Payments::debugModalData'); // Debug modal data with defaults
+    $routes->get('payments/debug-currency/(:num)', 'dashboard\Payments::debugCurrencyConversion/$1'); // Debug currency conversion
+    $routes->get('payments/debug-currency', 'dashboard\Payments::debugCurrencyConversion'); // Debug currency with defaults
     $routes->get('debug/session', 'DebugController::sessionData'); // Debug session endpoint
     
     // Payment API endpoints (no /api prefix)
@@ -206,6 +213,8 @@ $routes->get('topbar/getTopbarData', 'TopbarController::getTopbarData');
 $routes->get('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 $routes->post('topbar/setProgram/(:num)', 'TopbarController::setProgram/$1');
 $routes->post('topbar/(:num)/create', 'TopbarController::registerForProgram/$1');
+$routes->get('server-time', 'TopbarController::getServerTime');
+$routes->get('debug-timezone', 'TopbarController::debugTimezone');
 
 // Popup notification route for registration toasts
 $routes->get('popup-notification/getRecentRegistrations', 'PopupNotification::getRecentRegistrations');

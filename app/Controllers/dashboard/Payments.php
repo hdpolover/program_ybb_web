@@ -354,7 +354,7 @@ class Payments extends BaseController
         // Get participant data to determine their category
         $participantId = session()->get('current_participant_id');
         $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
-        $participantData = $participantResponse['participant'] ?? $participantResponse;
+        $participantData = $participantResponse['data']['participant'] ?? $participantResponse['participant'] ?? $participantResponse;
         $participantCategoryFromAPI = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
 
         // Check if there's a session category that differs from API (due to recent category switch)
@@ -493,8 +493,12 @@ class Payments extends BaseController
 
         // Get participant data to determine their category
         $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
-        $participantData = $participantResponse['participant'] ?? $participantResponse;
+        $participantData = $participantResponse['data']['participant'] ?? $participantResponse['participant'] ?? $participantResponse;
         $participantCategoryFromAPI = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
+        
+        // Debug logging for participant category extraction
+        log_message('debug', "Detail: Participant API response structure - has data: " . (isset($participantResponse['data']) ? 'YES' : 'NO') . ", has participant: " . (isset($participantResponse['participant']) ? 'YES' : 'NO'));
+        log_message('debug', "Detail: Extracted participant category from API: '{$participantCategoryFromAPI}'");
 
         // Check if there's a session category that differs from API (due to recent category switch)
         $participantCategoryFromSession = session()->get('current_participant_category');
@@ -535,6 +539,9 @@ class Payments extends BaseController
         $paymentType = $programPayment['type'] ?? 'all';
         $hasDirectAccess = ($paymentType === 'all') || ($paymentType === $participantCategory);
         
+        // Debug logging for access control
+        log_message('debug', "Detail: Access control check - Payment type: '{$paymentType}', Participant category: '{$participantCategory}', Direct access: " . ($hasDirectAccess ? 'YES' : 'NO'));
+        
         // Check if participant has payment history for this payment
         $hasPaymentHistory = false;
         if (isset($responseData['payments']) && is_array($responseData['payments'])) {
@@ -545,6 +552,8 @@ class Payments extends BaseController
                 }
             }
         }
+        
+        log_message('debug', "Detail: Payment history check - Has payment history: " . ($hasPaymentHistory ? 'YES' : 'NO'));
         
         $hasAccess = $hasDirectAccess || $hasPaymentHistory;
         
@@ -579,7 +588,8 @@ class Payments extends BaseController
         $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . $programId, [], false);
 
         // Get participant data for payment access validation
-        $participant = $this->makeGetRequest('/participants/' . $participantId, [], true);
+        $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
+        $participant = $participantResponse['data']['participant'] ?? $participantResponse['participant'] ?? $participantResponse;
         $participantCategory = $participant['category'] ?? 'self_funded';
 
         $data = [
@@ -611,7 +621,7 @@ class Payments extends BaseController
 
         // Get participant data to determine their category
         $participantResponse = $this->makeGetRequest('/participants/' . $participantId, [], true);
-        $participantData = $participantResponse['participant'] ?? $participantResponse;
+        $participantData = $participantResponse['data']['participant'] ?? $participantResponse['participant'] ?? $participantResponse;
         $participantCategoryFromAPI = $participantData['category'] ?? 'self_funded'; // Default to self_funded if not found
 
         // Check if there's a session category that differs from API (due to recent category switch)
@@ -923,6 +933,7 @@ class Payments extends BaseController
                     'usd_amount' => $paymentAmount,
                 ];
 
+            log_message('info', 'PAYMENT AMOUNT DEBUG - Frontend IDR Amount: ' . number_format($idrAmount, 0, ',', '.') . ' IDR');
             log_message('debug', 'Gateway payment data: ' . json_encode($paymentData));
 
             // Use the correct API endpoint for payment creation
@@ -940,6 +951,14 @@ class Payments extends BaseController
             );
 
             // Log the complete response for debugging
+            log_message('info', 'PAYMENT RESPONSE DEBUG - API Response: ' . json_encode($response));
+            
+            // Check if response contains updated payment amounts
+            if (isset($response['data']['amount']) || isset($response['amount'])) {
+                $apiAmount = $response['data']['amount'] ?? $response['amount'] ?? 'not_found';
+                log_message('info', 'PAYMENT AMOUNT DEBUG - API returned amount: ' . $apiAmount);
+            }
+            
             log_message('debug', 'Payment response: ' . json_encode($response));
 
             if (!$response || (isset($response['error']))) {
@@ -1057,6 +1076,127 @@ class Payments extends BaseController
     }
 
     /**
+     * Debug method to show currency conversion and payment amount calculations
+     */
+    public function debugCurrencyConversion($programPaymentId = null)
+    {
+        if (empty($programPaymentId)) {
+            $programPaymentId = 37; // Default to the one we've been testing
+        }
+        
+        $participantId = session()->get('current_participant_id');
+        
+        try {
+            // Get the program payment data
+            $responseData = $this->makeGetRequest('/payments/program-payments/' . $programPaymentId . '/participants/' . $participantId, [], true);
+            $programPayment = $responseData['program_payment'] ?? null;
+            
+            if (!$programPayment) {
+                return $this->response->setJSON(['error' => 'Program payment not found']);
+            }
+            
+            $usdAmount = (float)($programPayment['usd_amount'] ?? 0);
+            $usdToIdrRate = (float)($this->data['webSettings']['usd_in_idr'] ?? 0);
+            $calculatedIdrAmount = $usdAmount * $usdToIdrRate;
+            
+            return $this->response->setJSON([
+                'program_payment_id' => $programPaymentId,
+                'usd_amount' => $usdAmount,
+                'usd_to_idr_rate' => $usdToIdrRate,
+                'calculated_idr_amount' => $calculatedIdrAmount,
+                'formatted_idr_amount' => number_format($calculatedIdrAmount, 0, ',', '.') . ' IDR',
+                'web_settings_rate' => $this->data['webSettings']['usd_in_idr'] ?? 'NOT_FOUND',
+                'note' => 'This is what the frontend calculates and displays. The actual Midtrans amount might differ due to API processing, fees, or different rates.'
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'error' => 'Debug failed',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Debug method to show program payment data passed to modal
+     */
+    public function debugModalData($programPaymentId = null)
+    {
+        if (empty($programPaymentId)) {
+            $programPaymentId = 37; // Default to the one we've been testing
+        }
+        
+        $participantId = session()->get('current_participant_id');
+        
+        try {
+            // Get the same data as the detail method
+            $responseData = $this->makeGetRequest('/payments/program-payments/' . $programPaymentId . '/participants/' . $participantId, [], true);
+            
+            $programPayment = $responseData['program_payment'] ?? null;
+            
+            return $this->response->setJSON([
+                'program_payment_id' => $programPaymentId,
+                'participant_id' => $participantId,
+                'program_payment_data' => $programPayment,
+                'modal_data_attributes' => [
+                    'data-payment-id' => $programPayment['id'] ?? '',
+                    'data-payment-name' => $programPayment['name'] ?? 'Program Payment',
+                    'data-payment-amount' => number_format((float)($programPayment['usd_amount'] ?? 0), 2, '.', ''),
+                    'data-payment-category' => $programPayment['category'] ?? '',
+                ],
+                'usd_amount_raw' => $programPayment['usd_amount'] ?? 'NOT_FOUND',
+                'usd_amount_float' => (float)($programPayment['usd_amount'] ?? 0),
+                'web_settings_usd_in_idr' => $this->data['webSettings']['usd_in_idr'] ?? 'NOT_FOUND',
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'error' => 'API call failed',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Debug method to show program payment detail endpoint response
+     */
+    public function debugProgramPaymentDetail($programPaymentId = null, $participantId = null)
+    {
+        if (empty($programPaymentId)) {
+            $programPaymentId = 37; // Default to the one we've been testing
+        }
+        
+        if (empty($participantId)) {
+            $participantId = session()->get('current_participant_id') ?? 160052;
+        }
+        
+        try {
+            // Make the same API call as the detail method
+            $responseData = $this->makeGetRequest('/payments/program-payments/' . $programPaymentId . '/participants/' . $participantId, [], true);
+            
+            return $this->response->setJSON([
+                'endpoint' => $this->apiBaseUrl . '/payments/program-payments/' . $programPaymentId . '/participants/' . $participantId,
+                'program_payment_id' => $programPaymentId,
+                'participant_id' => $participantId,
+                'response' => $responseData,
+                'response_structure' => [
+                    'has_program_payment' => isset($responseData['program_payment']),
+                    'has_payments' => isset($responseData['payments']),
+                    'payments_count' => isset($responseData['payments']) ? count($responseData['payments']) : 0,
+                    'program_payment_keys' => isset($responseData['program_payment']) ? array_keys($responseData['program_payment']) : []
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'error' => 'API call failed',
+                'message' => $e->getMessage(),
+                'endpoint' => $this->apiBaseUrl . '/payments/program-payments/' . $programPaymentId . '/participants/' . $participantId
+            ]);
+        }
+    }
+
+    /**
      * Test endpoint to verify API connectivity and payment processing
      * This is a temporary debugging method that can be removed in production
      */
@@ -1159,7 +1299,7 @@ class Payments extends BaseController
 
             // Get other required data
             $participantData = $this->makeGetRequest('/participants/' . $participantId, [], true);
-            $participant = $participantData['participant'] ?? $participantData ?? [];
+            $participant = $participantData['data']['participant'] ?? $participantData['participant'] ?? $participantData ?? [];
             
             $programApiResponse = $this->makeGetRequest('/programs/' . $programId, [], false);
             $paymentMethods = $this->makeGetRequest('/payment-methods/program/' . $programId, [], false);
@@ -1350,7 +1490,7 @@ class Payments extends BaseController
             // Get participant details
             $participantData = $this->makeGetRequest('/participants/' . $participantId, [], true);
             // Extract participant data from the response structure
-            $participant = $participantData['participant'] ?? $participantData ?? [];
+            $participant = $participantData['data']['participant'] ?? $participantData['participant'] ?? $participantData ?? [];
             $participantCategory = $participant['category'] ?? 'self_funded'; // Default to self_funded if not found
             
             log_message('error', 'AUTHORIZATION CHECK: Participant ' . $participantId . ' has category: ' . $participantCategory);
