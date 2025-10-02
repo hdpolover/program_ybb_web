@@ -385,6 +385,41 @@ class Auth extends BaseController
         return $this->render('auth/pass-forgot', $data);
     }
 
+    // Test forgot password API connection
+    public function testForgotPasswordAPI()
+    {
+        $testEmail = 'hendrapolover@gmail.com';
+        
+        $resetData = [
+            'email' => $testEmail,
+            'web_url' => $this->currentUrl ?? 'istanbulyouthsummit.com',
+        ];
+
+        log_message('info', 'Testing forgot password API with data: ' . json_encode($resetData));
+        log_message('info', 'API Base URL: ' . $this->apiBaseUrl);
+        log_message('info', 'Full URL: ' . $this->apiBaseUrl . '/auth/forgot-password');
+
+        try {
+            $response = $this->makePostRequest('/auth/forgot-password', $resetData, [], false, true);
+            
+            return $this->response->setJSON([
+                'test_email' => $testEmail,
+                'api_url' => $this->apiBaseUrl . '/auth/forgot-password',
+                'request_data' => $resetData,
+                'response' => $response,
+                'response_type' => gettype($response),
+                'current_url' => $this->currentUrl
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'error' => true,
+                'message' => $e->getMessage(),
+                'api_url' => $this->apiBaseUrl . '/auth/forgot-password',
+                'request_data' => $resetData
+            ]);
+        }
+    }
+
     // send reset link
     public function sendResetLink()
     {
@@ -405,20 +440,38 @@ class Auth extends BaseController
             log_message('debug', 'Password reset request data: ' . json_encode($resetData));
 
             // Use the correct endpoint for forgot password
-            $response = $this->makePostRequest('/auth/forgot-password', $resetData, [], false, false);
+            log_message('info', 'Making forgot password API request to: ' . $this->apiBaseUrl . '/auth/forgot-password');
+            log_message('info', 'Request payload: ' . json_encode($resetData));
+            
+            $response = $this->makePostRequest('/auth/forgot-password', $resetData, [], false, true);
 
-            // Log response for debugging
-            log_message('debug', 'API Password Reset Response: ' . json_encode($response));
+            // Enhanced logging for debugging
+            log_message('info', 'API Password Reset Response received');
+            log_message('info', 'Response type: ' . gettype($response));
+            log_message('info', 'Response content: ' . json_encode($response));
 
             if (!$response) {
-                return redirect()->back()->with('error', 'Failed to send reset link. Please try again later.');
+                log_message('error', 'No response received from forgot password API');
+                return redirect()->back()->with('error', 'Unable to connect to the password reset service. Please check your internet connection and try again.');
             }
 
             // Check for successful response using new API format
             if (isset($response['status']) && $response['status'] === 'success') {
+                log_message('info', 'Password reset successful for email: ' . $email);
                 return redirect()->to('sign-in')->with('success', 'Reset link sent to your email. Please check your inbox.');
             } else {
-                $errorMessage = isset($response['message']) ? $response['message'] : 'Failed to send reset link. Please try again later.';
+                // Enhanced error handling
+                $errorMessage = 'Failed to send reset link. Please try again later.';
+                
+                if (isset($response['message']) && !empty($response['message'])) {
+                    $errorMessage = $response['message'];
+                } elseif (isset($response['error']) && !empty($response['error'])) {
+                    $errorMessage = $response['error'];
+                } elseif (isset($response['status']) && $response['status'] === 'error') {
+                    $errorMessage = 'The password reset request failed. Please check your email address and try again.';
+                }
+                
+                log_message('warning', 'Password reset failed for email: ' . $email . '. Error: ' . $errorMessage);
                 return redirect()->back()->with('error', $errorMessage);
             }
         } catch (\Exception $e) {

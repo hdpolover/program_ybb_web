@@ -273,7 +273,7 @@ abstract class BaseController extends Controller
 
         if ($environment === 'development') {
             // Use development API URL
-            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8100/api';
+            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
             log_message('info', "[BaseController::setApiBaseUrl] Development environment detected, using: {$this->apiBaseUrl}");
         } else {
             // TODO: Change back to real API when admin.ybbfoundation.com/api is fixed

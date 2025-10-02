@@ -92,6 +92,7 @@ $routes->post('resend-verification', 'Auth::resendVerification', ['filter' => 'n
 // set new password
 $routes->post('set-new-password', 'Auth::setNewPassword', ['filter' => 'noauth']);
 $routes->post('send-reset-link', 'Auth::sendResetLink', ['filter' => 'noauth']);
+$routes->get('test-forgot-password-api', 'Auth::testForgotPasswordAPI', ['filter' => 'noauth']);
 $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 'noauth']);
 
 // Protected routes for logged in users
