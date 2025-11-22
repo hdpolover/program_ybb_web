@@ -56,8 +56,8 @@ abstract class BaseControllerOptimized extends Controller
         $host = $_SERVER['HTTP_HOST'] ?? 'unknown';
 
         // Handle special cases for localhost and different environments
-        if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
-            $this->currentUrl = "koreayouthsummit.com";
+        if ($baseDomain === "localhost:8103" || $baseDomain === "localhost" || $host === "localhost:8103") {
+            $this->currentUrl = "istanbulyouthsummit.com";
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             $this->currentUrl = "worldyouthfest.com";
         } else {
@@ -206,7 +206,7 @@ abstract class BaseControllerOptimized extends Controller
         $environment = ENVIRONMENT;
 
         if ($environment === 'development') {
-            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
+            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8100/api';
         } else {
             $this->apiBaseUrl = defined('BASE_API_URL') ? BASE_API_URL : 'https://admin.ybbfoundation.com/api';
         }

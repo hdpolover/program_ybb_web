@@ -389,7 +389,7 @@ class Payments extends BaseController
         if (!empty($programPayments)) {
             foreach ($programPayments as $idx => $payment) {
                 $paymentType = $payment['type'] ?? 'all';
-                log_message('debug', "Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}");
+                log_message('debug', "Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}, Start: {$payment['start_date']}, End: {$payment['end_date']}");
             }
         }
         
@@ -473,6 +473,11 @@ class Payments extends BaseController
             'participantCategory' => $participantCategory, // Add participant category to view data
             'switchEligibility' => $switchEligibility, // Add switch eligibility data to view
         ];
+
+        // Add cache-control headers to prevent browser caching
+        $this->response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $this->response->setHeader('Pragma', 'no-cache');
+        $this->response->setHeader('Expires', '0');
 
         return $this->render('participant/payment/index', $data);
     }

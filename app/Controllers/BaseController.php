@@ -101,9 +101,9 @@ abstract class BaseController extends Controller
         log_message('debug', 'HTTP_HOST: ' . $host);
 
         // Handle special cases for localhost and different environments
-        if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
+        if ($baseDomain === "localhost:8104" || $baseDomain === "localhost" || $host === "localhost:8104") {
             // You can change this to test different domains
-            $this->currentUrl = "istanbulyouthsummit.com"; // Changed from koreayouthsummit.com for testing
+            $this->currentUrl = "japanyouthsummit.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to middleeastyouthsummit.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
@@ -273,7 +273,7 @@ abstract class BaseController extends Controller
 
         if ($environment === 'development') {
             // Use development API URL
-            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
+            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8100/api';
             log_message('info', "[BaseController::setApiBaseUrl] Development environment detected, using: {$this->apiBaseUrl}");
         } else {
             // TODO: Change back to real API when admin.ybbfoundation.com/api is fixed
