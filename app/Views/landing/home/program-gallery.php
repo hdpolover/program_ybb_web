@@ -80,9 +80,12 @@
                                     $display_photos = array_slice($year_photos, 0, 4);
                                     
                                     foreach ($display_photos as $photo_index => $photo):
+                                        // Skip if photo is not an array
+                                        if (!is_array($photo)) continue;
+                                        
                                         // First 2 photos get larger columns, remaining get smaller columns
                                         $size_class = ($photo_index < 2) ? 'col-lg-6' : 'col-lg-6 col-md-6';
-                                        $title = !empty($photo['title']) ? $photo['title'] : (($program_info['name'] ?? 'Program') . ' Photo ' . ($photo_index + 1));
+                                        $title = !empty($photo['title']) ? $photo['title'] : (($program_info['name'] ?? 'Program') . ' Photo ' . ((int)$photo_index + 1));
                                         $description = $photo['description'] ?? 'Program photo';
                                         $img_url = $photo['img_url'] ?? '';
                                         

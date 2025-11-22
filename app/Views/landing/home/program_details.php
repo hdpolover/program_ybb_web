@@ -31,8 +31,15 @@
             shuffle($all_photos);
             
             // Return the photo at the specified index or null if not enough photos
-            return isset($all_photos[$index]) ? $all_photos[$index] : null;
+            // Ensure we return an array with img_url key
+            if (isset($all_photos[$index])) {
+                return is_array($all_photos[$index]) ? $all_photos[$index] : null;
+            }
+            return null;
         }
+        
+        // Ensure $photos is set and is an array
+        $photos = isset($photos) && is_array($photos) ? $photos : [];
         
         // Get needed photos
         $photo1 = getRandomPhoto($photos, 0);
