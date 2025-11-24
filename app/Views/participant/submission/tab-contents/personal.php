@@ -14,6 +14,13 @@
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
+                                <h6 class="form-label fw-semibold">Nickname / Preferred Name</h6>
+                                <p class="text-muted mb-1"><?= !empty($participant['nickname']) ? strtoupper($participant['nickname']) : '-' ?></p>
+                                <small class="d-block text-info fst-italic"><i class="mdi mdi-information-outline me-1"></i>This name will appear on your ID card and name tag</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Gender</h6>
                                 <p class="text-muted"><?= $participant['gender'] ?? '-' ?></p>
                             </div>

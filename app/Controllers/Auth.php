@@ -747,6 +747,7 @@ class Auth extends BaseController
         $confirmPassword = $this->request->getPost('confirm_password');
         $ambassadorId = $this->request->getPost('ambassador_id');
         $ambassadorQuery = $this->request->getPost('q'); // Get encrypted ambassador query if available
+        $programSlug = $this->request->getPost('program_slug'); // Get program slug if available
 
         // Validate input
         if (!$fullname || !$email || !$password) {
@@ -765,6 +766,12 @@ class Auth extends BaseController
             'password' => $password,
             'web_url' => $this->currentUrl ?? $_SERVER['HTTP_HOST'] ?? 'default.com',
         ];
+
+        // Include program slug if provided
+        if ($programSlug && !empty($programSlug)) {
+            $registerData['program'] = $programSlug;
+            log_message('debug', 'Registration program slug set to: ' . $programSlug);
+        }
 
         // Include registration type (category) if provided
         $registrationType = $this->request->getPost('registration_type'); // From hidden field

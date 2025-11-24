@@ -93,6 +93,32 @@ class Dashboard extends BaseController
             }
         }
 
+        // Check for available programs that user is not registered for
+        $availablePrograms = [];
+        
+        // Extract program IDs from participants array
+        $participants = session()->get('participants') ?? [];
+        $participantProgramIds = [];
+        foreach ($participants as $p) {
+            if (isset($p['program_id'])) {
+                $participantProgramIds[] = $p['program_id'];
+            }
+        }
+        
+        if (isset($programs) && is_array($programs)) {
+            foreach ($programs as $program) {
+                // Check if program is active and user is not registered
+                $isActive = isset($program['is_active']) && $program['is_active'];
+                $isRegistered = in_array($program['id'] ?? null, $participantProgramIds);
+                
+                if ($isActive && !$isRegistered) {
+                    $availablePrograms[] = $program;
+                }
+            }
+        }
+        
+        log_message('info', 'Available unregistered programs: ' . count($availablePrograms) . ' (User registered in: ' . implode(', ', $participantProgramIds) . ')');
+
         // Build view data
         $data = [
             'title' => 'Dashboard',
@@ -103,6 +129,7 @@ class Dashboard extends BaseController
             'paymentDueDate' => $paymentDueDate,
             'hasSubmittedForm' => $hasSubmittedForm,
             'switchEligibility' => $switchEligibility,
+            'availablePrograms' => $availablePrograms,
         ];
 
         $totalLoadTime = round((microtime(true) - $startTime) * 1000, 2);

@@ -229,5 +229,152 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
 
 <!-- Add SweetAlert2 library for better user notifications -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Show available programs dialog on every sign in
+    document.addEventListener('DOMContentLoaded', function() {
+        <?php if (isset($availablePrograms) && is_array($availablePrograms) && count($availablePrograms) > 0): ?>
+                
+                // Build programs list HTML
+                let programsHtml = '<div class="available-programs-list" style="max-height: 400px; overflow-y: auto;">';
+                
+                <?php foreach ($availablePrograms as $program): ?>
+                    programsHtml += `
+                        <div class="program-card border rounded mb-3 overflow-hidden" style="background: #ffffff;">
+                            <?php if (isset($program['banner_url']) && !empty($program['banner_url'])): ?>
+                                <div class="program-banner" style="height: 150px; overflow: hidden; position: relative;">
+                                    <img src="<?= esc($program['banner_url']) ?>" 
+                                         alt="<?= esc($program['name'] ?? 'Program') ?>" 
+                                         style="width: 100%; height: 100%; object-fit: cover;">
+                                    <div style="position: absolute; top: 10px; right: 10px;">
+                                        <span class="badge bg-success shadow-sm">Active</span>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <div class="p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="mb-0 fw-bold"><?= esc($program['name'] ?? 'Program') ?></h5>
+                                    <?php if (!isset($program['banner_url']) || empty($program['banner_url'])): ?>
+                                        <span class="badge bg-success">Active</span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <?php if (isset($program['tagline']) && !empty($program['tagline'])): ?>
+                                    <p class="text-primary mb-2 small fw-semibold">
+                                        <i class="ri-quote-text me-1"></i><?= esc($program['tagline']) ?>
+                                    </p>
+                                <?php endif; ?>
+                                
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <?php if (isset($program['start_date']) && !empty($program['start_date'])): ?>
+                                        <div class="badge bg-light text-dark border">
+                                            <i class="ri-calendar-event-line me-1"></i>
+                                            <?= date('M d, Y', strtotime($program['start_date'])) ?>
+                                            <?php if (isset($program['end_date']) && !empty($program['end_date'])): ?>
+                                                - <?= date('M d', strtotime($program['end_date'])) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <?php if (isset($program['location']) && !empty($program['location'])): ?>
+                                        <div class="badge bg-light text-dark border">
+                                            <i class="ri-map-pin-line me-1"></i><?= esc($program['location']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <?php if (isset($program['description']) && !empty($program['description'])): ?>
+                                    <?php 
+                                        // Strip HTML tags and get plain text description
+                                        $plainDescription = strip_tags($program['description']);
+                                        $truncatedDesc = substr($plainDescription, 0, 120);
+                                        $truncatedDesc = htmlspecialchars($truncatedDesc, ENT_QUOTES, 'UTF-8');
+                                    ?>
+                                    <p class="text-muted mb-3 small" style="line-height: 1.5;">
+                                        <?= $truncatedDesc ?><?= strlen($plainDescription) > 120 ? '...' : '' ?>
+                                    </p>
+                                <?php endif; ?>
+                                
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <a href="<?= base_url('topbar/' . ($program['id'] ?? '') . '/create') ?>" 
+                                           class="btn btn-primary w-100 btn-sm">
+                                            <i class="ri-user-add-line me-1"></i> Register for this Program
+                                        </a>
+                                    </div>
+                                    <?php if (isset($program['slug']) && !empty($program['slug'])): ?>
+                                        <div class="col-12">
+                                            <a href="<?= base_url('programs/' . $program['slug']) ?>" 
+                                               class="btn btn-outline-secondary w-100 btn-sm" 
+                                               target="_blank">
+                                                <i class="ri-information-line me-1"></i> View Details
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                <?php endforeach; ?>
+                
+                programsHtml += '</div>';
+                
+                // Show SweetAlert dialog
+                Swal.fire({
+                    title: '<i class="ri-information-line text-primary"></i> New Programs Available',
+                    html: '<div class="text-start">' +
+                          '<p class="mb-3 text-muted">We have ' + <?= count($availablePrograms) ?> + ' active program(s) that you haven\'t joined yet. Would you like to participate?</p>' +
+                          programsHtml +
+                          '</div>',
+                    icon: null,
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                    cancelButtonText: '<i class="ri-close-line me-1"></i> Maybe Later',
+                    width: '700px',
+                    customClass: {
+                        container: 'available-programs-modal',
+                        cancelButton: 'btn btn-secondary',
+                        htmlContainer: 'text-start'
+                    },
+                    showClass: {
+                        popup: 'animate__animated animate__fadeInDown'
+                    },
+                    hideClass: {
+                        popup: 'animate__animated animate__fadeOutUp'
+                    },
+                    didOpen: () => {
+                        // Ensure HTML is properly rendered
+                        const container = Swal.getHtmlContainer();
+                        if (container) {
+                            container.style.textAlign = 'left';
+                        }
+                    }
+                });
+        <?php endif; ?>
+    });
+</script>
 
+<style>
+    .available-programs-modal .program-card {
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .available-programs-modal .program-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        transform: translateY(-2px);
+    }
+    
+    .available-programs-modal .swal2-html-container {
+        overflow: visible !important;
+    }
+    
+    .available-programs-modal .program-banner img {
+        transition: transform 0.3s ease;
+    }
+    
+    .available-programs-modal .program-card:hover .program-banner img {
+        transform: scale(1.05);
+    }
+</style>
 </html>

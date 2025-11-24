@@ -262,6 +262,15 @@ $routes->group('api/chat', function($routes) {
     $routes->post('typing', 'ChatController::typing');
 });
 
+// Countries API routes (public endpoints)
+$routes->group('api/countries', function($routes) {
+    $routes->get('/', 'Api\CountriesApiController::index');
+    $routes->get('search', 'Api\CountriesApiController::search');
+    $routes->get('codes', 'Api\CountriesApiController::codes');
+    $routes->get('by-name/(:segment)', 'Api\CountriesApiController::byName/$1');
+    $routes->get('(:num)', 'Api\CountriesApiController::show/$1');
+});
+
 /*
  * --------------------------------------------------------------------
  * Additional Routing

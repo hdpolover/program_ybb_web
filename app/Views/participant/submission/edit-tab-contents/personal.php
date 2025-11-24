@@ -31,6 +31,19 @@
             </div>
         </div>
         <div class="row">
+            <div class="col-lg-12">
+                <div class="mb-3">
+                    <label class="form-label" for="personal-nickname">Nickname / Preferred Name</label>
+                    <input type="text" class="form-control text-uppercase" id="personal-nickname" placeholder="Enter your nickname" value="<?= strtoupper($participant['nickname'] ?? '') ?>" required maxlength="10" oninput="this.value = this.value.toUpperCase(); updateCharCount(this, 'nickname-char-count')">
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted text-blue"><i class="ri-information-line me-1 text-blue"></i>This name will appear on your ID card and name tag</small>
+                        <small id="nickname-char-count" class="text-muted"><?= strlen($participant['nickname'] ?? '') ?>/10</small>
+                    </div>
+                    <div class="invalid-feedback">Please enter your nickname</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
             <div class="col-lg-6">
                 <div class="mb-3">
                     <label class="form-label" for="personal-birthdate">Birth Date</label>

@@ -83,7 +83,7 @@
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        <a href="<?= $participant['resume_url'] ?>" class="btn btn-primary" download>Download</a>
+                                                        <a href="<?= $participant['resume_url'] ?>" class="btn btn-primary" target="_blank" rel="noopener noreferrer" download>Download</a>
                                                     </div>
                                                 </div>
                                             </div>

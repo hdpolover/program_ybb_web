@@ -101,7 +101,7 @@ abstract class BaseController extends Controller
         log_message('debug', 'HTTP_HOST: ' . $host);
 
         // Handle special cases for localhost and different environments
-        if ($baseDomain === "localhost:8104" || $baseDomain === "localhost" || $host === "localhost:8104") {
+        if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
             // You can change this to test different domains
             $this->currentUrl = "japanyouthsummit.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to middleeastyouthsummit.com');

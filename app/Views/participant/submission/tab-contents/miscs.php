@@ -21,13 +21,29 @@
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Twibbon Link</h6>
-                                <p class="text-muted"><?= !empty($participant['twibbon_link']) ? $participant['twibbon_link'] : '-' ?></p>
+                                <p class="text-muted">
+                                    <?php if (!empty($participant['twibbon_link'])): ?>
+                                        <a href="<?= $participant['twibbon_link'] ?>" target="_blank" rel="noopener noreferrer">
+                                            <i class="ri-external-link-line me-1"></i><?= $participant['twibbon_link'] ?>
+                                        </a>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </p>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <h6 class="form-label fw-semibold">Requirement Link</h6>
-                                <p class="text-muted"><?= !empty($participant['requirement_link']) ? $participant['requirement_link'] : '-' ?></p>
+                                <p class="text-muted">
+                                    <?php if (!empty($participant['requirement_link'])): ?>
+                                        <a href="<?= $participant['requirement_link'] ?>" target="_blank" rel="noopener noreferrer">
+                                            <i class="ri-external-link-line me-1"></i><?= $participant['requirement_link'] ?>
+                                        </a>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </p>
                             </div>
                         </div>
                     </div>

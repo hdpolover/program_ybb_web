@@ -290,13 +290,99 @@
     <script src="<?= base_url('assets/libs/quill/quill.min.js') ?>"></script>
 
     <!-- input flag init -->
-    <script src="/assets/js/custom/submission-flag-input.init.js"></script>
+    <script src="/assets/js/custom/submission-flag-input-api.init.js"></script>
 
     <!-- Sweet Alerts js -->
     <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
 
     <!-- Sweet alert init js-->
     <script src="/assets/js/pages/sweetalerts.init.js"></script>
+
+    <!-- Tab persistence with URL query parameter -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // Map friendly tab names to target IDs
+            const tabMapping = {
+                'personal': 'steparrow-personal',
+                'professional': 'steparrow-professional',
+                'entry': 'steparrow-entry',
+                'misc': 'steparrow-misc',
+                'preview': 'steparrow-preview'
+            };
+            
+            // Reverse mapping for updating URL
+            const reverseMapping = {
+                'steparrow-personal': 'personal',
+                'steparrow-professional': 'professional',
+                'steparrow-entry': 'entry',
+                'steparrow-misc': 'misc',
+                'steparrow-preview': 'preview'
+            };
+            
+            // Get all tab buttons
+            const tabButtons = document.querySelectorAll('.nav-pills button[data-bs-toggle="pill"]');
+            
+            // Function to get tab from URL query parameter
+            function getTabFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const tab = urlParams.get('tab');
+                return tab ? tabMapping[tab] : null;
+            }
+            
+            // Function to activate tab by target
+            function activateTab(target, preventScroll = true) {
+                const targetButton = document.querySelector(`button[data-bs-target="#${target}"]`);
+                if (targetButton) {
+                    const tab = new bootstrap.Tab(targetButton);
+                    tab.show();
+                    
+                    // Prevent auto scroll to top
+                    if (preventScroll) {
+                        setTimeout(() => {
+                            window.scrollTo(0, 0);
+                        }, 10);
+                    }
+                }
+            }
+            
+            // Function to update URL without reloading
+            function updateURL(tabName) {
+                const url = new URL(window.location);
+                url.searchParams.set('tab', tabName);
+                window.history.pushState({}, '', url);
+            }
+            
+            // On page load, check if there's a tab parameter in the URL
+            const initialTab = getTabFromURL();
+            if (initialTab) {
+                activateTab(initialTab);
+            }
+            
+            // Update URL when tab is changed
+            tabButtons.forEach(button => {
+                button.addEventListener('shown.bs.tab', function(e) {
+                    const target = e.target.getAttribute('data-bs-target');
+                    if (target) {
+                        const tabId = target.substring(1); // Remove the # symbol
+                        const friendlyName = reverseMapping[tabId];
+                        if (friendlyName) {
+                            updateURL(friendlyName);
+                        }
+                    }
+                });
+            });
+            
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', function() {
+                const tab = getTabFromURL();
+                if (tab) {
+                    activateTab(tab, false);
+                }
+            });
+        })();
+    </script>
 
     <!-- App js -->
     <script src="/assets/js/app.js"></script>

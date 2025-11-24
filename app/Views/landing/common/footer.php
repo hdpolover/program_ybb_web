@@ -141,8 +141,8 @@
     <i class="ri-arrow-up-line"></i>
 </button>
 
-<!-- Chat Widget -->
-<div id="chat-widget" class="chat-widget bottom-right">
+<!-- Chat Widget - Hidden on landing pages -->
+<div id="chat-widget" class="chat-widget bottom-right" style="display: none;">
     <!-- Chat Button (Minimized State) -->
     <div id="chat-button" class="chat-button" title="YBB Support Assistant">
         <svg class="chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

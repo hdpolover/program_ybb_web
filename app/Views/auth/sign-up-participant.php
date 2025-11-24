@@ -87,6 +87,9 @@
                                                 <!-- Hidden field for registration type (category) -->
                                                 <input type="hidden" name="registration_type"
                                                     value="<?= $registrationType ?? '' ?>">
+                                                <!-- Hidden field for program slug -->
+                                                <input type="hidden" name="program_slug"
+                                                    value="<?= $programSlug ?? '' ?>">
 
                                                 <div class="mb-3">
                                                     <label for="fullname" class="form-label">Full Name <span
