@@ -163,6 +163,7 @@
                 const linkElement = e.target.closest('a');
                 if (linkElement && formChanged && !linkElement.hasAttribute('data-no-confirm')) {
                     const href = linkElement.getAttribute('href');
+                    const target = linkElement.getAttribute('target');
                     // Only handle internal links and not anchors
                     if (href && href !== '#' && !href.startsWith('javascript:')) {
                         e.preventDefault();
@@ -178,7 +179,12 @@
                             cancelButtonColor: '#3085d6',
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                window.location.href = href;
+                                // Open in new tab if target="_blank", otherwise navigate normally
+                                if (target === '_blank') {
+                                    window.open(href, '_blank');
+                                } else {
+                                    window.location.href = href;
+                                }
                             }
                         });
                     }

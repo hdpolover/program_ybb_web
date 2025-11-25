@@ -297,10 +297,12 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                                 
                                 <div class="row g-2">
                                     <div class="col-12">
-                                        <a href="<?= base_url('topbar/' . ($program['id'] ?? '') . '/create') ?>" 
-                                           class="btn btn-primary w-100 btn-sm">
+                                        <button type="button" 
+                                                class="btn btn-primary w-100 btn-sm register-program-btn" 
+                                                data-program-id="<?= $program['id'] ?? '' ?>"
+                                                data-program-name="<?= esc($program['name'] ?? 'Program') ?>">
                                             <i class="ri-user-add-line me-1"></i> Register for this Program
-                                        </a>
+                                        </button>
                                     </div>
                                     <?php if (isset($program['slug']) && !empty($program['slug'])): ?>
                                         <div class="col-12">
@@ -348,6 +350,30 @@ $full_name = isset($currentParticipant['full_name']) ? $currentParticipant['full
                         if (container) {
                             container.style.textAlign = 'left';
                         }
+                        
+                        // Attach click handlers to register buttons
+                        const registerButtons = container.querySelectorAll('.register-program-btn');
+                        registerButtons.forEach(button => {
+                            button.addEventListener('click', function() {
+                                const programId = this.getAttribute('data-program-id');
+                                const programName = this.getAttribute('data-program-name');
+                                
+                                // Close the current modal
+                                Swal.close();
+                                
+                                // Call the registration function from topbar.js
+                                if (typeof window.registerForProgram === 'function') {
+                                    window.registerForProgram(programId, programName);
+                                } else {
+                                    console.error('registerForProgram function not found');
+                                    Swal.fire({
+                                        title: 'Error',
+                                        text: 'Registration function not available. Please refresh the page.',
+                                        icon: 'error'
+                                    });
+                                }
+                            });
+                        });
                     }
                 });
         <?php endif; ?>
