@@ -95,6 +95,10 @@ $routes->post('send-reset-link', 'Auth::sendResetLink', ['filter' => 'noauth']);
 $routes->get('test-forgot-password-api', 'Auth::testForgotPasswordAPI', ['filter' => 'noauth']);
 $routes->get('two-step-verification', 'Auth::twoStepVerification', ['filter' => 'noauth']);
 
+// Ambassador authentication routes (must be outside protected group)
+$routes->get('ambassadors/sign-in', 'Auth::ambassadorSignIn', ['filter' => 'noauth']);
+$routes->post('ambassadors/authorize', 'Auth::authorizeAmbassador', ['filter' => 'noauth']);
+
 // Protected routes for logged in users
 $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API endpoints
     $routes->post('api/abstracts/(:num)/save-version', 'AjaxHandler::saveAbstractVersion/$1');
@@ -177,12 +181,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
 
     // ambassadors
     $routes->group('ambassadors', function ($routes) {
-        $routes->get('sign-in', 'Auth::ambassadorSignIn', ['filter' => 'noauth']);
         $routes->get('referrals', 'dashboard\Ambassadors::referrals');
         $routes->get('resources', 'dashboard\Ambassadors::resources');
         $routes->post('generate-link', 'dashboard\Ambassadors::generateReferralLink');
-
-        $routes->post('authorize', 'Auth::authorizeAmbassador', ['filter' => 'noauth']);
 
         // dashboard ambassador routes
         $routes->get('dashboard', 'ambassador\Dashboard::index');
