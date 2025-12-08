@@ -54,10 +54,22 @@ class Profile extends BaseController
         
         // Ensure we have a referral link
         if (!$referralLink) {
-            log_message('warning', 'No referral link from API, generating fallback link');
-            $refCode = $ambassador['details']['ref_code'] ?? $ambassador['ref_code'] ?? 'AMBASSADOR';
-            $referralLink = 'https://japanyouthsummit.com/sign-up?q=' . base64_encode($refCode);
-            log_message('info', 'Generated fallback referral link: ' . $referralLink);
+            log_message('warning', 'No referral link from API, attempting to fetch from backend');
+            
+            // Call backend API to generate the referral link
+            $linkResponse = $this->makeGetRequest('/ambassadors/' . $ambassador['id'] . '/generate-link', [], false);
+            
+            if ($linkResponse && isset($linkResponse['data']['referral_link'])) {
+                $referralLink = $linkResponse['data']['referral_link'];
+                log_message('info', 'Got referral link from backend API: ' . $referralLink);
+            } elseif ($linkResponse && isset($linkResponse['referral_link'])) {
+                $referralLink = $linkResponse['referral_link'];
+                log_message('info', 'Got referral link from backend API: ' . $referralLink);
+            } else {
+                // Last resort fallback - show error message
+                log_message('error', 'Failed to get referral link from backend API');
+                $referralLink = 'Error: Unable to generate referral link. Please contact support.';
+            }
         }
         
         // Get additional ambassador statistics

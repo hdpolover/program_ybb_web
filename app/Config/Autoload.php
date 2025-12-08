@@ -93,6 +93,7 @@ class Autoload extends AutoloadConfig
      * @var string[]
      * @phpstan-var list<string>
      */    public $helpers = [
+        'url_helper',
         'image_helper',
         'error_helper',
         'QrCodeHelper',

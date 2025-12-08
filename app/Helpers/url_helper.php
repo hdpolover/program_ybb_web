@@ -105,3 +105,7 @@ if (!function_exists('is_registration_actually_available')) {
         return false;
     }
 }
+
+// NOTE: Encryption/decryption is handled by the backend API
+// Use /api/ambassadors/{id}/generate-link to get encrypted referral links
+// Use /api/ambassadors/check-query to validate encrypted queries

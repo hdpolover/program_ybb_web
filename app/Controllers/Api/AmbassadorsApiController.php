@@ -136,8 +136,9 @@ class AmbassadorsApiController extends BaseController
                 ]);
             }
 
-            // Generate shareable link
-            $shareableLink = $this->generateShareableLink($ambassador['ref_code'] ?? '');
+            // Get shareable link from backend API
+            $linkResponse = $this->makeGetRequest('/ambassadors/' . $id . '/generate-link', [], false);
+            $shareableLink = $linkResponse['data']['referral_link'] ?? $linkResponse['referral_link'] ?? '';
 
             return $this->response->setJSON([
                 'status' => 'success',
@@ -221,6 +222,8 @@ class AmbassadorsApiController extends BaseController
     /**
      * Generate referral link for ambassador
      * GET /api/ambassadors/{id}/generate-link
+     * 
+     * Calls backend API to get encrypted referral link
      */
     public function generateLink($id)
     {
@@ -235,46 +238,22 @@ class AmbassadorsApiController extends BaseController
 
             $programId = session()->get('selectedProgram')['id'];
 
-            // Get ambassador details
-            $ambassador = $this->makeGetRequest('/ambassadors/' . $id, [], false);
+            // Call backend API to generate the encrypted link
+            $response = $this->makeGetRequest('/ambassadors/' . $id . '/generate-link', [], false);
 
-            if (!$ambassador || !isset($ambassador['id'])) {
-                return $this->response->setStatusCode(404)->setJSON([
+            if (!$response || isset($response['error'])) {
+                log_message('error', 'Backend API generate-link failed: ' . json_encode($response));
+                return $this->response->setStatusCode(500)->setJSON([
                     'status' => 'error',
-                    'message' => 'Ambassador not found'
+                    'message' => $response['message'] ?? 'Failed to generate referral link from backend'
                 ]);
             }
 
-            // Verify ambassador belongs to current program
-            if ($ambassador['program_id'] != $programId) {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status' => 'error',
-                    'message' => 'Ambassador not found in selected program'
-                ]);
-            }
-
-            $refCode = $ambassador['ref_code'] ?? '';
-            if (empty($refCode)) {
-                return $this->response->setStatusCode(400)->setJSON([
-                    'status' => 'error',
-                    'message' => 'Ambassador has no referral code'
-                ]);
-            }
-
-            // Generate referral link
-            $webUrl = 'https://japanyouthsummit.com'; // Default web URL
-            $encryptedQuery = base64_encode($refCode);
-            $referralLink = $webUrl . '/sign-up?q=' . $encryptedQuery;
-
+            // Backend returns the encrypted link - just pass it through
             return $this->response->setJSON([
                 'status' => 'success',
                 'message' => 'Referral link generated successfully',
-                'data' => [
-                    'ref_code' => $refCode,
-                    'web_url' => $webUrl,
-                    'encrypted_query' => $encryptedQuery,
-                    'referral_link' => $referralLink
-                ]
+                'data' => $response['data'] ?? $response
             ]);
 
         } catch (\Exception $e) {
@@ -289,6 +268,8 @@ class AmbassadorsApiController extends BaseController
     /**
      * Validate encrypted referral code
      * GET /api/ambassadors/check-query
+     * 
+     * Calls backend API to decrypt and validate the query
      */
     public function checkQuery()
     {
@@ -302,41 +283,19 @@ class AmbassadorsApiController extends BaseController
                 ]);
             }
 
-            // Decrypt the query
-            $refCode = base64_decode($encryptedQuery);
+            // Call backend API to decrypt and validate the query
+            $response = $this->makeGetRequest('/ambassadors/check-query?encrypted_query=' . urlencode($encryptedQuery), [], false);
 
-            if (!$refCode) {
+            if (!$response || isset($response['error'])) {
+                log_message('error', 'Backend API check-query failed: ' . json_encode($response));
                 return $this->response->setStatusCode(400)->setJSON([
                     'status' => 'error',
-                    'message' => 'Invalid encrypted query'
+                    'message' => $response['message'] ?? 'Failed to validate referral code'
                 ]);
             }
 
-            // Find ambassador by referral code
-            $ambassadors = $this->makeGetRequest('/ambassadors?ref_code=' . $refCode, [], false);
-
-            if (!$ambassadors || !is_array($ambassadors) || empty($ambassadors)) {
-                return $this->response->setStatusCode(404)->setJSON([
-                    'status' => 'error',
-                    'message' => 'Ambassador not found for this referral code'
-                ]);
-            }
-
-            $ambassador = $ambassadors[0];
-
-            return $this->response->setJSON([
-                'status' => 'success',
-                'message' => 'Referral code validated successfully',
-                'data' => [
-                    'ambassador' => [
-                        'id' => $ambassador['id'],
-                        'name' => $ambassador['name'],
-                        'ref_code' => $ambassador['ref_code'],
-                        'program_id' => $ambassador['program_id']
-                    ],
-                    'valid' => true
-                ]
-            ]);
+            // Backend returns ambassador info - pass it through
+            return $this->response->setJSON($response);
 
         } catch (\Exception $e) {
             log_message('error', 'Check query error: ' . $e->getMessage());
@@ -345,22 +304,5 @@ class AmbassadorsApiController extends BaseController
                 'message' => 'Failed to validate referral code'
             ]);
         }
-    }
-
-    /**
-     * Generate shareable link for ambassador
-     * 
-     * @param string $refCode
-     * @return string
-     */
-    private function generateShareableLink($refCode)
-    {
-        if (empty($refCode)) {
-            return '';
-        }
-
-        $webUrl = 'https://japanyouthsummit.com'; // Default web URL
-        $encryptedQuery = base64_encode($refCode);
-        return $webUrl . '/sign-up?q=' . $encryptedQuery;
     }
 }

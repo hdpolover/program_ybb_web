@@ -168,7 +168,13 @@ class Auth extends BaseController
                         log_message('error', 'Query validation failed - query is marked as invalid by API');
                         return redirect()->to('sign-in')->with('error', 'Invalid query. Please contact support.');
                     }
-                    log_message('debug', 'Query validation successful');
+                    
+                    // Store referral data in session
+                    session()->set('ambassador_referral', [
+                        'ref_code' => $queryData['ref_code'],
+                        'ambassador_id' => $queryData['ambassador']['id']
+                    ]);
+                    log_message('debug', 'Query validation successful - Ambassador referral stored in session: ref_code=' . $queryData['ref_code'] . ', id=' . $queryData['ambassador']['id']);
                 } else {
                     // queryData is null or empty
                     log_message('error', 'Query validation failed - API returned empty response');
