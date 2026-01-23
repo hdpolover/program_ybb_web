@@ -108,7 +108,7 @@ abstract class BaseController extends Controller
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
             // Check both baseDomain and HTTP_HOST to be safe
-            $this->currentUrl = "worldyouthfest.com";
+            $this->currentUrl = "middleeastyouthsummit.com";
             log_message('debug', 'Detected WorldYouthFest domain, setting currentUrl to worldyouthfest.com');
         } else {
             $this->currentUrl = $baseDomain;
@@ -124,15 +124,17 @@ abstract class BaseController extends Controller
     }
 
     /**
-     * Load web settings with caching
+     * Load web settings without caching (as requested to ensure fresh data)
      */
     protected function loadWebSettingsWithCache(): void
     {
+        // Cache key logic kept for reference or re-enabling later
         $cacheKey = "web_settings_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
         $cache = \Config\Services::cache();
 
-        // Try to get from cache first
-        $webSettingData = $cache->get($cacheKey);
+        // Disable cache retrieval - Always fetch from API
+        // $webSettingData = $cache->get($cacheKey);
+        $webSettingData = null;
 
         if ($webSettingData === null) {
             // Cache miss - fetch from API
@@ -140,10 +142,10 @@ abstract class BaseController extends Controller
             $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
             $loadTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            // Cache for 1 hour (3600 seconds)
+            // Still save to cache for other potential consumers, but we are bypassing reading it
             if (!empty($webSettingData)) {
                 $cache->save($cacheKey, $webSettingData, 3600);
-                log_message('info', "Web settings cached for {$this->currentUrl} (loaded in {$loadTime}ms)");
+                log_message('info', "Web settings fetched for {$this->currentUrl} (loaded in {$loadTime}ms) - Cache ignored");
             }
         } else {
             log_message('debug', "Web settings cache hit for {$this->currentUrl}");
@@ -202,15 +204,16 @@ abstract class BaseController extends Controller
     }
 
     /**
-     * Load program data with caching
+     * Load program data without caching
      */
     protected function loadProgramDataWithCache($programCategoryId, &$webSettingData): void
     {
         $cacheKey = "programs_category_" . $programCategoryId . "_v1";
         $cache = \Config\Services::cache();
 
-        // Try to get from cache first
-        $programs = $cache->get($cacheKey);
+        // Disable cache retrieval
+        // $programs = $cache->get($cacheKey);
+        $programs = null;
 
         if ($programs === null) {
             // Cache miss - fetch from API
@@ -218,10 +221,10 @@ abstract class BaseController extends Controller
             $programs = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
             $loadTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            // Cache for 30 minutes (1800 seconds)
+            // Still save to cache
             if (!empty($programs)) {
                 $cache->save($cacheKey, $programs, 1800);
-                log_message('info', "Programs data cached for category {$programCategoryId} (loaded in {$loadTime}ms)");
+                log_message('info', "Programs data fetched for category {$programCategoryId} (loaded in {$loadTime}ms) - Cache ignored");
             }
         } else {
             log_message('debug', "Programs data cache hit for category {$programCategoryId}");
@@ -273,7 +276,7 @@ abstract class BaseController extends Controller
 
         if ($environment === 'development') {
             // Use development API URL
-            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8100/api';
+            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
             log_message('info', "[BaseController::setApiBaseUrl] Development environment detected, using: {$this->apiBaseUrl}");
         } else {
             // TODO: Change back to real API when admin.ybbfoundation.com/api is fixed

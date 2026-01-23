@@ -42,9 +42,9 @@ class Dashboard extends BaseController
         }
 
         // Initialize cache service
-        $cache = \Config\Services::cache();
+        // $cache = \Config\Services::cache(); // Cache removed
 
-        // Get payment status with caching
+        // Get payment status without caching
         $paymentStatus = 'completed'; // Default
         $paymentDueDate = null;
         $hasSubmittedForm = false;
@@ -66,7 +66,7 @@ class Dashboard extends BaseController
             $hasSuccessfulPayment = false;
             if (isset($participantPayments) && is_array($participantPayments)) {
                 foreach ($participantPayments as $payment) {
-                    if (isset($payment['status']) && $payment['status'] === '2') {
+                    if (isset($payment['status']) && (string)$payment['status'] === '2') {
                         $hasSuccessfulPayment = true;
                         break;
                     }

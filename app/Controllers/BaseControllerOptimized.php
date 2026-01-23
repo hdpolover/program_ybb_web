@@ -206,7 +206,7 @@ abstract class BaseControllerOptimized extends Controller
         $environment = ENVIRONMENT;
 
         if ($environment === 'development') {
-            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8100/api';
+            $this->apiBaseUrl = defined('DEV_BASE_API_URL') ? DEV_BASE_API_URL : 'http://localhost:8080/api';
         } else {
             $this->apiBaseUrl = defined('BASE_API_URL') ? BASE_API_URL : 'https://admin.ybbfoundation.com/api';
         }
