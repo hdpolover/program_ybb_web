@@ -15,7 +15,8 @@ class Programs extends BaseController
         $cache = \Config\Services::cache();
         
         // Try to get from cache first
-        $programs = $cache->get($cacheKey);
+        // $programs = $cache->get($cacheKey);
+        $programs = null; // FORCE CACHE MISS as requested
         
         if ($programs === null) {
             // Cache miss - fetch from API
@@ -23,10 +24,10 @@ class Programs extends BaseController
             $programs = $this->makeGetRequest('/landing/programs?web_url=' . $this->currentUrl);
             $apiLoadTime = round((microtime(true) - $apiStartTime) * 1000, 2);
             
-            // Cache for 20 minutes (1200 seconds)
+            // Cache for 20 minutes (1200 seconds) - DISABLED
             if (!empty($programs)) {
-                $cache->save($cacheKey, $programs, 1200);
-                log_message('info', "Programs data cached for {$this->currentUrl} (API load: {$apiLoadTime}ms)");
+                // $cache->save($cacheKey, $programs, 1200);
+                log_message('info', "Programs data fetched for {$this->currentUrl} (API load: {$apiLoadTime}ms)");
             }
         } else {
             log_message('debug', "Programs data cache hit for {$this->currentUrl}");

@@ -15,7 +15,8 @@ class Home extends BaseController
         $cache = \Config\Services::cache();
         
         // Try to get from cache first
-        $homeData = $cache->get($cacheKey);
+        // $homeData = $cache->get($cacheKey);
+        $homeData = null; // FORCE CACHE MISS as requested
         
         if ($homeData === null) {
             // Cache miss - fetch from API
@@ -23,10 +24,10 @@ class Home extends BaseController
             $homeData = $this->makeGetRequest('/landing/home?web_url=' . $this->currentUrl);
             $apiLoadTime = round((microtime(true) - $apiStartTime) * 1000, 2);
             
-            // Cache for 15 minutes (900 seconds)
+            // Cache for 15 minutes (900 seconds) - DISABLED
             if (!empty($homeData)) {
-                $cache->save($cacheKey, $homeData, 900);
-                log_message('info', "Home data cached for {$this->currentUrl} (API load: {$apiLoadTime}ms)");
+                // $cache->save($cacheKey, $homeData, 900);
+                log_message('info', "Home data fetched for {$this->currentUrl} (API load: {$apiLoadTime}ms)");
             }
         } else {
             log_message('debug', "Home data cache hit for {$this->currentUrl}");
