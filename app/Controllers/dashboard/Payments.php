@@ -763,129 +763,117 @@ class Payments extends BaseController
             $idrAmount = $paymentAmount * $usdToIdrRate;
             log_message('debug', 'Manual payment USD to IDR conversion: ' . $paymentAmount . ' USD * ' . $usdToIdrRate . ' = ' . $idrAmount . ' IDR');
 
-            // Get the file with the correct field name matching the API
+            // Manual payments must include a valid proof file.
             $proof = $this->request->getFile('proof_url');
 
-            // Check if we have a valid file
-            $hasValidFile = $proof && $proof->isValid() && !$proof->hasMoved();
+            if (!$proof || !$proof->isValid() || $proof->hasMoved()) {
+                $proofError = $proof ? $proof->getErrorString() : 'No file was uploaded';
+                log_message('error', 'Manual payment proof validation failed: ' . $proofError);
 
-            if ($hasValidFile) {
-                // This is a file upload, so we need to use a different approach
-                // Manually build the POST payload and directly send it with cURL
+                session()->setFlashdata('swal', json_encode([
+                    'title' => 'Invalid Payment Proof',
+                    'text' => 'Please upload a valid JPG, PNG, or PDF payment proof before submitting your manual payment.',
+                    'icon' => 'error'
+                ]));
 
-                // Prepare the endpoint URL
-                $url = $this->apiBaseUrl . '/payments/create';
-
-                // Set up cURL
-                $curl = curl_init();
-                // Build the multipart/form-data payload
-                $payload = [
-                    'participant_id' => $participantId,
-                    'program_payment_id' => $programPaymentId,
-                    'payment_method_id' => $paymentMethodId,
-                    'source_name' => $sourceName,
-                    'account_name' => $accountName,
-                    'notes' => $notes,
-                    'payment_date' => $paymentDate,
-                    'idr_amount' => $idrAmount,
-                    'usd_amount' => $paymentAmount,
-                    'proof' => curl_file_create(
-                        $proof->getTempName(),
-                        $proof->getMimeType(),
-                        $proof->getName()
-                    )
-                ];
-
-                log_message('debug', 'Making direct cURL payment request with file upload');
-
-                // Get JWT token for authentication
-                $jwtToken = $this->getJwtToken();
-                $headers = [
-                    'Accept: application/json'
-                ];
-                if ($jwtToken) {
-                    $headers[] = 'Authorization: Bearer ' . $jwtToken;
-                }
-
-                // Set cURL options
-                curl_setopt_array($curl, [
-                    CURLOPT_URL => $url,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => $payload,
-                    CURLOPT_HTTPHEADER => $headers
-                ]);
-
-                // Execute the cURL request
-                $response = curl_exec($curl);
-                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-                $error = curl_error($curl);
-
-                // Close the cURL session
-                curl_close($curl);
-
-                // Log the response
-                log_message('debug', 'Payment cURL Response: ' . $response);
-                if ($error) {
-                    log_message('error', 'cURL Error: ' . $error);
-                }
-
-                // Process the response
-                $responseData = json_decode($response, true);
-
-                if ($httpCode >= 200 && $httpCode < 300 && $responseData) {
-                    log_message('debug', 'Payment request successful');
-                    session()->setFlashdata('swal', json_encode([
-                        'title' => 'Success!',
-                        'text' => 'Your payment has been submitted successfully and is now awaiting approval.',
-                        'icon' => 'success'
-                    ]));
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId));
-                } else {
-                    log_message('error', 'Payment request failed: ' . ($error ?: 'API Error'));
-                    session()->setFlashdata('swal', json_encode([
-                        'title' => 'Error!',
-                        'text' => 'There was a problem submitting your payment. Please try again.',
-                        'icon' => 'error'
-                    ]));
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId));
-                }
-            } else {
-                // No file upload, use the regular makePostRequest method
-                $formData = [
-                    'participant_id' => $participantId,
-                    'program_payment_id' => $programPaymentId,
-                    'payment_method_id' => $paymentMethodId,
-                    'source_name' => $sourceName,
-                    'account_name' => $accountName,
-                    'notes' => $notes,
-                    'payment_date' => $paymentDate,
-                    'idr_amount' => $idrAmount,
-                    'usd_amount' => $paymentAmount,
-                ];
-
-                log_message('debug', 'Making payment request with data (no file): ' . json_encode($formData));
-
-                $response = $this->makePostRequest(
-                    '/payments/create',
-                    $formData,
-                    [], // No additional headers
-                    true, // Use JWT authentication (required for this endpoint)
-                    true, // Send as JSON
-                    false, // Not multipart
-                    [] // No file data
-                );
-
-                if ($response) {
-                    log_message('debug', 'Payment request successful: ' . json_encode($response));
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('success', 'Payment request submitted successfully.');
-                } else {
-                    log_message('error', 'Payment request failed');
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('error', 'Error submitting payment request.');
-                }
+                return redirect()->to(base_url('payments/detail/' . $programPaymentId));
             }
+
+            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            if (!in_array($proof->getMimeType(), $allowedMimeTypes, true)) {
+                log_message('error', 'Manual payment proof has unsupported mime type: ' . $proof->getMimeType());
+
+                session()->setFlashdata('swal', json_encode([
+                    'title' => 'Unsupported File Type',
+                    'text' => 'Only JPG, PNG, and PDF files are allowed for manual payment proof.',
+                    'icon' => 'error'
+                ]));
+
+                return redirect()->to(base_url('payments/detail/' . $programPaymentId));
+            }
+
+            if ($proof->getSize() > 5 * 1024 * 1024) {
+                log_message('error', 'Manual payment proof exceeds 5MB limit: ' . $proof->getSize());
+
+                session()->setFlashdata('swal', json_encode([
+                    'title' => 'File Too Large',
+                    'text' => 'Payment proof must be 5 MB or smaller.',
+                    'icon' => 'error'
+                ]));
+
+                return redirect()->to(base_url('payments/detail/' . $programPaymentId));
+            }
+
+            // This is a file upload, so we need to use a different approach
+            // Manually build the POST payload and directly send it with cURL
+            $url = $this->apiBaseUrl . '/payments/create';
+
+            $curl = curl_init();
+            $payload = [
+                'participant_id' => $participantId,
+                'program_payment_id' => $programPaymentId,
+                'payment_method_id' => $paymentMethodId,
+                'source_name' => $sourceName,
+                'account_name' => $accountName,
+                'notes' => $notes,
+                'payment_date' => $paymentDate,
+                'idr_amount' => $idrAmount,
+                'usd_amount' => $paymentAmount,
+                'proof' => curl_file_create(
+                    $proof->getTempName(),
+                    $proof->getMimeType(),
+                    $proof->getName()
+                )
+            ];
+
+            log_message('debug', 'Making direct cURL payment request with file upload');
+
+            $jwtToken = $this->getJwtToken();
+            $headers = [
+                'Accept: application/json'
+            ];
+            if ($jwtToken) {
+                $headers[] = 'Authorization: Bearer ' . $jwtToken;
+            }
+
+            curl_setopt_array($curl, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => $headers
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+
+            curl_close($curl);
+
+            log_message('debug', 'Payment cURL Response: ' . $response);
+            if ($error) {
+                log_message('error', 'cURL Error: ' . $error);
+            }
+
+            $responseData = json_decode($response, true);
+
+            if ($httpCode >= 200 && $httpCode < 300 && $responseData) {
+                log_message('debug', 'Payment request successful');
+                session()->setFlashdata('swal', json_encode([
+                    'title' => 'Success!',
+                    'text' => 'Your payment has been submitted successfully and is now awaiting approval.',
+                    'icon' => 'success'
+                ]));
+                return redirect()->to(base_url('payments/detail/' . $programPaymentId));
+            }
+
+            log_message('error', 'Payment request failed: ' . ($error ?: 'API Error'));
+            session()->setFlashdata('swal', json_encode([
+                'title' => 'Error!',
+                'text' => 'There was a problem submitting your payment. Please try again.',
+                'icon' => 'error'
+            ]));
+            return redirect()->to(base_url('payments/detail/' . $programPaymentId));
         } else {
             // Handle gateway payment types
             try {
@@ -938,53 +926,49 @@ class Payments extends BaseController
                     'usd_amount' => $paymentAmount,
                 ];
 
-            log_message('info', 'PAYMENT AMOUNT DEBUG - Frontend IDR Amount: ' . number_format($idrAmount, 0, ',', '.') . ' IDR');
-            log_message('debug', 'Gateway payment data: ' . json_encode($paymentData));
+                log_message('info', 'PAYMENT AMOUNT DEBUG - Frontend IDR Amount: ' . number_format($idrAmount, 0, ',', '.') . ' IDR');
+                log_message('debug', 'Gateway payment data: ' . json_encode($paymentData));
 
-            // Use the correct API endpoint for payment creation
-            $apiEndpoint = '/payments/create';
-            log_message('debug', 'Using API endpoint: ' . $this->apiBaseUrl . $apiEndpoint);
+                $apiEndpoint = '/payments/create';
+                log_message('debug', 'Using API endpoint: ' . $this->apiBaseUrl . $apiEndpoint);
 
-            // Make API call to initiate gateway payment           
-            $response = $this->makePostRequest(
-                $apiEndpoint,
-                $paymentData,
-                [], // No additional headers
-                true, // Use JWT authentication (required for this endpoint)
-                true, // Send as JSON
-                false // Not multipart
-            );
+                $response = $this->makePostRequest(
+                    $apiEndpoint,
+                    $paymentData,
+                    [],
+                    true,
+                    true,
+                    false
+                );
 
-            // Log the complete response for debugging
-            log_message('info', 'PAYMENT RESPONSE DEBUG - API Response: ' . json_encode($response));
-            
-            // Check if response contains updated payment amounts
-            if (isset($response['data']['amount']) || isset($response['amount'])) {
-                $apiAmount = $response['data']['amount'] ?? $response['amount'] ?? 'not_found';
-                log_message('info', 'PAYMENT AMOUNT DEBUG - API returned amount: ' . $apiAmount);
-            }
-            
-            log_message('debug', 'Payment response: ' . json_encode($response));
+                log_message('info', 'PAYMENT RESPONSE DEBUG - API Response: ' . json_encode($response));
 
-            if (!$response || (isset($response['error']))) {
-                $errorMessage = 'Failed to initiate payment. Please try again or contact support.';
-                if (isset($response['error'])) {
-                    log_message('error', 'API Error: ' . json_encode($response));
-                    if (isset($response['message'])) {
-                        $errorMessage = $response['message'];
+                if (isset($response['data']['amount']) || isset($response['amount'])) {
+                    $apiAmount = $response['data']['amount'] ?? $response['amount'] ?? 'not_found';
+                    log_message('info', 'PAYMENT AMOUNT DEBUG - API returned amount: ' . $apiAmount);
+                }
+
+                log_message('debug', 'Payment response: ' . json_encode($response));
+
+                if (!$response || isset($response['error'])) {
+                    $errorMessage = 'Failed to initiate payment. Please try again or contact support.';
+                    if (isset($response['error'])) {
+                        log_message('error', 'API Error: ' . json_encode($response));
+                        if (isset($response['message'])) {
+                            $errorMessage = $response['message'];
+                        }
+                    }
+
+                    if ($isAjax) {
+                        return $this->response->setJSON([
+                            'status' => 'error',
+                            'message' => $errorMessage
+                        ])->setStatusCode(400);
+                    } else {
+                        return redirect()->to(base_url('payments/detail/' . $programPaymentId))
+                            ->with('error', $errorMessage);
                     }
                 }
-
-                if ($isAjax) {
-                    return $this->response->setJSON([
-                        'status' => 'error',
-                        'message' => $errorMessage
-                    ])->setStatusCode(400);
-                } else {
-                    return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('error', $errorMessage);
-                }
-            }
 
             // Log the complete response for debugging
             log_message('debug', 'Payment response structure: ' . json_encode($response));
@@ -1052,17 +1036,21 @@ class Payments extends BaseController
             } else {
                 log_message('error', 'No redirect URL or payment ID found in response: ' . json_encode($response));
 
+                $errorMessage = !empty($responseMessage)
+                    ? $responseMessage
+                    : 'Payment gateway error. Please try again later.';
+
                 if ($isAjax) {
                     return $this->response->setJSON([
                         'status' => 'error',
-                        'message' => 'Payment gateway error. Please try again later.'
+                        'message' => $errorMessage
                     ])->setStatusCode(400);
                 } else {
                     return redirect()->to(base_url('payments/detail/' . $programPaymentId))
-                        ->with('error', 'Payment gateway error. Please try again later.');
+                        ->with('error', $errorMessage);
                 }
             }
-            
+
             } catch (\Exception $e) {
                 log_message('error', 'Exception in gateway payment processing: ' . $e->getMessage());
                 log_message('error', 'Exception trace: ' . $e->getTraceAsString());

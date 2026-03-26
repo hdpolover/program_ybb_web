@@ -234,7 +234,7 @@ abstract class BaseControllerOptimized extends Controller
     // Keep all the existing makeGetRequest, makePostRequest methods...
     // (Copy from original BaseController)
     
-    function makeGetRequest($endpoint, $headers = [], $useJwt = false)
+    function makeGetRequest($endpoint, $headers = [], $useJwt = false, $legacyFlag = null)
     {
         // Add request timing
         $startTime = microtime(true);

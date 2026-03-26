@@ -101,9 +101,9 @@ abstract class BaseController extends Controller
         log_message('debug', 'HTTP_HOST: ' . $host);
 
         // Handle special cases for localhost and different environments
-        if ($baseDomain === "localhost:8081" || $baseDomain === "localhost" || $host === "localhost:8081") {
+        if ($baseDomain === "localhost:8100" || $baseDomain === "localhost" || $host === "localhost:8100") {
             // You can change this to test different domains
-            $this->currentUrl = "worldyouthfest.com"; // Changed from koreayouthsummit.com for testing
+            $this->currentUrl = "japanyouthsummit.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to worldyouthfest.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
@@ -248,6 +248,18 @@ abstract class BaseController extends Controller
 
                 log_message('debug', 'BaseController - Latest program dates set: ' .
                     $latestProgram['start_date'] . ' to ' . $latestProgram['end_date']);
+            }
+
+            // Override category-level usd_in_idr with program-specific rate if available
+            $currentProgramId = session()->get('current_program_id');
+            if ($currentProgramId) {
+                foreach ($programs as $prog) {
+                    if (isset($prog['id']) && $prog['id'] == $currentProgramId && !empty($prog['usd_in_idr'])) {
+                        $webSettingData['usd_in_idr'] = $prog['usd_in_idr'];
+                        log_message('debug', 'BaseController - Overriding usd_in_idr with program-specific rate: ' . $prog['usd_in_idr'] . ' for program ID: ' . $currentProgramId);
+                        break;
+                    }
+                }
             }
         } else {
             log_message('warning', 'BaseController - No programs found for category ID: ' . $programCategoryId);
@@ -441,7 +453,7 @@ abstract class BaseController extends Controller
     }
 
     // create a fucntion for get requests that accepts endpoint and headers and returns response as json
-    function makeGetRequest($endpoint, $headers = [], $useJwt = false)
+    function makeGetRequest($endpoint, $headers = [], $useJwt = false, $legacyFlag = null)
     {
         try {
             // combine endpoint with base url

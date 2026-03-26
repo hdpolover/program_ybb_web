@@ -150,6 +150,13 @@ if (isset($_GET['debug'])) {
     border: 1px solid rgba(235, 144, 49, 0.3) !important;
 }
 
+@media (min-width: 768px) {
+    .vertical-overlay {
+        display: none !important;
+        pointer-events: none !important;
+    }
+}
+
 /* Modal enhancements */
 .category-modal .modal-dialog {
     max-width: 800px;
@@ -480,6 +487,46 @@ if (isset($_GET['debug'])) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    function syncSidebarOverlayState() {
+        const overlay = document.querySelector('.vertical-overlay');
+
+        if (window.innerWidth > 767) {
+            document.body.classList.remove('vertical-sidebar-enable');
+
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.pointerEvents = 'none';
+            }
+        } else if (overlay) {
+            overlay.style.display = '';
+            overlay.style.pointerEvents = '';
+        }
+    }
+
+    syncSidebarOverlayState();
+    window.addEventListener('resize', syncSidebarOverlayState);
+
+    const modal = document.getElementById('categoryInfoModal');
+    const categoryModal = modal && typeof bootstrap !== 'undefined'
+        ? bootstrap.Modal.getOrCreateInstance(modal)
+        : null;
+
+    document.querySelectorAll('.participant-category-card [data-bs-target="#categoryInfoModal"]').forEach(function(trigger) {
+        trigger.addEventListener('click', function(event) {
+            if (!categoryModal) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            syncSidebarOverlayState();
+
+            modal.__triggerButton = this;
+            categoryModal.show();
+        });
+    });
+
     // Handle category switching with full API integration
     const switchBtn = document.getElementById('switchCategoryBtn');
     
@@ -703,10 +750,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Handle modal trigger with action data
-    const modal = document.getElementById('categoryInfoModal');
     if (modal) {
         modal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
+            const button = event.relatedTarget || modal.__triggerButton;
             const action = button?.getAttribute('data-action');
             
             if (action === 'switch') {
@@ -763,5 +809,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-</script>
 </script>

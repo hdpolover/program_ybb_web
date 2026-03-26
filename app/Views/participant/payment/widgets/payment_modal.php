@@ -154,9 +154,10 @@
                             </div>
                             <div class="mb-3">
                                 <label for="manualProof" class="form-label">Payment Proof (Required)</label>
-                                <input type="file" class="form-control" id="manualProof" name="proof_url" accept="image/*" required max-size="1024">
-                                <div class="form-text">Upload a photo of your receipt or payment proof (Max: 1 MB)</div>
-                                <div class="invalid-feedback" id="filesize-error">The file is too large. Maximum allowed size is 1 MB.</div>
+                                <input type="file" class="form-control" id="manualProof" name="proof_url" accept="image/jpeg,image/png,image/jpg,application/pdf" required max-size="5120">
+                                <div class="form-text">Upload your receipt or payment proof in JPG, PNG, or PDF format (Max: 5 MB)</div>
+                                <div class="invalid-feedback" id="filesize-error">The file is too large. Maximum allowed size is 5 MB.</div>
+                                <div class="invalid-feedback" id="filetype-error">Only JPG, PNG, and PDF files are allowed.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="notes" class="form-label">Additional Notes</label>
@@ -296,17 +297,32 @@
                 if (paymentType === 'manual') {
                     console.log('Processing manual payment');
                     
-                    // Check file size limit (1 MB = 1024 * 1024 bytes)
+                    // Check file type and size limit to match backend validation
                     const fileInput = document.getElementById('manualProof');
                     if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                        const typeErrorDiv = document.getElementById('filetype-error');
+
+                        if (!allowedTypes.includes(file.type)) {
+                            console.log('File type is not allowed:', file.type);
+                            if (typeErrorDiv) typeErrorDiv.style.display = 'block';
+                            fileInput.setCustomValidity('Only JPG, PNG, and PDF files are allowed');
+                            this.classList.add('was-validated');
+                            return;
+                        }
+
+                        fileInput.setCustomValidity('');
+                        if (typeErrorDiv) typeErrorDiv.style.display = 'none';
+
                         const fileSize = fileInput.files[0].size;
-                        const maxSize = 1024 * 1024; // 1 MB in bytes
+                        const maxSize = 5 * 1024 * 1024; // 5 MB in bytes
 
                         if (fileSize > maxSize) {
                             console.log('File size exceeds limit:', fileSize, 'bytes');
                             const errorDiv = document.getElementById('filesize-error');
                             if (errorDiv) errorDiv.style.display = 'block';
-                            fileInput.setCustomValidity('File size exceeds the maximum limit of 1 MB');
+                            fileInput.setCustomValidity('File size exceeds the maximum limit of 5 MB');
                             this.classList.add('was-validated');
                             return;
                         } else {

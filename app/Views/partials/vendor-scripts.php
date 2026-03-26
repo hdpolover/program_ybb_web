@@ -18,3 +18,5 @@
 <script src="/assets/js/ajax-error-handler.js"></script>
 <!-- Loading Manager (handles loading overlays) -->
 <script src="/assets/js/loading-manager.js"></script>
+<!-- Chat Widget Integration -->
+<?= $this->include('partials/chat-widget') ?>
