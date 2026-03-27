@@ -900,8 +900,7 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                     var paymentTable = $('#paymentDatatable').DataTable({
                         responsive: {
                             details: {
-                                type: 'column',
-                                target: 'tr',
+                                type: 'inline',
                                 renderer: function(api, rowIdx, columns) {
                                     var data = $.map(columns, function(col, i) {
                                         return col.hidden ?
@@ -919,15 +918,15 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                         columnDefs: [{
                                 responsivePriority: 1,
                                 targets: [0, 1, 5]
-                            }, // Always visible
+                            }, // Always visible: #, Payment Info, Actions
                             {
                                 responsivePriority: 2,
                                 targets: [3, 4]
-                            }, // Next priority
+                            }, // Next priority: Amount, Payment Status
                             {
                                 responsivePriority: 3,
                                 targets: 2
-                            }, // Lowest priority
+                            }, // Lowest priority: Period
                             // Set width for specific columns
                             {
                                 width: "50px",
@@ -947,8 +946,6 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                         ordering: true,
                         info: true,
                         autoWidth: false,
-                        scrollX: true,
-                        scrollCollapse: true,
                         language: {
                             paginate: {
                                 previous: "<i class='mdi mdi-chevron-left'>",
@@ -963,25 +960,13 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                         ],
                         drawCallback: function() {
                             $('[data-bs-toggle="tooltip"]').tooltip();
-                            // Force the table to recalculate its layout
-                            $(window).trigger('resize');
-                            // Reinitialize any components that might be in the table
-                            if (typeof initComponents === 'function') {
-                                initComponents();
-                            }
                         }
                     });
 
                     // Handle window resize to properly adjust the table
                     $(window).on('resize', function() {
-                        // Adjust column widths and recalculate responsive layout
                         paymentTable.columns.adjust().responsive.recalc();
                     });
-
-                    // Initial adjustment
-                    setTimeout(function() {
-                        paymentTable.columns.adjust().responsive.recalc();
-                    }, 100);
                 });
 
                 // Check if there are any flash messages set in session
@@ -1098,68 +1083,6 @@ require_once(__DIR__ . '/helpers/payment_helpers.php');
                     });
                 });
 
-                // Payment modal data
-                const makePaymentModal = document.getElementById('makePaymentModal');
-                if (makePaymentModal) {
-                    makePaymentModal.addEventListener('show.bs.modal', function(event) {
-                        const button = event.relatedTarget;
-                        const paymentId = button.getAttribute('data-payment-id');
-                        const paymentIndex = button.getAttribute('data-payment-index');
-
-                        // Get the full program payment object using the index
-                        const selectedPayment = programPayments[paymentIndex] || null;
-                        if (selectedPayment) {
-                            // Set the selected program payment data to hidden input to be sent to the server
-                            document.getElementById('program_payment_id').value = selectedPayment.id;
-                            document.getElementById('payment_amount').value = selectedPayment.usd_amount;
-
-                            // Update display elements
-                            if (document.getElementById('payment_description')) {
-                                document.getElementById('payment_description').textContent = selectedPayment.name || 'Program Payment';
-                            }
-
-                            if (document.getElementById('payment_amount_display')) {
-                                document.getElementById('payment_amount_display').textContent = '$' + parseFloat(selectedPayment.usd_amount).toFixed(2);
-                            }
-
-                            if (document.getElementById('payment_reference')) {
-                                document.getElementById('payment_reference').textContent = 'YBB-' + selectedPayment.id;
-                            }
-
-                            // Set hidden form field with the complete payment object
-                            const paymentDataField = document.createElement('input');
-                            paymentDataField.type = 'hidden';
-                            paymentDataField.name = 'selectedProgramPayment';
-                            paymentDataField.value = JSON.stringify(selectedPayment);
-
-                            // Replace existing field if it exists, or add a new one
-                            const existingField = document.querySelector('input[name="selectedProgramPayment"]');
-                            if (existingField) {
-                                existingField.value = JSON.stringify(selectedPayment);
-                            } else {
-                                document.getElementById('paymentForm').appendChild(paymentDataField);
-                            }
-                        }
-                    });
-                }
-
-                // Payment method fields toggle
-                const paymentMethodSelect = document.getElementById('paymentMethod');
-                if (paymentMethodSelect) {
-                    paymentMethodSelect.addEventListener('change', function() {
-                        // Hide all programPayment method fields
-                        document.querySelectorAll('.programPayment-method-fields').forEach(function(field) {
-                            field.style.display = 'none';
-                        });
-
-                        // Show selected programPayment method fields
-                        if (this.value === 'credit_card' || this.value === 'debit_card') {
-                            document.getElementById('creditCardFields').style.display = 'block';
-                        } else if (this.value === 'bank_transfer') {
-                            document.getElementById('bankTransferFields').style.display = 'block';
-                        }
-                    });
-                }
             });
         </script>
 

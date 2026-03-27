@@ -6,6 +6,40 @@
 <link href="/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
 <!-- App Css-->
 <link href="/assets/css/app.min.css" rel="stylesheet" type="text/css" />
+<!-- Overlay fix: placed AFTER app.min.css so these rules win the cascade -->
+<style>
+/* Browser extension chat widget fix — its container covers the page but should not block clicks */
+.chat-ai-widget-container {
+    pointer-events: none !important;
+}
+.chat-ai-widget-container * {
+    pointer-events: auto;
+}
+/* .bg-overlay is always decorative (backgrounds on auth/landing pages) — never intercept clicks */
+.bg-overlay {
+    pointer-events: none !important;
+}
+
+/* .vertical-overlay: non-interactive by default.
+   Only restore pointer-events when it is intentionally shown (mobile sidebar/navbar open). */
+.vertical-overlay {
+    pointer-events: none !important;
+}
+body.vertical-sidebar-enable .vertical-overlay,
+.navbar-show .vertical-overlay {
+    pointer-events: auto !important;
+}
+
+/* On desktop: always hide the overlay entirely — it should never appear */
+@media (min-width: 768px) {
+    .vertical-overlay,
+    body.vertical-sidebar-enable .vertical-overlay,
+    .navbar-show .vertical-overlay {
+        display: none !important;
+        pointer-events: none !important;
+    }
+}
+</style>
 <!-- custom Css-->
 <link href="/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
 <!-- DateTime Widget Css -->

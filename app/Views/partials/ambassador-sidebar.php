@@ -79,3 +79,16 @@
 <!-- Left Sidebar End -->
 <!-- Vertical Overlay-->
 <div class="vertical-overlay"></div>
+<script>
+(function () {
+    function fixOverlayOnDesktop() {
+        if (window.innerWidth > 767) {
+            document.body.classList.remove('vertical-sidebar-enable');
+            document.body.classList.remove('navbar-show');
+        }
+    }
+    fixOverlayOnDesktop();
+    document.addEventListener('DOMContentLoaded', fixOverlayOnDesktop);
+    window.addEventListener('resize', fixOverlayOnDesktop);
+})();
+</script>

@@ -103,7 +103,7 @@ abstract class BaseController extends Controller
         // Handle special cases for localhost and different environments
         if ($baseDomain === "localhost:8100" || $baseDomain === "localhost" || $host === "localhost:8100") {
             // You can change this to test different domains
-            $this->currentUrl = "japanyouthsummit.com"; // Changed from koreayouthsummit.com for testing
+            $this->currentUrl = "koreayouthsummit.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to worldyouthfest.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest

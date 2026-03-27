@@ -150,13 +150,6 @@ if (isset($_GET['debug'])) {
     border: 1px solid rgba(235, 144, 49, 0.3) !important;
 }
 
-@media (min-width: 768px) {
-    .vertical-overlay {
-        display: none !important;
-        pointer-events: none !important;
-    }
-}
-
 /* Modal enhancements */
 .category-modal .modal-dialog {
     max-width: 800px;
@@ -487,25 +480,6 @@ if (isset($_GET['debug'])) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    function syncSidebarOverlayState() {
-        const overlay = document.querySelector('.vertical-overlay');
-
-        if (window.innerWidth > 767) {
-            document.body.classList.remove('vertical-sidebar-enable');
-
-            if (overlay) {
-                overlay.style.display = 'none';
-                overlay.style.pointerEvents = 'none';
-            }
-        } else if (overlay) {
-            overlay.style.display = '';
-            overlay.style.pointerEvents = '';
-        }
-    }
-
-    syncSidebarOverlayState();
-    window.addEventListener('resize', syncSidebarOverlayState);
-
     const modal = document.getElementById('categoryInfoModal');
     const categoryModal = modal && typeof bootstrap !== 'undefined'
         ? bootstrap.Modal.getOrCreateInstance(modal)
@@ -519,8 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             event.preventDefault();
             event.stopPropagation();
-
-            syncSidebarOverlayState();
 
             modal.__triggerButton = this;
             categoryModal.show();

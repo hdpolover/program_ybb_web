@@ -115,3 +115,18 @@
 <!-- Left Sidebar End -->
 <!-- Vertical Overlay-->
 <div class="vertical-overlay"></div>
+<script>
+(function () {
+    function fixOverlayOnDesktop() {
+        if (window.innerWidth > 767) {
+            document.body.classList.remove('vertical-sidebar-enable');
+            document.body.classList.remove('navbar-show');
+        }
+    }
+    // Run immediately (early in page parse, before app.js loads)
+    fixOverlayOnDesktop();
+    // Run again after app.js and all scripts have executed
+    document.addEventListener('DOMContentLoaded', fixOverlayOnDesktop);
+    window.addEventListener('resize', fixOverlayOnDesktop);
+})();
+</script>
