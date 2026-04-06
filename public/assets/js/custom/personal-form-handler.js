@@ -543,6 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const formData = {
                 participant: {
                     full_name: document.getElementById('personal-fullname')?.value || '',
+                    nickname: document.getElementById('personal-nickname')?.value || '',
                     birthdate: document.getElementById('personal-birthdate')?.value || '',
                     gender: document.getElementById('personal-gender')?.value || '',
                     nationality: document.querySelector('[data-input-flag][data-option-flag-img-name] .flag-input')?.value || '',

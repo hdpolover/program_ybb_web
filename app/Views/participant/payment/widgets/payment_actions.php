@@ -396,6 +396,10 @@ if (!$paymentHasStarted) {
                         <button type="button" class="btn btn-soft-primary" onclick="window.location.reload();">
                             <i class="ri-refresh-line align-middle me-1"></i> Refresh Status
                         </button>
+                        <button type="button" class="btn btn-outline-danger"
+                            onclick="confirmCancelPayment(<?= (int)$latestPayment['id'] ?>);">
+                            <i class="ri-close-circle-line align-middle me-1"></i> Cancel Payment
+                        </button>
                     </div>
                 </div><?php elseif ($latestPayment['status'] == 3 || $latestPayment['status'] == 'cancelled'): ?>
                 <!-- Payment Cancelled UI with timing and access validation -->
@@ -891,6 +895,64 @@ if ($isInstallmentPayment && $installmentCount > 0):
                 confirmButtonText: 'OK'
             });
         }
+    }
+
+    // Cancel a pending payment with SweetAlert confirmation
+    function confirmCancelPayment(paymentId) {
+        Swal.fire({
+            title: 'Cancel Payment?',
+            text: 'Are you sure you want to cancel this payment? This action cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, cancel it',
+            cancelButtonText: 'Go back',
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Cancelling...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch('<?= site_url('payments/cancel') ?>/' + paymentId, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        title: 'Payment Cancelled',
+                        text: 'Your payment has been cancelled successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                    }).then(() => { window.location.reload(); });
+                } else {
+                    Swal.fire({
+                        title: 'Could Not Cancel',
+                        text: data.message || 'Failed to cancel payment. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An unexpected error occurred. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                });
+            });
+        });
     }
 
     // Function to copy text to clipboard

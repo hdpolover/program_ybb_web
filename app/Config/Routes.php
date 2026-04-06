@@ -157,6 +157,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {    // Abstract API
     $routes->get('payments', 'dashboard\Payments::index');
     $routes->get('payments/detail/(:num)', 'dashboard\Payments::detail/$1');
     $routes->post('payments/make', 'dashboard\Payments::makePayment');
+    $routes->post('payments/cancel/(:num)', 'dashboard\Payments::cancelPayment/$1');
     $routes->get('payments/test-api', 'dashboard\Payments::testPaymentAPI'); // Temporary debug endpoint
     $routes->get('payments/debug-detail/(:num)/(:num)', 'dashboard\Payments::debugProgramPaymentDetail/$1/$2'); // Debug program payment detail
     $routes->get('payments/debug-detail/(:num)', 'dashboard\Payments::debugProgramPaymentDetail/$1'); // Debug with default participant

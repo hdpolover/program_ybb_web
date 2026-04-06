@@ -1405,8 +1405,67 @@ class Payments extends BaseController
     }
 
     /**
+     * Cancel a pending payment (automatic or manual)
+     * Proxies to the admin API cancel endpoint.
+     *
+     * @param int $id Payment ID
+     */
+    public function cancelPayment($id)
+    {
+        if (empty($id) || !is_numeric($id)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Invalid payment ID.',
+            ])->setStatusCode(400);
+        }
+
+        $participantId = session()->get('current_participant_id');
+        if (empty($participantId)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Session expired. Please log in again.',
+            ])->setStatusCode(401);
+        }
+
+        // Verify the payment belongs to this participant before cancelling
+        $paymentResponse = $this->makeGetRequest('/payments/get/' . $id, [], true);
+        $payment = $paymentResponse['data'] ?? $paymentResponse;
+
+        if (empty($payment)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Payment not found.',
+            ])->setStatusCode(404);
+        }
+
+        $paymentParticipantId = $payment['participant_id'] ?? null;
+        if ((string)$paymentParticipantId !== (string)$participantId) {
+            log_message('warning', 'Participant ' . $participantId . ' attempted to cancel payment ' . $id . ' belonging to participant ' . $paymentParticipantId);
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'You are not authorised to cancel this payment.',
+            ])->setStatusCode(403);
+        }
+
+        $response = $this->makePostRequest('/payments/cancel/' . $id, [], [], true, true);
+
+        if (isset($response['status']) && $response['status'] === 200) {
+            return $this->response->setJSON([
+                'status'  => 'success',
+                'message' => 'Payment cancelled successfully.',
+            ]);
+        }
+
+        $errorMessage = $response['message'] ?? 'Failed to cancel payment. Please try again.';
+        return $this->response->setJSON([
+            'status'  => 'error',
+            'message' => $errorMessage,
+        ])->setStatusCode(400);
+    }
+
+    /**
      * Download programPayment receipt for a completed programPayment attempt
-     * 
+     *
      * @param int $id The programPayment attempt ID
      */
     public function downloadReceipt($id)

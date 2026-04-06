@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.*
+writable/cache/*
+writable/logs/*
+writable/session/*
+writable/uploads/*
+vendor
+tests
+*.md
+*.zip
+app.zip
+system_backup_*
+node_modules
