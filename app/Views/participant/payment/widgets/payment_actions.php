@@ -364,9 +364,10 @@ if (!$paymentHasStarted) {
                             <i class="ri-time-line"></i>
                         </div>
                     </div>
-                    <h5 class="fs-16 mb-2">Payment Processing</h5>
+                    <h5 class="fs-16 mb-2">Payment In Progress</h5>
                     <div class="alert alert-warning mb-3">
-                        <p class="mb-0">Your payment is being processed. Contact administrator if your payment is not completed within 1x12 hours.</p>
+                        <p class="mb-2">We're waiting for your payment to be confirmed by the gateway.</p>
+                        <p class="mb-0 small"><i class="ri-time-line me-1"></i>If your payment isn't confirmed within <strong>24 hours</strong>, please contact support.</p>
                     </div>
 
                     <!-- Processing animation -->
@@ -379,15 +380,8 @@ if (!$paymentHasStarted) {
                     <!-- Action buttons -->
                     <div class="d-grid gap-2">
                         <?php if (!empty($latestPayment['payment_url'])): ?>
-                            <div class="alert alert-info mb-3">
-                                <div class="d-flex">
-                                    <div class="flex-shrink-0">
-                                        <i class="ri-information-line fs-18"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-2">
-                                        <p class="mb-0">Did you close the payment page or need to try again? Click the button below to continue your payment.</p>
-                                    </div>
-                                </div>
+                            <div class="alert alert-info py-2 mb-2 text-start">
+                                <i class="ri-information-line me-1"></i>Closed the payment page? Click below to reopen it.
                             </div>
                             <button type="button" class="btn btn-warning" onclick="openPaymentGateway('<?= esc($latestPayment['payment_url']) ?>');">
                                 <i class="ri-bank-card-line align-middle me-1"></i> Continue Payment
@@ -410,9 +404,15 @@ if (!$paymentHasStarted) {
                         </div>
                     </div>
                     <h5 class="fs-16 mb-2">Payment Cancelled</h5>
-                    <div class="alert alert-danger mb-3">
-                        <p class="mb-0">This payment has been cancelled. Contact support for more information.</p>
-                    </div>
+                    <?php if ($paymentIsActive && $canMakePayment): ?>
+                        <div class="alert alert-warning mb-3">
+                            <p class="mb-0">Your previous payment was cancelled. You can try again — the payment period is still open.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-danger mb-3">
+                            <p class="mb-0">This payment was cancelled. If you believe this is an error, please contact support.</p>
+                        </div>
+                    <?php endif; ?>
                     
                     <?php if (!$paymentHasStarted): ?>
                         <!-- Payment hasn't started yet -->
@@ -870,8 +870,8 @@ if ($isInstallmentPayment && $installmentCount > 0):
         // Try to open payment URL in new tab
         const newTab = window.open(url, '_blank', 'noopener');
 
-        // Show message if popup was blocked or failed to open
         if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+            // Popup was blocked — show manual link
             Swal.fire({
                 title: 'Payment Gateway',
                 html: `
@@ -893,6 +893,31 @@ if ($isInstallmentPayment && $installmentCount > 0):
                 `,
                 icon: 'info',
                 confirmButtonText: 'OK'
+            });
+        } else {
+            // Tab opened — show "come back and check status" guidance
+            Swal.fire({
+                title: 'Payment In Progress',
+                html: `
+                    <div class="text-center">
+                        <p>The payment gateway has been opened in a new tab.</p>
+                        <p class="mb-0">Complete your payment there, then come back and click <strong>Check Payment Status</strong> to see if it was confirmed.</p>
+                        <div class="mt-3">
+                            <a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="ri-external-link-line me-1"></i>Reopen gateway tab
+                            </a>
+                        </div>
+                    </div>
+                `,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Check Payment Status',
+                cancelButtonText: 'Done — Refresh Page',
+                allowOutsideClick: true,
+            }).then((result) => {
+                if (result.isConfirmed || result.dismiss === Swal.DismissReason.cancel || result.dismiss === Swal.DismissReason.backdrop) {
+                    window.location.reload();
+                }
             });
         }
     }

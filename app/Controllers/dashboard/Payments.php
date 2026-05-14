@@ -78,7 +78,17 @@ class Payments extends BaseController
     public function getVisibleProgramPayments($allPayments, $participantPayments)
     {
         $today = date('Y-m-d H:i:s');
-        
+
+        // Filter out any payments missing required date fields before any processing
+        $allPayments = array_filter($allPayments, function ($p) {
+            $valid = isset($p['start_date']) && isset($p['end_date']);
+            if (!$valid) {
+                log_message('warning', 'getVisibleProgramPayments: Skipping payment ID ' . ($p['id'] ?? 'unknown') . ' - missing start_date or end_date');
+            }
+            return $valid;
+        });
+        $allPayments = array_values($allPayments);
+
         log_message('debug', 'getVisibleProgramPayments: Processing ' . count($allPayments) . ' filtered payments and ' . count($participantPayments) . ' participant payments');
 
         // Group participant payments by program_payment_id (with safety check)
@@ -389,7 +399,7 @@ class Payments extends BaseController
         if (!empty($programPayments)) {
             foreach ($programPayments as $idx => $payment) {
                 $paymentType = $payment['type'] ?? 'all';
-                log_message('debug', "Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}, Start: {$payment['start_date']}, End: {$payment['end_date']}");
+                log_message('debug', "Payment {$idx}: ID={$payment['id']}, Name={$payment['name']}, Type={$paymentType}, Start: " . ($payment['start_date'] ?? 'N/A') . ", End: " . ($payment['end_date'] ?? 'N/A'));
             }
         }
         

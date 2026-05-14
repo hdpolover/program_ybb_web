@@ -44,37 +44,40 @@ class CacheService
      */
     public function getWebSettingsKey(string $domain): string
     {
-        return "web_settings:{$domain}:v1";
+        $safeDomain = str_replace(['.', ':', '/', '\\', '@', '-'], '_', $domain);
+        return "web_settings_{$safeDomain}_v1";
     }
 
     public function getProgramsCategoryKey(int $categoryId): string
     {
-        return "programs:category:{$categoryId}:v1";
+        return "programs_category_{$categoryId}_v1";
     }
 
     public function getParticipantPaymentsKey(int $participantId): string
     {
-        return "payments:participant:{$participantId}:v1";
+        return "payments_participant_{$participantId}_v1";
     }
 
     public function getParticipantStatusKey(int $participantId): string
     {
-        return "participant:status:{$participantId}:v1";
+        return "participant_status_{$participantId}_v1";
     }
 
     public function getUserParticipantsKey(int $userId): string
     {
-        return "participant:user:{$userId}:v1";
+        return "participant_user_{$userId}_v1";
     }
 
     public function getProgramDetailsKey(int $programId): string
     {
-        return "program:details:{$programId}:v1";
+        return "program_details_{$programId}_v1";
     }
 
     public function getLandingDataKey(string $page, string $domain): string
     {
-        return "landing:{$page}:{$domain}:v1";
+        $safeDomain = str_replace(['.', ':', '/', '\\', '@', '-'], '_', $domain);
+        $safePage = str_replace(['.', ':', '/', '\\', '@', '-'], '_', $page);
+        return "landing_{$safePage}_{$safeDomain}_v1";
     }
 
     /**

@@ -20,7 +20,7 @@ class Cache extends BaseConfig
      * The name of the preferred handler that should be used. If for some reason
      * it is not available, the $backupHandler will be used in its place.
      */
-    public string $handler = 'file';
+    public string $handler = 'predis';
 
     /**
      * --------------------------------------------------------------------------
@@ -31,7 +31,7 @@ class Cache extends BaseConfig
      * unreachable. Often, 'file' is used here since the filesystem is
      * always available, though that's not always practical for the app.
      */
-    public string $backupHandler = 'dummy';
+    public string $backupHandler = 'file';
 
     /**
      * --------------------------------------------------------------------------
@@ -166,4 +166,19 @@ class Cache extends BaseConfig
         'redis'     => RedisHandler::class,
         'wincache'  => WincacheHandler::class,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->handler        = env('cache.handler', $this->handler);
+        $this->backupHandler  = env('cache.backupHandler', $this->backupHandler);
+        $this->prefix         = env('cache.prefix', $this->prefix);
+
+        $this->redis['host']     = env('cache.redis.host', $this->redis['host']);
+        $this->redis['port']     = (int) env('cache.redis.port', $this->redis['port']);
+        $this->redis['password'] = env('cache.redis.password', $this->redis['password']) ?: null;
+        $this->redis['database'] = (int) env('cache.redis.database', $this->redis['database']);
+        $this->redis['timeout']  = (int) env('cache.redis.timeout', $this->redis['timeout']);
+    }
 }

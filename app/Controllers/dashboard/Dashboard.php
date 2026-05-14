@@ -26,42 +26,58 @@ class Dashboard extends BaseController
             }
         }
 
+        $cache = \Config\Services::cache();
+
         // Fetch detailed participant information including category
         $detailedParticipant = null;
         $switchEligibility = null;
         if ($currentParticipantId) {
-            $detailedParticipant = $this->makeGetRequest('/participants/' . $currentParticipantId, [], true);
-            log_message('debug', 'Detailed participant data: ' . json_encode($detailedParticipant));
-            
-            // Check category switch eligibility
-            $eligibilityStartTime = microtime(true);
-            $switchEligibility = $this->makeGetRequest('/participants/' . $currentParticipantId . '/switch-category/check', [], false, false);
-            $eligibilityLoadTime = round((microtime(true) - $eligibilityStartTime) * 1000, 2);
-            log_message('info', "Category switch eligibility checked for {$currentParticipantId} (loaded in {$eligibilityLoadTime}ms)");
-            log_message('debug', 'Switch eligibility data: ' . json_encode($switchEligibility));
+            $participantCacheKey = "participant_detail_{$currentParticipantId}";
+            $detailedParticipant = $cache->get($participantCacheKey);
+            if ($detailedParticipant === null) {
+                $detailedParticipant = $this->makeGetRequest('/participants/' . $currentParticipantId, [], true);
+                if ($detailedParticipant) {
+                    $cache->save($participantCacheKey, $detailedParticipant, 120);
+                }
+            }
+
+            $eligibilityCacheKey = "switch_eligibility_{$currentParticipantId}";
+            $switchEligibility = $cache->get($eligibilityCacheKey);
+            if ($switchEligibility === null) {
+                $eligibilityStartTime = microtime(true);
+                $switchEligibility = $this->makeGetRequest('/participants/' . $currentParticipantId . '/switch-category/check', [], false, false);
+                $eligibilityLoadTime = round((microtime(true) - $eligibilityStartTime) * 1000, 2);
+                log_message('info', "Switch eligibility fetched for {$currentParticipantId} in {$eligibilityLoadTime}ms");
+                if ($switchEligibility) {
+                    $cache->save($eligibilityCacheKey, $switchEligibility, 300);
+                }
+            }
         }
 
-        // Initialize cache service
-        // $cache = \Config\Services::cache(); // Cache removed
-
-        // Get payment status without caching
+        // Get payment status with short cache for real-time feel
         $paymentStatus = 'completed'; // Default
         $paymentDueDate = null;
         $hasSubmittedForm = false;
-        
+
         if ($currentParticipantId) {
-            // Fetch participant payments directly without caching for real-time data
-            $paymentsStartTime = microtime(true);
-            $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
-            $paymentsLoadTime = round((microtime(true) - $paymentsStartTime) * 1000, 2);
-            log_message('info', "Participant payments fetched directly for {$currentParticipantId} (loaded in {$paymentsLoadTime}ms)");
-            
+            $paymentsCacheKey = "participant_payments_{$currentParticipantId}";
+            $participantPaymentsResponse = $cache->get($paymentsCacheKey);
+            if ($participantPaymentsResponse === null) {
+                $paymentsStartTime = microtime(true);
+                $participantPaymentsResponse = $this->makeGetRequest('/payments/participants/' . $currentParticipantId, [], false, false);
+                $paymentsLoadTime = round((microtime(true) - $paymentsStartTime) * 1000, 2);
+                log_message('info', "Payments fetched for {$currentParticipantId} in {$paymentsLoadTime}ms");
+                if ($participantPaymentsResponse) {
+                    $cache->save($paymentsCacheKey, $participantPaymentsResponse, 30);
+                }
+            }
+
             // Extract payments array from the new nested response structure
             $participantPayments = null;
             if (isset($participantPaymentsResponse['data']['payments']) && is_array($participantPaymentsResponse['data']['payments'])) {
                 $participantPayments = $participantPaymentsResponse['data']['payments'];
             }
-            
+
             // Check if any payment is pending
             $hasSuccessfulPayment = false;
             if (isset($participantPayments) && is_array($participantPayments)) {
@@ -71,24 +87,29 @@ class Dashboard extends BaseController
                         break;
                     }
                 }
-                
+
                 if (!$hasSuccessfulPayment) {
                     $paymentStatus = 'pending';
-                    
-                    // If program has payment due date, use it
+
                     if (isset($currentProgram['payment_due_date'])) {
                         $paymentDueDate = $currentProgram['payment_due_date'];
                     }
                 }
             }
-            
-            // Fetch form submission status directly without caching for real-time data  
-            $statusStartTime = microtime(true);
-            $participantStatuses = $this->makeGetRequest('/participants/' . $currentParticipantId . '/status', [], false, false);
-            $statusLoadTime = round((microtime(true) - $statusStartTime) * 1000, 2);
-            log_message('info', "Participant status fetched directly for {$currentParticipantId} (loaded in {$statusLoadTime}ms)");
-            
-            if (isset($participantStatuses) && isset($participantStatuses['form_status']) && $participantStatuses['form_status'] === '2') {
+
+            $statusCacheKey = "participant_status_{$currentParticipantId}";
+            $participantStatuses = $cache->get($statusCacheKey);
+            if ($participantStatuses === null) {
+                $statusStartTime = microtime(true);
+                $participantStatuses = $this->makeGetRequest('/participants/' . $currentParticipantId . '/status', [], false, false);
+                $statusLoadTime = round((microtime(true) - $statusStartTime) * 1000, 2);
+                log_message('info', "Participant status fetched for {$currentParticipantId} in {$statusLoadTime}ms");
+                if ($participantStatuses) {
+                    $cache->save($statusCacheKey, $participantStatuses, 30);
+                }
+            }
+
+            if (isset($participantStatuses['form_status']) && $participantStatuses['form_status'] === '2') {
                 $hasSubmittedForm = true;
             }
         }

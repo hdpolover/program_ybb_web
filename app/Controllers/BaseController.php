@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Intervention\Image\ImageManager;
+use App\Services\CacheService;
 
 /**
  * Class BaseController
@@ -75,6 +76,13 @@ abstract class BaseController extends Controller
     protected $apiBaseUrl;
 
     /**
+     * Cache service instance
+     *
+     * @var CacheService
+     */
+    protected $cacheService;
+
+    /**
      * Constructor.
      */
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
@@ -82,10 +90,14 @@ abstract class BaseController extends Controller
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
 
+        // Initialize cache service
+        $this->cacheService = new CacheService();
+
         // Initialize the HTTP client
         $this->client = \Config\Services::curlrequest([
-            'timeout' => 30,
-            'verify'  => false, // Set to true in production for SSL verification
+            'timeout'         => 30,
+            'connect_timeout' => 5,
+            'verify'          => false, // Set to true in production for SSL verification
         ]);
 
         // Set the API base URL based on environment
@@ -103,7 +115,7 @@ abstract class BaseController extends Controller
         // Handle special cases for localhost and different environments
         if ($baseDomain === "localhost:8100" || $baseDomain === "localhost" || $host === "localhost:8100") {
             // You can change this to test different domains
-            $this->currentUrl = "koreayouthsummit.com"; // Changed from koreayouthsummit.com for testing
+            $this->currentUrl = "istanbulyouthsummit.com"; // Changed from koreayouthsummit.com for testing
             log_message('debug', 'Detected localhost, setting currentUrl to worldyouthfest.com');
         } else if (strpos($baseDomain, 'worldyouthfest.com') !== false || strpos($host, 'worldyouthfest.com') !== false) {
             // Ensure we're using the correct domain for WorldYouthFest
@@ -128,28 +140,14 @@ abstract class BaseController extends Controller
      */
     protected function loadWebSettingsWithCache(): void
     {
-        // Cache key logic kept for reference or re-enabling later
-        $cacheKey = "web_settings_" . str_replace(['.', ':', '/', '\\', '@'], '_', $this->currentUrl) . "_v1";
-        $cache = \Config\Services::cache();
-
-        // Disable cache retrieval - Always fetch from API
-        // $webSettingData = $cache->get($cacheKey);
-        $webSettingData = null;
-
-        if ($webSettingData === null) {
-            // Cache miss - fetch from API
+        $cacheKey = $this->cacheService->getWebSettingsKey($this->currentUrl);
+        $webSettingData = $this->cacheService->remember($cacheKey, function () {
             $startTime = microtime(true);
-            $webSettingData = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
+            $result = $this->makeGetRequest('/web-settings?url=' . $this->currentUrl, [], false);
             $loadTime = round((microtime(true) - $startTime) * 1000, 2);
-
-            // Still save to cache for other potential consumers, but we are bypassing reading it
-            if (!empty($webSettingData)) {
-                $cache->save($cacheKey, $webSettingData, 3600);
-                log_message('info', "Web settings fetched for {$this->currentUrl} (loaded in {$loadTime}ms) - Cache ignored");
-            }
-        } else {
-            log_message('debug', "Web settings cache hit for {$this->currentUrl}");
-        }
+            log_message('info', "Web settings fetched for {$this->currentUrl} (loaded in {$loadTime}ms) - Cached for 1h");
+            return $result;
+        }, 3600);
 
         $siteLogoUrl = $webSettingData['logo_url'] ?? null;
         // Debug log for web settings data
@@ -208,27 +206,14 @@ abstract class BaseController extends Controller
      */
     protected function loadProgramDataWithCache($programCategoryId, &$webSettingData): void
     {
-        $cacheKey = "programs_category_" . $programCategoryId . "_v1";
-        $cache = \Config\Services::cache();
-
-        // Disable cache retrieval
-        // $programs = $cache->get($cacheKey);
-        $programs = null;
-
-        if ($programs === null) {
-            // Cache miss - fetch from API
+        $cacheKey = $this->cacheService->getProgramsCategoryKey($programCategoryId);
+        $programs = $this->cacheService->remember($cacheKey, function () use ($programCategoryId) {
             $startTime = microtime(true);
-            $programs = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
+            $result = $this->makeGetRequest('/programs/category/' . $programCategoryId, [], false);
             $loadTime = round((microtime(true) - $startTime) * 1000, 2);
-
-            // Still save to cache
-            if (!empty($programs)) {
-                $cache->save($cacheKey, $programs, 1800);
-                log_message('info', "Programs data fetched for category {$programCategoryId} (loaded in {$loadTime}ms) - Cache ignored");
-            }
-        } else {
-            log_message('debug', "Programs data cache hit for category {$programCategoryId}");
-        }
+            log_message('info', "Programs data fetched for category {$programCategoryId} (loaded in {$loadTime}ms) - Cached for 30m");
+            return $result;
+        }, 1800);
 
         // Log the programs data for debugging
         log_message('debug', 'BaseController - Programs retrieved: ' . json_encode($programs));
@@ -388,8 +373,8 @@ abstract class BaseController extends Controller
             $programCategoryId = $this->data['webSettings']['program_category_id'];
             log_message('debug', 'BaseController - Getting program_type_id for program_category_id: ' . $programCategoryId);
 
-            // Get program type ID based on program category ID
-            $programTypeId = $this->getProgramTypeId($programCategoryId);
+            // Get program type ID based on program category ID (cached 2h)
+            $programTypeId = $this->getProgramTypeIdCached($programCategoryId);
 
             // Add program type ID to webSettings
             if ($programTypeId !== null) {
@@ -411,11 +396,17 @@ abstract class BaseController extends Controller
      */
     protected function render($view, $data = [])
     {
+        $startTime = microtime(true);
+
         // Prepare topbar data before rendering
         $this->prepareTopbarData();
 
         // Merge global data with view-specific data
         $data = array_merge($this->data, $data);
+
+        $renderTime = round((microtime(true) - $startTime) * 1000, 2);
+        log_message('debug', "View '{$view}' rendered in {$renderTime}ms");
+
         return view($view, $data);
     }
     /**
@@ -450,6 +441,21 @@ abstract class BaseController extends Controller
             log_message('error', 'BaseController - Failed to get program type ID: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Get program type ID with 2-hour caching
+     */
+    protected function getProgramTypeIdCached($programCategoryId): ?int
+    {
+        if (!$programCategoryId) {
+            return null;
+        }
+
+        $cacheKey = "program_category_type_{$programCategoryId}_v1";
+        return $this->cacheService->remember($cacheKey, function () use ($programCategoryId) {
+            return $this->getProgramTypeId($programCategoryId);
+        }, 7200);
     }
 
     // create a fucntion for get requests that accepts endpoint and headers and returns response as json

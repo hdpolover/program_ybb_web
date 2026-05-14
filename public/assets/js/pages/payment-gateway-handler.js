@@ -281,13 +281,13 @@
                                 <p class="text-muted small mt-2">For the best experience, we recommend using Google Chrome browser.</p>
                             </div>
                         </div>
-                        <p class="text-muted small mt-3">You can safely close this message and check your payment status later.</p>
+                        <p class="text-muted small mt-3">Complete the payment in the gateway tab, then come back and click <strong>Check Payment Status</strong>.</p>
                     </div>
                 `,
                 icon: 'info',
                 showCancelButton: true,
-                confirmButtonText: 'Check Payment Status',
-                cancelButtonText: 'Close',
+                confirmButtonText: '<i class="ri-refresh-line me-1"></i> Check Payment Status',
+                cancelButtonText: 'Done — Refresh Page',
                 allowOutsideClick: true, didOpen: () => {
                     // Only open the redirect URL after Swal is shown, and only once                   
                     if (!hasOpenedRedirectTab && redirectUrl) {
@@ -325,10 +325,13 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     console.log('User clicked to check payment status');
-                    // Use the same fallback mechanism for the redirect
                     const paymentIdForRedirect = paymentId || document.getElementById('program_payment_id')?.value || '';
-                    if (paymentIdForRedirect) {
-                        window.location.href = window.location.origin + '/payments/detail/' + paymentIdForRedirect;
+                    const detailPath = '/payments/detail/' + paymentIdForRedirect;
+                    // If already on the detail page, reload in-place instead of navigating
+                    if (paymentIdForRedirect && window.location.pathname === detailPath) {
+                        window.location.reload();
+                    } else if (paymentIdForRedirect) {
+                        window.location.href = window.location.origin + detailPath;
                     } else {
                         console.error('No payment ID available for status check redirect');
                         Swal.fire({
@@ -337,9 +340,9 @@
                             icon: 'error'
                         });
                     }
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    // If user clicked the "Close" button, reload the page to refresh the state
-                    console.log('User clicked Close, reloading the page');
+                } else if (result.dismiss === Swal.DismissReason.cancel || result.dismiss === Swal.DismissReason.backdrop) {
+                    // "Done — Refresh Page" or clicking outside: reload to pick up any status change
+                    console.log('User dismissed, reloading the page');
                     window.location.reload();
                 }
             });

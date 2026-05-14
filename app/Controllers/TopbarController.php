@@ -108,11 +108,11 @@ class TopbarController extends BaseController
             // If still no full name, try to get from user session data
             if (!isset($requestData['full_name']) || empty($requestData['full_name'])) {
                 $user = session()->get('user');
-                if (isset($user['full_name'])) {
+                if (!empty($user['full_name'])) {
                     $requestData['full_name'] = $user['full_name'];
-                } elseif (isset($user['name'])) {
+                } elseif (!empty($user['name'])) {
                     $requestData['full_name'] = $user['name'];
-                } elseif (isset($user['email'])) {
+                } elseif (!empty($user['email'])) {
                     // Use email as a last resort (without the domain)
                     $requestData['full_name'] = explode('@', $user['email'])[0];
                 }
