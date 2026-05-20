@@ -6,7 +6,6 @@ use App\Controllers\BaseController;
 
 class Announcements extends BaseController
 {
-
     public function index()
     {
         // Get query parameters for pagination
@@ -34,7 +33,7 @@ class Announcements extends BaseController
         $paginatedAnnouncements = array_slice($allAnnouncements, $offset, $perPage);
 
         $data = [
-            'title' => 'Help & News',
+            'title' => 'Announcements',
             'category' => $announcementsData['category'] ?? [],
             'announcements' => $paginatedAnnouncements,
             'total' => $total,
@@ -46,23 +45,34 @@ class Announcements extends BaseController
         return $this->render('landing/announcements', $data);
     }
 
-    public function detail($slug)
+    public function detail($identifier)
     {
-        // Get the announcement detail from API
-        $announcementData = $this->makeGetRequest('/program-announcements/' . $slug);
+        $announcementData = $this->makeGetRequest($this->buildDetailEndpoint($identifier));
+        $announcement = $announcementData['announcement'] ?? [];
 
-        if (empty($announcementData)) {
+        if (empty($announcement)) {
             return redirect()->to('/announcements')->with('error', 'Announcement not found');
         }
 
-        log_message('info', 'Retrieved announcement details for slug: ' . $slug);
+        log_message('info', 'Retrieved landing announcement details for identifier: ' . $identifier);
 
         $data = [
-            'title' => $announcementData['title'] ?? 'Announcement Detail',
+            'title' => $announcement['title'] ?? 'Announcement Detail',
             'category' => $announcementData['category'] ?? [],
-            'announcement' => $announcementData['announcement'] ?? [],
+            'announcement' => $announcement,
         ];
 
         return $this->render('landing/announcement-detail', $data);
+    }
+
+    private function buildDetailEndpoint($identifier): string
+    {
+        $query = http_build_query(['web_url' => $this->currentUrl]);
+
+        if (is_numeric($identifier)) {
+            return '/landing/announcements/' . $identifier . '?' . $query;
+        }
+
+        return '/landing/announcement-by-slug/' . rawurlencode((string) $identifier) . '?' . $query;
     }
 }

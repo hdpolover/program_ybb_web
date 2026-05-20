@@ -1,3 +1,6 @@
+<?php
+$pageCategoryName = is_array($category ?? null) ? trim((string) ($category['name'] ?? '')) : '';
+?>
 <?= $this->include('partials/main') ?>
 
 <head>
@@ -8,6 +11,23 @@
     <link href="/assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
 
     <?= $this->include('partials/head-css') ?>
+    <style>
+        .announcement-grid-media {
+            height: 220px;
+        }
+
+        .announcement-grid-placeholder {
+            background: linear-gradient(135deg, rgba(64, 81, 137, 0.08), rgba(10, 179, 156, 0.12));
+        }
+
+        .announcement-grid-summary {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
+            min-height: 4.5rem;
+        }
+    </style>
 
 </head>
 
@@ -40,23 +60,45 @@
                 <div class="row">
                     <?php if (isset($announcements) && !empty($announcements)) : ?>
                         <?php foreach ($announcements as $item) : ?>
+                            <?php
+                            $title = trim((string)($item['title'] ?? 'Announcement'));
+                            $imageUrl = trim((string)($item['img_url'] ?? ''));
+                            $identifier = (string)($item['slug'] ?? $item['id'] ?? '');
+                            $detailUrl = $identifier !== '' ? base_url('announcements/' . rawurlencode($identifier)) : base_url('announcements');
+                            $summarySource = trim((string)($item['meta_description'] ?? ''));
+                            if ($summarySource === '') {
+                                $summarySource = trim(strip_tags((string)($item['content'] ?? '')));
+                            }
+                            $summary = $summarySource !== '' ? mb_strimwidth($summarySource, 0, 150, '...') : 'Stay tuned for the latest update from our program.';
+                            $badgeLabel = trim((string)($item['category'] ?? $pageCategoryName ?: 'Announcement'));
+                            ?>
                             <div class="col-xxl-3 col-lg-4 col-md-6 mb-4">
-                                <div class="card overflow-hidden blog-grid-card h-100">
-                                    <?php if (isset($item['img_url']) && !empty($item['img_url'])): ?>
-                                        <div class="position-relative overflow-hidden">
-                                            <img src="<?= $item['img_url'] ?>" alt="<?= $item['title'] ?>" class="blog-img object-fit-cover w-100" style="height: 200px;">
+                                <div class="card border-0 shadow-sm overflow-hidden blog-grid-card h-100">
+                                    <?php if ($imageUrl !== ''): ?>
+                                        <div class="position-relative overflow-hidden announcement-grid-media">
+                                            <img src="<?= esc($imageUrl) ?>" alt="<?= esc($title) ?>" class="blog-img object-fit-cover w-100 h-100">
                                             <?php if (isset($item['is_new']) && $item['is_new']): ?>
                                                 <div class="badge bg-danger position-absolute top-0 end-0 m-2">New</div>
                                             <?php endif; ?>
                                         </div>
+                                    <?php else: ?>
+                                        <div class="announcement-grid-media announcement-grid-placeholder d-flex align-items-center justify-content-center px-4 text-center">
+                                            <div>
+                                                <div class="avatar-md mx-auto mb-3">
+                                                    <div class="avatar-title bg-white text-primary rounded-circle fs-24 shadow-sm">
+                                                        <i class="ri-megaphone-line"></i>
+                                                    </div>
+                                                </div>
+                                                <p class="text-muted mb-0">Announcement image will appear here when available.</p>
+                                            </div>
+                                        </div>
                                     <?php endif; ?>
                                     <div class="card-body">
-                                        <?php if (isset($item['category']) && !empty($item['category'])): ?>
-                                            <div class="badge bg-soft-primary text-primary mb-2"><?= $item['category'] ?></div>
-                                        <?php endif; ?> <h5 class="card-title mb-2"><a href="<?= base_url('announcements/' . ($item['slug'] ?? $item['id'])) ?>" class="text-reset"><?= $item['title'] ?></a></h5>
-                                        <p class="text-muted mb-3">
-                                            <?= isset($item['meta_description']) ? $item['meta_description'] : (strlen($item['content'] ?? '') > 120 ? substr(strip_tags($item['content']), 0, 120) . '...' : strip_tags($item['content'] ?? '')) ?>
-                                        </p>
+                                        <div class="badge bg-soft-primary text-primary mb-2"><?= esc($badgeLabel) ?></div>
+                                        <h5 class="card-title mb-2">
+                                            <a href="<?= esc($detailUrl) ?>" class="text-reset"><?= esc($title) ?></a>
+                                        </h5>
+                                        <p class="text-muted mb-3 announcement-grid-summary"><?= esc($summary) ?></p>
                                         <div class="d-flex align-items-center">
                                             <div class="flex-grow-1">
                                                 <small class="text-muted">
@@ -65,7 +107,7 @@
                                                 </small>
                                             </div>
                                             <div>
-                                                <a href="<?= base_url('announcements/' . ($item['slug'] ?? $item['id'])) ?>" class="link link-primary text-decoration-underline">Read More <i class="ri-arrow-right-line align-bottom"></i></a>
+                                                <a href="<?= esc($detailUrl) ?>" class="link link-primary text-decoration-underline">Read More <i class="ri-arrow-right-line align-bottom"></i></a>
                                             </div>
                                         </div>
                                     </div>
