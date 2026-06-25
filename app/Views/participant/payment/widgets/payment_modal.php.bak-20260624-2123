@@ -643,16 +643,7 @@ if (isset($paymentMethods) && !empty($paymentMethods)) {
                 document.querySelectorAll('#manualMethodCards .manual-method-card').forEach(function(c) {
                     c.classList.remove('active');
                 });
-
-                // Restore the gateway method id when switching to gateway; clear it for manual.
-                // Without this, selecting the "Online Payment" card wipes payment_method_id and
-                // the gateway submit fails with "Payment method is not selected".
-                if (selectedType === 'gateway') {
-                    const _gId = document.getElementById('gatewayPaymentMethodId');
-                    document.getElementById('payment_method_id').value = (_gId && _gId.value) ? _gId.value : '';
-                } else {
-                    document.getElementById('payment_method_id').value = '';
-                }
+                document.getElementById('payment_method_id').value = '';
 
                 // Hide all payment method fields
                 document.querySelectorAll('.payment-method-fields').forEach(field => {
