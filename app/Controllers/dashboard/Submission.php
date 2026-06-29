@@ -248,6 +248,8 @@ class Submission extends BaseController
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
 
             if ($updatedParticipant) {
+                // makeGetRequest returns the API wrapper; store the inner participant object.
+                $updatedParticipant = $updatedParticipant['participant'] ?? $updatedParticipant;
                 // Force the picture_url to be updated using the value from the API response
                 if ($picture_url) {
                     log_message('debug', 'Forcing picture_url update in session to: ' . $picture_url);
@@ -342,6 +344,7 @@ class Submission extends BaseController
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
 
             if ($updatedParticipant) {
+                $updatedParticipant = $updatedParticipant['participant'] ?? $updatedParticipant;
                 session()->set('current_participant', $updatedParticipant);
             }
 
@@ -502,6 +505,8 @@ class Submission extends BaseController
         log_message('debug', 'updateEntry - Updated Participant Data: ' . json_encode($updatedParticipant));
 
         if ($updatedParticipant) {
+            // makeGetRequest returns the API wrapper; store the inner participant object.
+            $updatedParticipant = $updatedParticipant['participant'] ?? $updatedParticipant;
             // Make sure we update the participant data in the session
             session()->set('current_participant', $updatedParticipant);
 
@@ -559,6 +564,7 @@ class Submission extends BaseController
             $updatedParticipant = $this->makeGetRequest('/participants/' . $participantId, [], false);
 
             if ($updatedParticipant) {
+                $updatedParticipant = $updatedParticipant['participant'] ?? $updatedParticipant;
                 session()->set('current_participant', $updatedParticipant);
             }
 

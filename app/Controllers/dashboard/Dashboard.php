@@ -280,7 +280,9 @@ class Dashboard extends BaseController
                     $freshParticipantData = $this->makeGetRequest("/participants/{$participantId}", [], true);
                     if ($freshParticipantData) {
                         log_message('info', 'switchCategory: Fresh participant data fetched: ' . json_encode($freshParticipantData));
-                        session()->set('current_participant', $freshParticipantData);
+                        // API wraps the participant under a 'participant' key; store the inner
+                        // object so $currentParticipant['category'] resolves correctly.
+                        session()->set('current_participant', $freshParticipantData['participant'] ?? $freshParticipantData);
                     }
                 }
                 

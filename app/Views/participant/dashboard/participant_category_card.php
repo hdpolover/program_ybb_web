@@ -10,10 +10,13 @@
 // Check multiple possible field names for category
 $participantCategory = null;
 if (isset($detailedParticipant)) {
-    $participantCategory = $detailedParticipant['category'] ?? 
-                          $detailedParticipant['registration_type'] ?? 
-                          $detailedParticipant['funding_type'] ?? 
-                          $detailedParticipant['participant_category'] ??
+    // API wraps the participant under a 'participant' key; read that first,
+    // then fall back to top-level shapes for safety.
+    $detailedInner = $detailedParticipant['participant'] ?? $detailedParticipant;
+    $participantCategory = $detailedInner['category'] ??
+                          $detailedInner['registration_type'] ??
+                          $detailedInner['funding_type'] ??
+                          $detailedInner['participant_category'] ??
                           null;
 }
 
